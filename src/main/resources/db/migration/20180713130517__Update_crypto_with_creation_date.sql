@@ -1,0 +1,1 @@
+ALTER TABLE crypto ADD COLUMN created_at TIMESTAMP;

@@ -8,6 +8,7 @@ import com.vaadin.flow.router.Route;
 
 @Route("greeting")
 public class HelloWorld extends VerticalLayout {
+
     public HelloWorld() {
         TextField textField = new TextField("Name");
 

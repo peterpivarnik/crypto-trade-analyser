@@ -57,7 +57,7 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(
                     cryptoDto -> cryptoDto.setFifteenMinutesPercentageLoss(calculate15MinPercentageLoss(cryptoDto)));
             cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getFifteenMinutesPercentageLoss().compareTo(new BigDecimal("1")) > 0)
+                    .filter(dto -> dto.getFifteenMinutesPercentageLoss().compareTo(new BigDecimal("0.5")) > 0)
                     .collect(Collectors.toList());
             log.info("Number of dtos after 2. filtration: " + cryptoDtos.size());
             List<LinkedTreeMap<String, Object>> tickers = getAll24hTickers(api);

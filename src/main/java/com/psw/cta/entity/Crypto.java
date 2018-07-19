@@ -15,11 +15,10 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import static javax.persistence.GenerationType.SEQUENCE;
+import static javax.persistence.GenerationType.AUTO;
 
 @Entity
 @Table(schema = "public", name = "crypto")
-@SequenceGenerator(name = "generator__seq_crypto_id", schema = "public", sequenceName = "seq_crypto_id")
 @Cacheable
 @Getter
 @Setter
@@ -28,7 +27,8 @@ public class Crypto {
 
     @Id
     @NotNull
-    @GeneratedValue(strategy = SEQUENCE, generator = "generator__seq_crypto_id")
+    @SequenceGenerator(name = "generator__seq_crypto_id", schema = "public", sequenceName = "seq_crypto_id")
+    @GeneratedValue(strategy = AUTO, generator = "generator__seq_crypto_id")
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 

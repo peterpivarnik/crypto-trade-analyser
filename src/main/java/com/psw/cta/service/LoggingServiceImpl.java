@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import com.psw.cta.service.dto.CryptoDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 @Slf4j
 class LoggingServiceImpl {
 
+    @Async
     void log(List<CryptoDto> cryptoDtos) {
         String text = prepareText(cryptoDtos);
         log.info(text);

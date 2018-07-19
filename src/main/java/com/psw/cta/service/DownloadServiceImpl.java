@@ -36,6 +36,9 @@ class DownloadServiceImpl {
     @Autowired
     private LoggingServiceImpl loggingService;
 
+    @Autowired
+    private CryptoService cryptoService;
+
     @Time
     @Scheduled(cron = "0 * * * * ?")
     public void downloadData() {
@@ -92,6 +95,7 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setRatio(calculateRatio(cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight(calculateWeight(cryptoDto)));
             loggingService.log(cryptoDtos);
+            cryptoService.saveAll(cryptoDtos);
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }

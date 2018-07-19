@@ -94,6 +94,10 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSell(calculatePriceToSell(cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setRatio(calculateRatio(cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight(calculateWeight(cryptoDto)));
+            cryptoDtos = cryptoDtos.stream()
+                    .filter(dto -> dto.getWeight().compareTo(new BigDecimal("100000")) > 0)
+                    .collect(Collectors.toList());
+            log.info("Number of dtos after 6. filtration: " + cryptoDtos.size());
             loggingService.log(cryptoDtos);
             cryptoService.saveAll(cryptoDtos);
         } catch (BinanceApiException e) {

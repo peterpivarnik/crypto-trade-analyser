@@ -1,0 +1,4 @@
+/.idea
+/src/main/resources/vagrant/.vagrant
+/target
+.gitignore

@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-cd ~/git/crypto-trade-analyser/src/main/resources/vagrant/
+cd ~/IdeaProjects/crypto-trade-analyser/src/main/resources/vagrant/
 vagrant halt

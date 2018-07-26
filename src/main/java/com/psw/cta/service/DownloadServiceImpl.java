@@ -54,7 +54,7 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setDepth20(getDepth(api, cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setCurrentPrice(provideCurrentPrice(cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
-                    .setFifteenMinutesCandleStickData(getCandleStickData(api, cryptoDto, FIFTEEN_MIN, 5)));
+                    .setFifteenMinutesCandleStickData(getCandleStickData(api, cryptoDto, FIFTEEN_MIN, 96)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setFifteenMinutesMaxToCurrentDifferent(
                     calculateFifteenMinutesMaxToCurrent(cryptoDto)));
             cryptoDtos.parallelStream().forEach(
@@ -194,9 +194,12 @@ class DownloadServiceImpl {
     }
 
     private BigDecimal calculateFifteenMinutesMaxToCurrent(CryptoDto cryptoDto) {
-        return cryptoDto.getFifteenMinutesCandleStickData().stream().map(BinanceCandlestick::getHigh)
-                .max(Comparator.naturalOrder())
-                .orElseThrow(() -> new RuntimeException("Problem with getting max"))
+        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
+                .limit(5)
+                .map(BinanceCandlestick::getHigh)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(new BigDecimal("5"), 8, BigDecimal.ROUND_UP)
                 .subtract(cryptoDto.getCurrentPrice());
     }
 

@@ -31,4 +31,5 @@ public class CryptoDto {
     private LinkedTreeMap<String, Object> depth20;
     private BigDecimal ratio;
     private BigDecimal priceToSell;
+    private BigDecimal lastHourAverage;
 }

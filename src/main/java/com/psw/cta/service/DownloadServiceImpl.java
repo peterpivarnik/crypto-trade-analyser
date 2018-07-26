@@ -59,6 +59,8 @@ class DownloadServiceImpl {
                     calculateFifteenMinutesMaxToCurrent(cryptoDto)));
             cryptoDtos.parallelStream().forEach(
                     cryptoDto -> cryptoDto.setFifteenMinutesPercentageLoss(calculate15MinPercentageLoss(cryptoDto)));
+            cryptoDtos.parallelStream().forEach(
+                    cryptoDto -> cryptoDto.setLastHourAverage(calculateLastHourAverage(cryptoDto)));
             cryptoDtos = cryptoDtos.stream()
                     .filter(dto -> dto.getFifteenMinutesPercentageLoss().compareTo(new BigDecimal("0.5")) > 0)
                     .collect(Collectors.toList());
@@ -82,6 +84,7 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
                     .setLastThreeDaysMaxMinDiffPercent(calculateLastThreeDaysMaxMinDiffPercent(cryptoDto)));
             cryptoDtos = cryptoDtos.stream()
+                    .filter(dto -> dto.getLastThreeDaysAveragePrice().compareTo(dto.getLastHourAverage()) > 0)
                     .filter(dto -> dto.getLastThreeDaysAveragePrice().compareTo(dto.getCurrentPrice()) > 0)
                     .filter(dto -> dto.getLastThreeDaysMaxMinDiffPercent().compareTo(new BigDecimal("30")) < 0)
                     .collect(Collectors.toList());
@@ -207,6 +210,15 @@ class DownloadServiceImpl {
         final BigDecimal high = cryptoDto.getFifteenMinutesMaxToCurrentDifferent();
         final BigDecimal currentPrice = cryptoDto.getCurrentPrice();
         return high.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
+    }
+
+    private BigDecimal calculateLastHourAverage(CryptoDto cryptoDto) {
+        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
+                .limit(5)
+                .map(stick -> stick.getHigh().add(stick.getLow()).add(stick.getOpen()).add(stick.getClose()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(new BigDecimal("20"), 8, BigDecimal.ROUND_UP);
     }
 
     private LinkedTreeMap<String, Object> getDepth(BinanceApi api, CryptoDto cryptoDto) {

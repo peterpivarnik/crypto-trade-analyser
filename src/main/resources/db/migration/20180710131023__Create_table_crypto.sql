@@ -15,6 +15,7 @@ CREATE TABLE crypto (
     ratio NUMERIC(20, 8),
     price_to_sell NUMERIC(20, 8),
     created_at TIMESTAMP,
+    next_day_max_value NUMERIC(20,8) DEFAULT 0,
 
     CONSTRAINT pk_crypto_id PRIMARY KEY (id)
 );

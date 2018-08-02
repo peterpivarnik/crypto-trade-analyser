@@ -32,4 +32,5 @@ public class CryptoDto {
     private BigDecimal ratio;
     private BigDecimal priceToSell;
     private BigDecimal lastHourAverage;
+    private BigDecimal nextDayMaxPrice;
 }

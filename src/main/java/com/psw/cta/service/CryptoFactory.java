@@ -4,6 +4,7 @@ import com.psw.cta.entity.Crypto;
 import com.psw.cta.service.dto.CryptoDto;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Component
@@ -23,6 +24,7 @@ class CryptoFactory {
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());
         crypto.setWeight(cryptoDto.getWeight());
+        crypto.setNextDayMaxValue(BigDecimal.ZERO);
         return crypto;
     }
 }

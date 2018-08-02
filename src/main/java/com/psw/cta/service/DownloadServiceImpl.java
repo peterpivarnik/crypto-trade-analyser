@@ -103,6 +103,7 @@ class DownloadServiceImpl {
             log.info("Number of dtos after 6. filtration: " + cryptoDtos.size());
             loggingService.log(cryptoDtos);
             cryptoService.saveAll(cryptoDtos);
+            cryptoService.updateAll(api);
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }

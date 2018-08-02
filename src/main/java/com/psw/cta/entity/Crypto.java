@@ -83,4 +83,8 @@ public class Crypto {
     @NotNull
     @Column(name = "created_at", updatable = false, nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime createdAt;
+
+    @NotNull
+    @Column(name = "next_day_max_value", updatable = true, nullable = false, precision = 20, scale = 8)
+    private BigDecimal nextDayMaxValue;
 }

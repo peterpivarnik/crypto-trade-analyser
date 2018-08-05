@@ -13,6 +13,14 @@ import java.util.List;
 @Repository
 public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecificationExecutor<Crypto> {
 
-    @Query("SELECT c from Crypto c where c.createdAt > :dateTime")
-    List<Crypto> findNewest(@Param("dateTime") LocalDateTime dateTime);
+    @Query("SELECT c FROM Crypto c WHERE c.createdAt > :dateTime")
+    List<Crypto> findLastDayCryptos(@Param("dateTime") LocalDateTime dateTime);
+
+    @Query("SELECT c FROM Crypto c ORDER BY c.createdAt DESC")
+    List<Crypto> findOrderedCryptos();
+
+    @Query("SELECT c FROM Crypto c WHERE c.createdAt = :dateTime")
+    List<Crypto> findLastCryptos(@Param("dateTime") LocalDateTime dateTime);
+
+    List<Crypto> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

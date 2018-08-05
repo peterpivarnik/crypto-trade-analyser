@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.service.factory;
 
 import com.psw.cta.entity.Crypto;
 import com.psw.cta.service.dto.CryptoDto;
@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Component
-class CryptoFactory {
-    Crypto createCrypto(CryptoDto cryptoDto) {
+public class CryptoFactory {
+    public Crypto createCrypto(CryptoDto cryptoDto) {
         Crypto crypto = new Crypto();
         crypto.setCreatedAt(LocalDateTime.now());
         crypto.setCurrentPrice(cryptoDto.getCurrentPrice());

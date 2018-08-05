@@ -113,7 +113,7 @@ public class CryptoService {
         long count = lastDayCryptos.stream()
                 .filter(crypto -> crypto.getPriceToSell().compareTo(crypto.getNextDayMaxValue()) < 0)
                 .count();
-        return size > 0 ? count / size * 100 : 100;
+        return size > 0 ? (double) count / (double) size * 100 : 100;
     }
 
     private List<Crypto> findCryptosBetween(LocalDateTime startDate, LocalDateTime endDate) {

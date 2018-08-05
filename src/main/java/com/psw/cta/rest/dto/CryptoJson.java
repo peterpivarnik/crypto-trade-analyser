@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class CryptoJson {
 
     private LocalDateTime date;
+    private String symbol;
     private BigDecimal currentPrice;
     private BigDecimal priceToSell;
     private BigDecimal percentage;

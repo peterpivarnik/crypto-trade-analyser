@@ -6,7 +6,9 @@ import com.psw.cta.rest.dto.CryptoJson;
 import com.psw.cta.rest.dto.Stats;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.factory.CryptoFactory;
+import com.psw.cta.service.factory.CryptoJsonFactory;
 import com.psw.cta.service.factory.StatsFactory;
+import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
 
 import static com.webcerebrium.binance.datatype.BinanceInterval.FIFTEEN_MIN;
 
-@Service
+@SpringComponent
 public class CryptoService {
 
     @Autowired
@@ -34,10 +36,10 @@ public class CryptoService {
     private CryptoFactory cryptoFactory;
 
     @Autowired
-    private com.psw.cta.service.factory.CryptoJsonFactory CryptoJsonFactory;
+    private StatsFactory statsFactory;
 
     @Autowired
-    private StatsFactory statsFactory;
+    private CryptoJsonFactory cryptoJsonFactory;
 
     @Async
     @Transactional
@@ -94,7 +96,7 @@ public class CryptoService {
         LocalDateTime latestCreatedAt = latestCrypto.getCreatedAt();
         List<Crypto> lastCryptos = cryptoRepository.findLastCryptos(latestCreatedAt);
         return lastCryptos.stream()
-                .map(CryptoJsonFactory::create)
+                .map(cryptoJsonFactory::create)
                 .collect(Collectors.toList());
     }
 
@@ -113,7 +115,7 @@ public class CryptoService {
         long count = lastDayCryptos.stream()
                 .filter(crypto -> crypto.getPriceToSell().compareTo(crypto.getNextDayMaxValue()) < 0)
                 .count();
-        return size > 0 ? (double) count / (double) size * 100 : 100;
+        return size > 0 ? (double) count / (double) size * 100 : -1;
     }
 
     private List<Crypto> findCryptosBetween(LocalDateTime startDate, LocalDateTime endDate) {

@@ -51,19 +51,20 @@
             <version>1.0.9</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-core -->
+        <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-spring-boot-starter -->
         <dependency>
             <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-core</artifactId>
-            <version>10.0.1</version>
+            <artifactId>vaadin-spring-boot-starter</artifactId>
+            <version>10.0.2</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-spring -->
         <dependency>
             <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-bom</artifactId>
-            <version>10.0.1</version>
-            <type>pom</type>
-            <scope>import</scope>
+            <artifactId>vaadin-spring</artifactId>
+            <version>10.0.0</version>
         </dependency>
+
 
         <!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
         <dependency>
@@ -102,6 +103,18 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-bom</artifactId>
+                <version>10.0.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>

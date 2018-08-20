@@ -30,5 +30,6 @@ class CryptoTradeAnalyserConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests().antMatchers("/crypto", "/stats").permitAll();
+        http.csrf().disable();
     }
 }

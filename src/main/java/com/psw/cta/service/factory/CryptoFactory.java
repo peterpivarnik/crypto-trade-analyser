@@ -19,11 +19,11 @@ public class CryptoFactory {
         crypto.setLastThreeDaysMaxMinDiffPercent(cryptoDto.getLastThreeDaysMaxMinDiffPercent());
         crypto.setLastThreeDaysMaxPrice(cryptoDto.getLastThreeDaysMaxPrice());
         crypto.setLastThreeDaysMinPrice(cryptoDto.getLastThreeDaysMinPrice());
-        crypto.setPriceToSell(cryptoDto.getPriceToSell());
+        crypto.setPriceToSell(cryptoDto.getPriceToSell2h());
         crypto.setRatio(cryptoDto.getRatio());
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());
-        crypto.setWeight(cryptoDto.getWeight());
+        crypto.setWeight(cryptoDto.getWeight2h());
         crypto.setNextDayMaxValue(BigDecimal.ZERO);
         return crypto;
     }

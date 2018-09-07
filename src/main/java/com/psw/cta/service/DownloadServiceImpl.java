@@ -26,9 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.webcerebrium.binance.datatype.BinanceInterval.FIFTEEN_MIN;
-import static com.webcerebrium.binance.datatype.BinanceInterval.ONE_DAY;
-
 @Service
 @Slf4j
 class DownloadServiceImpl {
@@ -51,59 +48,66 @@ class DownloadServiceImpl {
                     .filter(dto -> dto.getBinanceExchangeSymbol().getStatus().equals("TRADING"))
                     .collect(Collectors.toList());
             log.info("Number of dtos after 1. filtration: " + cryptoDtos.size());
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setDepth20(getDepth(api, cryptoDto)));
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setCurrentPrice(provideCurrentPrice(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
-                    .setFifteenMinutesCandleStickData(getCandleStickData(api, cryptoDto, FIFTEEN_MIN, 96)));
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setFifteenMinutesMaxToCurrentDifferent(
-                    calculateFifteenMinutesMaxToCurrent(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(
-                    cryptoDto -> cryptoDto.setFifteenMinutesPercentageLoss(calculate15MinPercentageLoss(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(
-                    cryptoDto -> cryptoDto.setLastHourAverage(calculateLastHourAverage(cryptoDto)));
-            cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getFifteenMinutesPercentageLoss().compareTo(new BigDecimal("0.5")) > 0)
-                    .collect(Collectors.toList());
-            log.info("Number of dtos after 2. filtration: " + cryptoDtos.size());
             List<LinkedTreeMap<String, Object>> tickers = getAll24hTickers(api);
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setTicker24hr(get24hTicker(tickers, cryptoDto)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setVolume(provideVolume(cryptoDto)));
             cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getTicker24hr().containsKey("quoteVolume") &&
-                            (new BigDecimal((String) dto.getTicker24hr().get("quoteVolume"))
-                                    .compareTo(new BigDecimal("100")) > 0))
+                    .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                    .collect(Collectors.toList());
+            log.info("Number of dtos after 2. filtration: " + cryptoDtos.size());
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setDepth20(getDepth(api, cryptoDto)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setCurrentPrice(provideCurrentPrice(cryptoDto)));
+            cryptoDtos = cryptoDtos.stream()
+                    .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                     .collect(Collectors.toList());
             log.info("Number of dtos after 3. filtration: " + cryptoDtos.size());
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setThreeDaysCandleStickData(
-                    getCandleStickData(api, cryptoDto, ONE_DAY, 500)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
-                    .setLastThreeDaysAveragePrice(calculateLastThreeDaysAveragePrice(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(
-                    cryptoDto -> cryptoDto.setLastThreeDaysMaxPrice(calculateLastThreeDaysMaxPrice(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(
-                    cryptoDto -> cryptoDto.setLastThreeDaysMinPrice(calculateLastThreeDaysMinPrice(cryptoDto)));
+                    .setFifteenMinutesCandleStickData(getCandleStickData(api, cryptoDto)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
-                    .setLastThreeDaysMaxMinDiffPercent(calculateLastThreeDaysMaxMinDiffPercent(cryptoDto)));
-            cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getLastThreeDaysAveragePrice().compareTo(dto.getLastHourAverage()) > 0)
-                    .filter(dto -> dto.getLastThreeDaysAveragePrice().compareTo(dto.getCurrentPrice()) > 0)
-                    .filter(dto -> dto.getLastThreeDaysMaxMinDiffPercent().compareTo(new BigDecimal("30")) < 0)
-                    .collect(Collectors.toList());
-            log.info("Number of dtos after 4. filtration: " + cryptoDtos.size());
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setVolume(calculateVolume(cryptoDto)));
-            cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getVolume().compareTo(new BigDecimal("1000")) > 0)
-                    .collect(Collectors.toList());
-            log.info("Number of dtos after 5. filtration: " + cryptoDtos.size());
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSell(calculatePriceToSell(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setRatio(calculateRatio(cryptoDto)));
-            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight(calculateWeight(cryptoDto)));
-            cryptoDtos = cryptoDtos.stream()
-                    .filter(dto -> dto.getWeight().compareTo(new BigDecimal("100000")) > 0)
-                    .collect(Collectors.toList());
-            log.info("Number of dtos after 6. filtration: " + cryptoDtos.size());
+                    .setSumDiffsPerc2h(calculateSumDiffsPerc(cryptoDto, 8)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
+                    .setSumDiffsPerc5h(calculateSumDiffsPerc(cryptoDto, 20)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
+                    .setSumDiffsPerc10h(calculateSumDiffsPerc(cryptoDto, 40)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto
+                    .setSumDiffsPerc24h(calculateSumDiffsPerc(cryptoDto, 96)));
+            cryptoDtos.parallelStream()
+                    .forEach(cryptoDto -> cryptoDto.setPriceToSell2h(calculatePriceToSell(cryptoDto, 8)));
+            cryptoDtos.parallelStream()
+                    .forEach(cryptoDto -> cryptoDto.setPriceToSell5h(calculatePriceToSell(cryptoDto, 20)));
+            cryptoDtos.parallelStream()
+                    .forEach(cryptoDto -> cryptoDto.setPriceToSell10h(calculatePriceToSell(cryptoDto, 40)));
+            cryptoDtos.parallelStream()
+                    .forEach(cryptoDto -> cryptoDto.setPriceToSell24h(calculatePriceToSell(cryptoDto, 96)));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage2h(
+                    calculatePriceToSellPercentage(cryptoDto.getPriceToSell2h(),
+                                                   cryptoDto.getCurrentPrice())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage5h(
+                    calculatePriceToSellPercentage(cryptoDto.getPriceToSell5h(),
+                                                   cryptoDto.getCurrentPrice())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage10h(
+                    calculatePriceToSellPercentage(cryptoDto.getPriceToSell10h(),
+                                                   cryptoDto.getCurrentPrice())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage24h(
+                    calculatePriceToSellPercentage(cryptoDto.getPriceToSell24h(),
+                                                   cryptoDto.getCurrentPrice())));
+            cryptoDtos.parallelStream()
+                    .forEach(cryptoDto -> cryptoDto.setRatio(calculateRatio(cryptoDto, cryptoDto.getPriceToSell2h())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight2h(calculateWeight(cryptoDto,
+                                                                                                   cryptoDto.getPriceToSell2h(),
+                                                                                                   cryptoDto.getPriceToSellPercentage2h())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight5h(calculateWeight(cryptoDto,
+                                                                                                   cryptoDto.getPriceToSell5h(),
+                                                                                                   cryptoDto.getPriceToSellPercentage5h())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight10h(calculateWeight(cryptoDto,
+                                                                                                    cryptoDto.getPriceToSell10h(),
+                                                                                                    cryptoDto.getPriceToSellPercentage10h())));
+            cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight24h(calculateWeight(cryptoDto,
+                                                                                                    cryptoDto.getPriceToSell24h(),
+                                                                                                    cryptoDto.getPriceToSellPercentage24h())));
             loggingService.log(cryptoDtos);
-            cryptoService.saveAll(cryptoDtos);
-            cryptoService.updateAll(api);
+//            cryptoService.saveAll(cryptoDtos);
+//            cryptoService.updateAll(api);
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }
@@ -121,15 +125,6 @@ class DownloadServiceImpl {
         return cryptoDtos;
     }
 
-    @SuppressWarnings({"unchecked"})
-    private BigDecimal provideCurrentPrice(CryptoDto cryptoDto) {
-        ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
-        return asks.stream()
-                .map(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))))
-                .min(Comparator.naturalOrder())
-                .orElseThrow(RuntimeException::new);
-    }
-
     private List<LinkedTreeMap<String, Object>> getAll24hTickers(BinanceApi api) throws BinanceApiException {
         final JsonArray json = api.ticker24hr();
         return getObject(json);
@@ -144,82 +139,12 @@ class DownloadServiceImpl {
                 .orElseThrow(() -> new RuntimeException("Dto with symbol: " + symbol + "not found"));
     }
 
-    private static List<BinanceCandlestick> getCandleStickData(BinanceApi api,
-                                                               CryptoDto cryptoDto,
-                                                               BinanceInterval interval,
-                                                               int limit) {
-        final BinanceSymbol symbol = cryptoDto.getBinanceExchangeSymbol().getSymbol();
-        try {
-            return api.klines(symbol, interval, limit, null);
-        } catch (BinanceApiException e) {
-            throw new RuntimeException(e);
+    private BigDecimal provideVolume(CryptoDto cryptoDto) {
+        if (cryptoDto.getTicker24hr().containsKey("quoteVolume")) {
+            return new BigDecimal((String) cryptoDto.getTicker24hr().get("quoteVolume"));
+        } else {
+            return BigDecimal.ZERO;
         }
-    }
-
-    private static BigDecimal calculateLastThreeDaysAveragePrice(CryptoDto cryptoDto) {
-        return cryptoDto.getThreeDaysCandleStickData().stream()
-                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
-                .limit(3)
-                .map(data -> data.getOpen().add((data.getLow())).add(data.getHigh()).add(data.getClose()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(new BigDecimal("12"), 8, BigDecimal.ROUND_UP);
-    }
-
-    private BigDecimal calculateLastThreeDaysMaxPrice(CryptoDto cryptoDto) {
-        return cryptoDto.getThreeDaysCandleStickData().stream()
-                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
-                .limit(3)
-                .map(BinanceCandlestick::getHigh)
-                .max(BigDecimal::compareTo)
-                .orElseThrow(RuntimeException::new);
-    }
-
-    private BigDecimal calculateLastThreeDaysMinPrice(CryptoDto cryptoDto) {
-        return cryptoDto.getThreeDaysCandleStickData().stream()
-                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
-                .limit(3)
-                .map(BinanceCandlestick::getLow)
-                .min(BigDecimal::compareTo)
-                .orElseThrow(RuntimeException::new);
-    }
-
-    private BigDecimal calculateLastThreeDaysMaxMinDiffPercent(CryptoDto cryptoDto) {
-        final BigDecimal lastThreeDaysMaxPrice = cryptoDto.getLastThreeDaysMaxPrice();
-        final BigDecimal lastThreeDaysMinPrice = cryptoDto.getLastThreeDaysMinPrice();
-        final BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        final BigDecimal differentMaxMin = lastThreeDaysMaxPrice.subtract(lastThreeDaysMinPrice);
-        return differentMaxMin.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
-    }
-
-    private BigDecimal calculateVolume(CryptoDto cryptoDto) {
-        return cryptoDto.getThreeDaysCandleStickData().stream()
-                .map(BinanceCandlestick::getQuoteAssetVolume)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private BigDecimal calculateFifteenMinutesMaxToCurrent(CryptoDto cryptoDto) {
-        return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
-                .limit(5)
-                .map(BinanceCandlestick::getHigh)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(new BigDecimal("5"), 8, BigDecimal.ROUND_UP)
-                .subtract(cryptoDto.getCurrentPrice());
-    }
-
-    private static BigDecimal calculate15MinPercentageLoss(CryptoDto cryptoDto) {
-        final BigDecimal high = cryptoDto.getFifteenMinutesMaxToCurrentDifferent();
-        final BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        return high.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
-    }
-
-    private BigDecimal calculateLastHourAverage(CryptoDto cryptoDto) {
-        return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .sorted(Comparator.comparing(BinanceCandlestick::getOpenTime).reversed())
-                .limit(5)
-                .map(stick -> stick.getHigh().add(stick.getLow()).add(stick.getOpen()).add(stick.getClose()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(new BigDecimal("20"), 8, BigDecimal.ROUND_UP);
     }
 
     private LinkedTreeMap<String, Object> getDepth(BinanceApi api, CryptoDto cryptoDto) {
@@ -238,17 +163,68 @@ class DownloadServiceImpl {
         return new Gson().fromJson(json, typeToken.getType());
     }
 
-    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto) {
-        final BigDecimal fifteenMinutesPercentageLoss = cryptoDto.getFifteenMinutesPercentageLoss();
-        final BigDecimal realLoss = fifteenMinutesPercentageLoss.multiply(cryptoDto.getCurrentPrice())
-                .divide(new BigDecimal("100"), 8, BigDecimal.ROUND_UP);
-        final BigDecimal realLossOf75Percent = realLoss.multiply(new BigDecimal("0.75"));
-        return cryptoDto.getCurrentPrice().add(realLossOf75Percent);
+    @SuppressWarnings({"unchecked"})
+    private BigDecimal provideCurrentPrice(CryptoDto cryptoDto) {
+        ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
+        return asks.stream()
+                .map(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))))
+                .min(Comparator.naturalOrder())
+                .orElseThrow(RuntimeException::new);
+    }
+
+    private static List<BinanceCandlestick> getCandleStickData(BinanceApi api,
+                                                               CryptoDto cryptoDto) {
+        final BinanceSymbol symbol = cryptoDto.getBinanceExchangeSymbol().getSymbol();
+        try {
+            return api.klines(symbol, BinanceInterval.FIFTEEN_MIN, 96, null);
+        } catch (BinanceApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto, int dataToSkip) {
+        int size = cryptoDto.getFifteenMinutesCandleStickData().size();
+        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+                .skip(size - dataToSkip)
+                .map(data -> getPercentualDifference(data, cryptoDto.getCurrentPrice()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal getPercentualDifference(BinanceCandlestick data, BigDecimal currentPrice) {
+        BigDecimal absoluteValue = getAverageValue(data);
+        BigDecimal relativeValue = absoluteValue.multiply(new BigDecimal("100"))
+                .divide(currentPrice, 8, BigDecimal.ROUND_UP);
+        return relativeValue.subtract(new BigDecimal("100")).abs();
+    }
+
+    private BigDecimal getAverageValue(BinanceCandlestick data) {
+        return data.getOpen()
+                .add(data.getClose())
+                .add(data.getHigh())
+                .add(data.getLow())
+                .divide(new BigDecimal("4"), 8, BigDecimal.ROUND_UP);
+    }
+
+    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto, int dataToSkip) {
+        int size = cryptoDto.getFifteenMinutesCandleStickData().size();
+        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+                .skip(size - dataToSkip)
+                .map(BinanceCandlestick::getHigh)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO)
+                .subtract(cryptoDto.getCurrentPrice())
+                .divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP)
+                .add(cryptoDto.getCurrentPrice());
+    }
+
+    private BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal currentPrice) {
+        return priceToSell.multiply(new BigDecimal("100"))
+                .divide(currentPrice, 8, BigDecimal.ROUND_UP)
+                .subtract(new BigDecimal("100"));
     }
 
     @SuppressWarnings({"unchecked"})
-    private BigDecimal calculateRatio(CryptoDto cryptoDto) {
-        final BigDecimal priceToSell = cryptoDto.getPriceToSell();
+    private BigDecimal calculateRatio(CryptoDto cryptoDto, BigDecimal priceToSell) {
         ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
         final BigDecimal sum = asks.stream()
                 .filter(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))).compareTo(priceToSell) < 0)
@@ -264,8 +240,22 @@ class DownloadServiceImpl {
         }
     }
 
-    private BigDecimal calculateWeight(CryptoDto cryptoDto) {
-        return cryptoDto.getFifteenMinutesPercentageLoss().divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP)
-                .multiply(cryptoDto.getRatio());
+    @SuppressWarnings({"unchecked"})
+    private BigDecimal calculateWeight(CryptoDto cryptoDto, BigDecimal priceToSell, BigDecimal priceToSellPercentage) {
+        BigDecimal ratio = BigDecimal.ZERO;
+        ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
+        final BigDecimal sum = asks.stream()
+                .filter(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))).compareTo(priceToSell) < 0)
+                .map(data -> (new BigDecimal(((String) ((ArrayList<Object>) data).get(0)))
+                        .multiply(new BigDecimal((String) ((ArrayList<Object>) data).get(1)))))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (sum.compareTo(BigDecimal.ZERO) == 0 && priceToSell.compareTo(cryptoDto.getCurrentPrice()) > 0) {
+            ratio = new BigDecimal(Double.MAX_VALUE);
+        } else if (sum.compareTo(BigDecimal.ZERO) == 0) {
+            ratio = BigDecimal.ZERO;
+        } else {
+            ratio = cryptoDto.getVolume().divide(sum, 8, BigDecimal.ROUND_UP);
+        }
+        return priceToSellPercentage.multiply(ratio);
     }
 }

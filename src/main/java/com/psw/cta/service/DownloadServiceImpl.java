@@ -91,8 +91,6 @@ class DownloadServiceImpl {
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage24h(
                     calculatePriceToSellPercentage(cryptoDto.getPriceToSell24h(),
                                                    cryptoDto.getCurrentPrice())));
-            cryptoDtos.parallelStream()
-                    .forEach(cryptoDto -> cryptoDto.setRatio(calculateRatio(cryptoDto, cryptoDto.getPriceToSell2h())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight2h(calculateWeight(cryptoDto,
                                                                                                    cryptoDto.getPriceToSell2h(),
                                                                                                    cryptoDto.getPriceToSellPercentage2h())));
@@ -106,8 +104,8 @@ class DownloadServiceImpl {
                                                                                                     cryptoDto.getPriceToSell24h(),
                                                                                                     cryptoDto.getPriceToSellPercentage24h())));
             loggingService.log(cryptoDtos);
-//            cryptoService.saveAll(cryptoDtos);
-//            cryptoService.updateAll(api);
+            cryptoService.saveAll(cryptoDtos);
+            cryptoService.updateAll(api);
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }
@@ -224,25 +222,8 @@ class DownloadServiceImpl {
     }
 
     @SuppressWarnings({"unchecked"})
-    private BigDecimal calculateRatio(CryptoDto cryptoDto, BigDecimal priceToSell) {
-        ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
-        final BigDecimal sum = asks.stream()
-                .filter(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))).compareTo(priceToSell) < 0)
-                .map(data -> (new BigDecimal(((String) ((ArrayList<Object>) data).get(0)))
-                        .multiply(new BigDecimal((String) ((ArrayList<Object>) data).get(1)))))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (sum.compareTo(BigDecimal.ZERO) == 0 && priceToSell.compareTo(cryptoDto.getCurrentPrice()) > 0) {
-            return new BigDecimal(Double.MAX_VALUE);
-        } else if (sum.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        } else {
-            return cryptoDto.getVolume().divide(sum, 8, BigDecimal.ROUND_UP);
-        }
-    }
-
-    @SuppressWarnings({"unchecked"})
     private BigDecimal calculateWeight(CryptoDto cryptoDto, BigDecimal priceToSell, BigDecimal priceToSellPercentage) {
-        BigDecimal ratio = BigDecimal.ZERO;
+        BigDecimal ratio;
         ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
         final BigDecimal sum = asks.stream()
                 .filter(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))).compareTo(priceToSell) < 0)

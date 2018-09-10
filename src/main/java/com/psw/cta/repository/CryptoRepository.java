@@ -1,6 +1,7 @@
 package com.psw.cta.repository;
 
 import com.psw.cta.entity.Crypto;
+import com.psw.cta.entity.CryptoType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +24,7 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     List<Crypto> findLastCryptos(@Param("dateTime") LocalDateTime dateTime);
 
     List<Crypto> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    List<Crypto> findByCryptoType(CryptoType cryptoType);
+
 }

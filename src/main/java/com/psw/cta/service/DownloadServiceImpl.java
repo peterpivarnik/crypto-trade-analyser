@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
+import com.psw.cta.entity.Crypto;
 import com.psw.cta.service.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.webcerebrium.binance.api.BinanceApi;

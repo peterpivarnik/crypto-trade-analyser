@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public interface CryptoResult {
 
-    LocalDateTime getDate();
+    LocalDateTime getCreatedAt();
 
     String getSymbol();
 

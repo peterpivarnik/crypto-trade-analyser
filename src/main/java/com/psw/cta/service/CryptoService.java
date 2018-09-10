@@ -2,13 +2,14 @@ package com.psw.cta.service;
 
 import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
+import com.psw.cta.entity.CryptoType;
 import com.psw.cta.repository.CryptoRepository;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
+import com.psw.cta.service.dto.AverageProfit;
 import com.psw.cta.service.dto.CryptoDto;
-import com.psw.cta.entity.CryptoType;
 import com.psw.cta.service.factory.CompleteStatsFactory;
-import com.psw.cta.service.factory.CryptoJsonFactory;
+import com.psw.cta.service.factory.CryptoDtoFactory;
 import com.psw.cta.service.factory.StatsFactory;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.webcerebrium.binance.api.BinanceApi;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,29 +40,36 @@ public class CryptoService {
     private StatsFactory statsFactory;
 
     @Autowired
-    private CryptoJsonFactory cryptoJsonFactory;
+    private CompleteStatsFactory completeStatsFactory;
 
     @Autowired
-    private CompleteStatsFactory completeStatsFactory;
+    private CryptoDtoFactory cryptoDtoFactory;
 
     @Async
     @Transactional
     void saveAll(List<CryptoDto> cryptoDtos) {
-        save(cryptoDtos, CryptoDto::getPriceToSellPercentage2h, CryptoType.TYPE_2H);
-        save(cryptoDtos, CryptoDto::getPriceToSellPercentage5h, CryptoType.TYPE_5H);
-        save(cryptoDtos, CryptoDto::getPriceToSellPercentage10h, CryptoType.TYPE_10H);
-        save(cryptoDtos, CryptoDto::getPriceToSellPercentage24h, CryptoType.TYPE24H);
-        cryptoRepository.flush();
+        List<Crypto> cryptos = cryptoDtos.stream()
+                .map(cryptoDto -> cryptoDtoFactory.createCrypto(cryptoDto))
+                .collect(Collectors.toList());
+        LocalDateTime now = LocalDateTime.now();
+        save(cryptos, Crypto::getPriceToSellPercentage2h, CryptoType.TYPE_2H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage5h, CryptoType.TYPE_5H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage10h, CryptoType.TYPE_10H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage24h, CryptoType.TYPE_24H, now);
     }
 
-    private void save(List<CryptoDto> cryptoDtos,
-                      Function<CryptoDto, BigDecimal> function,
-                      CryptoType cryptoType) {
-        List<Crypto> cryptos = cryptoDtos.stream()
-                .filter(cryptoDto -> function.apply(cryptoDto).compareTo(new BigDecimal("0.5")) > 0)
+    private void save(List<Crypto> cryptos,
+                      Function<Crypto, BigDecimal> function,
+                      CryptoType cryptoType,
+                      LocalDateTime now) {
+        List<Crypto> updatedCryptos = cryptos.stream()
+                .filter(crypto -> function.apply(crypto).compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto -> crypto.setCryptoType(cryptoType))
+                .peek(crypto -> crypto.setCreatedAt(now))
+                .peek(crypto -> crypto.setId(null))
                 .collect(Collectors.toList());
-        cryptoRepository.saveAll(cryptos);
+        cryptoRepository.saveAll(updatedCryptos);
+        cryptoRepository.flush();
     }
 
     @Async
@@ -96,8 +105,8 @@ public class CryptoService {
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
 
-        if (crypto.getNextDayMaxValue().compareTo(max) < 0) {
-            crypto.setNextDayMaxValue(max);
+        if (crypto.getNextDayMaxPrice().compareTo(max) < 0) {
+            crypto.setNextDayMaxPrice(max);
             cryptoRepository.save(crypto);
         }
     }
@@ -105,6 +114,9 @@ public class CryptoService {
     @Transactional
     public List<CryptoResult> getActualCryptos() {
         List<Crypto> cryptos = cryptoRepository.findOrderedCryptos();
+        if (cryptos.size() == 0) {
+            return new ArrayList<>();
+        }
         Crypto latestCrypto = cryptos.get(0);
         LocalDateTime latestCreatedAt = latestCrypto.getCreatedAt();
         List<Crypto> lastCryptos = cryptoRepository.findLastCryptos(latestCreatedAt);
@@ -135,10 +147,30 @@ public class CryptoService {
         List<Crypto> lastDayCryptos = cryptoRepository.findByCreatedAtBetween(startDate, endDate);
         int size = lastDayCryptos.size();
         long count = lastDayCryptos.stream()
-                .filter(crypto -> function.apply(crypto).compareTo(crypto.getNextDayMaxValue()) < 0)
+                .filter(crypto -> function.apply(crypto).compareTo(crypto.getNextDayMaxPrice()) < 0)
                 .count();
         return size > 0 ? (double) count / (double) size * 100 : -1;
     }
 
+    public AverageProfit getAverageProfit() {
+        List<Crypto> byCryptoType = cryptoRepository.findByCryptoType(CryptoType.TYPE_2H);
+
+        BigDecimal average2H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage2h);
+        BigDecimal average5H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage5h);
+        BigDecimal average10H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage10h);
+        BigDecimal average24H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage24h);
+        return new AverageProfit(average2H, average5H, average10H, average24H);
+    }
+
+    private BigDecimal getAverage(List<Crypto> byCryptoType, Function<Crypto, BigDecimal> function) {
+        int size = byCryptoType.size();
+        if (size == 0) {
+            return BigDecimal.ZERO;
+        }
+        return byCryptoType.stream()
+                .map(function)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(new BigDecimal(size), 8, BigDecimal.ROUND_UP);
+    }
 }
 

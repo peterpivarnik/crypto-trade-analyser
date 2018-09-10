@@ -1,5 +1,6 @@
 package com.psw.cta.entity;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -7,6 +8,8 @@ import lombok.ToString;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
@@ -23,6 +26,7 @@ import static javax.persistence.GenerationType.AUTO;
 @Getter
 @Setter
 @ToString
+@EqualsAndHashCode
 public class Crypto implements CryptoResult {
 
     @Id
@@ -109,6 +113,7 @@ public class Crypto implements CryptoResult {
     private BigDecimal weight24h;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "crypto_type", updatable = false, nullable = false, precision = 20, scale = 8)
     private CryptoType cryptoType;
 
@@ -117,6 +122,6 @@ public class Crypto implements CryptoResult {
     private LocalDateTime createdAt;
 
     @NotNull
-    @Column(name = "next_day_max_value", updatable = true, nullable = false, precision = 20, scale = 8)
-    private BigDecimal nextDayMaxValue;
+    @Column(name = "next_day_max_price", updatable = true, nullable = false, precision = 20, scale = 8)
+    private BigDecimal nextDayMaxPrice;
 }

@@ -153,21 +153,20 @@ public class CryptoService {
     }
 
     public AverageProfit getAverageProfit() {
-        List<Crypto> byCryptoType = cryptoRepository.findByCryptoType(CryptoType.TYPE_2H);
-
-        BigDecimal average2H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage2h);
-        BigDecimal average5H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage5h);
-        BigDecimal average10H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage10h);
-        BigDecimal average24H = getAverage(byCryptoType, Crypto::getPriceToSellPercentage24h);
+        BigDecimal average2H = getAverage(CryptoType.TYPE_2H, Crypto::getPriceToSellPercentage2h);
+        BigDecimal average5H = getAverage(CryptoType.TYPE_5H, Crypto::getPriceToSellPercentage5h);
+        BigDecimal average10H = getAverage(CryptoType.TYPE_10H, Crypto::getPriceToSellPercentage10h);
+        BigDecimal average24H = getAverage(CryptoType.TYPE_24H, Crypto::getPriceToSellPercentage24h);
         return new AverageProfit(average2H, average5H, average10H, average24H);
     }
 
-    private BigDecimal getAverage(List<Crypto> byCryptoType, Function<Crypto, BigDecimal> function) {
-        int size = byCryptoType.size();
+    private BigDecimal getAverage(CryptoType byCryptoType, Function<Crypto, BigDecimal> function) {
+        List<Crypto> cryptos = cryptoRepository.findByCryptoType(byCryptoType);
+        int size = cryptos.size();
         if (size == 0) {
             return BigDecimal.ZERO;
         }
-        return byCryptoType.stream()
+        return cryptos.stream()
                 .map(function)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(new BigDecimal(size), 8, BigDecimal.ROUND_UP);

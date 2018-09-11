@@ -15,7 +15,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.3.RELEASE</version>
+        <version>2.0.4.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -55,14 +55,14 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
-            <version>10.0.2</version>
+            <version>11.0.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-spring -->
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring</artifactId>
-            <version>10.0.0</version>
+            <version>10.0.3</version>
         </dependency>
 
 
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.3</version>
+            <version>42.2.5</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.flywaydb/flyway-core -->
@@ -92,7 +92,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.0</version>
+            <version>1.18.2</version>
             <scope>provided</scope>
         </dependency>
 
@@ -109,7 +109,7 @@
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>
-                <version>10.0.2</version>
+                <version>11.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -122,7 +122,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.8.0</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>

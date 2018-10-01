@@ -13,6 +13,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -21,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Route
+@Theme(Lumo.class)
 public class MainView extends VerticalLayout {
 
     public MainView(@Autowired CryptoService cryptoService) {
@@ -126,7 +129,7 @@ public class MainView extends VerticalLayout {
     }
 
     private Component getStatisticsProfitLayout(String average) {
-        Component averagePercentLabel = createTextField("Percentual profit", average.toString());
+        Component averagePercentLabel = createTextField("Percentual profit", average);
         return new HorizontalLayout(averagePercentLabel);
     }
 

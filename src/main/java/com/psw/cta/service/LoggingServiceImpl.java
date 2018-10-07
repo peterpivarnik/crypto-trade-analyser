@@ -25,7 +25,7 @@ class LoggingServiceImpl {
         String text = prepareText2h(cryptoDtos) + prepareText5h(cryptoDtos) + prepareText10h(cryptoDtos) + prepareText24h(
                 cryptoDtos);
         log.info(text);
-        final String fileName = "/home/peter/work/crypto/" + LocalDateTime.now().toString() + ".txt";
+        final String fileName = "~/work/crypto/" + LocalDateTime.now().toString() + ".txt";
         try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName), "utf-8"))) {
             writer.write(text);
         } catch (IOException e) {

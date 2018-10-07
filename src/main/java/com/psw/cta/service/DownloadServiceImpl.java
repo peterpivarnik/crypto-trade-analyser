@@ -6,16 +6,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
-import com.psw.cta.entity.Crypto;
 import com.psw.cta.service.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceExchangeInfo;
-import com.webcerebrium.binance.datatype.BinanceExchangeSymbol;
-import com.webcerebrium.binance.datatype.BinanceInterval;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
+import com.webcerebrium.binance.datatype.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -82,29 +77,29 @@ class DownloadServiceImpl {
                     .forEach(cryptoDto -> cryptoDto.setPriceToSell24h(calculatePriceToSell(cryptoDto, 96)));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage2h(
                     calculatePriceToSellPercentage(cryptoDto.getPriceToSell2h(),
-                                                   cryptoDto.getCurrentPrice())));
+                            cryptoDto.getCurrentPrice())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage5h(
                     calculatePriceToSellPercentage(cryptoDto.getPriceToSell5h(),
-                                                   cryptoDto.getCurrentPrice())));
+                            cryptoDto.getCurrentPrice())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage10h(
                     calculatePriceToSellPercentage(cryptoDto.getPriceToSell10h(),
-                                                   cryptoDto.getCurrentPrice())));
+                            cryptoDto.getCurrentPrice())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setPriceToSellPercentage24h(
                     calculatePriceToSellPercentage(cryptoDto.getPriceToSell24h(),
-                                                   cryptoDto.getCurrentPrice())));
+                            cryptoDto.getCurrentPrice())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight2h(calculateWeight(cryptoDto,
-                                                                                                   cryptoDto.getPriceToSell2h(),
-                                                                                                   cryptoDto.getPriceToSellPercentage2h())));
+                    cryptoDto.getPriceToSell2h(),
+                    cryptoDto.getPriceToSellPercentage2h())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight5h(calculateWeight(cryptoDto,
-                                                                                                   cryptoDto.getPriceToSell5h(),
-                                                                                                   cryptoDto.getPriceToSellPercentage5h())));
+                    cryptoDto.getPriceToSell5h(),
+                    cryptoDto.getPriceToSellPercentage5h())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight10h(calculateWeight(cryptoDto,
-                                                                                                    cryptoDto.getPriceToSell10h(),
-                                                                                                    cryptoDto.getPriceToSellPercentage10h())));
+                    cryptoDto.getPriceToSell10h(),
+                    cryptoDto.getPriceToSellPercentage10h())));
             cryptoDtos.parallelStream().forEach(cryptoDto -> cryptoDto.setWeight24h(calculateWeight(cryptoDto,
-                                                                                                    cryptoDto.getPriceToSell24h(),
-                                                                                                    cryptoDto.getPriceToSellPercentage24h())));
-            loggingService.log(cryptoDtos);
+                    cryptoDto.getPriceToSell24h(),
+                    cryptoDto.getPriceToSellPercentage24h())));
+            //loggingService.log(cryptoDtos);
             cryptoService.saveAll(cryptoDtos);
             cryptoService.updateAll(api);
         } catch (BinanceApiException e) {

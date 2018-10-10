@@ -55,14 +55,14 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
-            <version>11.0.0</version>
+            <version>11.0.1</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-spring -->
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring</artifactId>
-            <version>10.0.3</version>
+            <version>10.0.4</version>
         </dependency>
 
 
@@ -109,7 +109,7 @@
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-bom</artifactId>
-                <version>11.0.0</version>
+                <version>11.0.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

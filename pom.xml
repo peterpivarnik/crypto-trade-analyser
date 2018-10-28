@@ -31,10 +31,7 @@
 
     <modules>
         <module>crypto-trade-analyser-db-update</module>
-        <module>crypto-trade-analyser-common</module>
-        <module>crypto-trade-analyser-collector</module>
-        <module>crypto-trade-analyser-updater</module>
-        <module>crypto-trade-analyser-presenter</module>
+        <module>crypto-trade-analyser</module>
         <module>crypto-trade-analyser-vagrant</module>
     </modules>
 

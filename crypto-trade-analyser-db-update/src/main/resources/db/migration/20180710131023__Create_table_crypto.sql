@@ -22,7 +22,7 @@ CREATE TABLE crypto (
     weight_10h NUMERIC(20, 8),
     weight_24h NUMERIC(20, 8),
     crypto_type VARCHAR(15),
-    created_at TIMESTAMP,
+    created_at BIGINT,
     next_day_max_price NUMERIC(20,8) DEFAULT 0,
 
     CONSTRAINT pk_crypto_id PRIMARY KEY (id)

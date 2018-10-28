@@ -1,11 +1,10 @@
 package com.psw.cta.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 public interface CryptoResult {
 
-    LocalDateTime getCreatedAt();
+    Long getCreatedAt();
 
     String getSymbol();
 

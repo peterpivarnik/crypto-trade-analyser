@@ -18,6 +18,9 @@ import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -98,7 +101,9 @@ public class MainView extends VerticalLayout {
                 .filter(cryptoResult -> cryptoResult.getCryptoType().equals(type))
                 .collect(Collectors.toList());
         grid.setItems(filteredCryptos);
-        grid.addColumn(CryptoResult::getCreatedAt).setHeader("Date");
+        grid.addColumn(cryptoResult -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(cryptoResult.getCreatedAt()),
+                                                               ZoneOffset.systemDefault()))
+                .setHeader("Date");
         grid.addColumn(CryptoResult::getSymbol).setHeader("Symbol");
         grid.addColumn(CryptoResult::getCurrentPrice).setHeader("Current price");
         grid.addColumn(priceToSellFunction::apply).setHeader("Price to sell");

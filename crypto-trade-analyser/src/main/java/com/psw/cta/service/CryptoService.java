@@ -25,7 +25,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -55,7 +56,7 @@ public class CryptoService {
             return new ArrayList<>();
         }
         Crypto latestCrypto = cryptos.get(0);
-        LocalDateTime latestCreatedAt = latestCrypto.getCreatedAt();
+        Long latestCreatedAt = latestCrypto.getCreatedAt();
         List<Crypto> lastCryptos = cryptoRepository.findLastCryptos(latestCreatedAt);
         return lastCryptos.stream()
                 .map(crypto -> (CryptoResult) crypto)
@@ -64,8 +65,8 @@ public class CryptoService {
 
     @Transactional
     public CompleteStats getStats() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endDate = now.minusDays(1);
+        Instant now = Instant.now();
+        Long endDate = now.minus(1, ChronoUnit.DAYS).toEpochMilli();
         Stats stats2H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage2h);
         Stats stats4H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage5h);
         Stats stats10H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage10h);
@@ -73,14 +74,14 @@ public class CryptoService {
         return completeStatsFactory.createCompleteStats(stats2H, stats4H, stats10H, stats24H);
     }
 
-    private Stats getCompleteStats(LocalDateTime endDate, Function<Crypto, BigDecimal> function) {
-        double oneDayStats = getStats(endDate.minusDays(1), endDate, function);
-        double oneWeekStats = getStats(endDate.minusWeeks(1), endDate, function);
-        double oneMonthStats = getStats(endDate.minusMonths(1), endDate, function);
+    private Stats getCompleteStats(Long endDate, Function<Crypto, BigDecimal> function) {
+        double oneDayStats = getStats(endDate - 86400000 , endDate, function);
+        double oneWeekStats = getStats(endDate - 86400000 , endDate, function);
+        double oneMonthStats = getStats(endDate - 86400000 , endDate, function);
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
-    private double getStats(LocalDateTime startDate, LocalDateTime endDate, Function<Crypto, BigDecimal> function) {
+    private double getStats(Long startDate, Long endDate, Function<Crypto, BigDecimal> function) {
         List<Crypto> lastDayCryptos = cryptoRepository.findByCreatedAtBetween(startDate, endDate);
         int size = lastDayCryptos.size();
         long count = lastDayCryptos.stream()
@@ -113,10 +114,16 @@ public class CryptoService {
     @Async
     @Time
     @Transactional
-    @Scheduled(cron = "5 * * * * ?")
-    void updateAll() throws BinanceApiException {
+//    @Scheduled(cron = "5 * * * * ?")
+    void updateAll() {
         BinanceApi api = new BinanceApi();
-        BinanceExchangeInfo binanceExchangeInfo = api.exchangeInfo();
+        BinanceExchangeInfo binanceExchangeInfo = null;
+        try {
+            binanceExchangeInfo = api.exchangeInfo();
+        } catch (BinanceApiException e) {
+            throw new RuntimeException("Problem during exchange info", e);
+        }
+
         binanceExchangeInfo.getSymbols().stream()
                 .map(BinanceExchangeSymbol::getSymbol)
                 .map(BinanceSymbol::getSymbol)
@@ -132,8 +139,8 @@ public class CryptoService {
         }
         BinanceCandlestick binanceCandlestick = klines.get(0);
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime beforeOneDay = now.minusDays(1);
+        Instant now = Instant.now();
+        Long beforeOneDay = now.minus(1, ChronoUnit.DAYS).toEpochMilli();
         cryptoRepository.update(binanceCandlestick.getHigh(), symbol, beforeOneDay);
     }
 
@@ -144,7 +151,7 @@ public class CryptoService {
         List<Crypto> cryptos = cryptoDtos.stream()
                 .map(cryptoDto -> cryptoDtoFactory.createCrypto(cryptoDto))
                 .collect(Collectors.toList());
-        LocalDateTime now = LocalDateTime.now();
+        Long now = Instant.now().toEpochMilli();
         save(cryptos, Crypto::getPriceToSellPercentage2h, CryptoType.TYPE_2H, now);
         save(cryptos, Crypto::getPriceToSellPercentage5h, CryptoType.TYPE_5H, now);
         save(cryptos, Crypto::getPriceToSellPercentage10h, CryptoType.TYPE_10H, now);
@@ -154,7 +161,7 @@ public class CryptoService {
     private void save(List<Crypto> cryptos,
                       Function<Crypto, BigDecimal> function,
                       CryptoType cryptoType,
-                      LocalDateTime now) {
+                      Long now) {
         List<Crypto> updatedCryptos = cryptos.stream()
                 .filter(crypto -> function.apply(crypto).compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto -> crypto.setCryptoType(cryptoType))

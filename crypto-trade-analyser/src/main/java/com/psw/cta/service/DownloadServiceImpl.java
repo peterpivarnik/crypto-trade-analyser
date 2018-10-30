@@ -10,7 +10,9 @@ import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.*;
+import com.webcerebrium.binance.datatype.BinanceCandlestick;
+import com.webcerebrium.binance.datatype.BinanceInterval;
+import com.webcerebrium.binance.datatype.BinanceSymbol;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,7 +37,8 @@ class DownloadServiceImpl {
         BinanceApi api = new BinanceApi();
         try {
             List<LinkedTreeMap<String, Object>> tickers = getAll24hTickers(api);
-            List<CryptoDto> cryptoDtos = createCryptoDtos(api).parallelStream()
+            List<CryptoDto> cryptoDtos = api.exchangeInfo().getSymbols().parallelStream()
+                    .map(CryptoDto::new)
                     .filter(dto -> dto.getBinanceExchangeSymbol().getSymbol().getSymbol().endsWith("BTC"))
                     .filter(dto -> dto.getBinanceExchangeSymbol().getStatus().equals("TRADING"))
                     .peek(cryptoDto -> cryptoDto.setTicker24hr(get24hTicker(tickers, cryptoDto)))
@@ -79,18 +82,6 @@ class DownloadServiceImpl {
         } catch (BinanceApiException e) {
             e.printStackTrace();
         }
-    }
-
-    private List<CryptoDto> createCryptoDtos(BinanceApi api) throws BinanceApiException {
-        List<CryptoDto> cryptoDtos = new ArrayList<>();
-        log.info("Getting exchange info");
-        BinanceExchangeInfo binanceExchangeInfo = api.exchangeInfo();
-        for (BinanceExchangeSymbol symbol : binanceExchangeInfo.getSymbols()) {
-            CryptoDto cryptoDto = new CryptoDto();
-            cryptoDto.setBinanceExchangeSymbol(symbol);
-            cryptoDtos.add(cryptoDto);
-        }
-        return cryptoDtos;
     }
 
     private List<LinkedTreeMap<String, Object>> getAll24hTickers(BinanceApi api) throws BinanceApiException {

@@ -15,7 +15,6 @@ import com.psw.cta.service.factory.StatsFactory;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceExchangeInfo;
 import com.webcerebrium.binance.datatype.BinanceExchangeSymbol;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,22 +49,18 @@ public class CryptoService {
 
     @Transactional
     public List<CryptoResult> getActualCryptos() {
-        List<Crypto> cryptos = cryptoRepository.findOrderedCryptos();
-        if (cryptos.size() == 0) {
-            return new ArrayList<>();
-        }
-        Crypto latestCrypto = cryptos.get(0);
-        Long latestCreatedAt = latestCrypto.getCreatedAt();
-        List<Crypto> lastCryptos = cryptoRepository.findLastCryptos(latestCreatedAt);
-        return lastCryptos.stream()
+        Instant now = Instant.now();
+        Instant beforeMinute = now.minus(1, ChronoUnit.MINUTES);
+        return cryptoRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
+                                                       now.toEpochMilli())
+                .stream()
                 .map(crypto -> (CryptoResult) crypto)
                 .collect(Collectors.toList());
     }
 
     @Transactional
     public CompleteStats getStats() {
-        Instant now = Instant.now();
-        Long endDate = now.minus(1, ChronoUnit.DAYS).toEpochMilli();
+        Instant endDate = Instant.now();
         Stats stats2H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage2h);
         Stats stats4H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage5h);
         Stats stats10H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage10h);
@@ -74,15 +68,16 @@ public class CryptoService {
         return completeStatsFactory.createCompleteStats(stats2H, stats4H, stats10H, stats24H);
     }
 
-    private Stats getCompleteStats(Long endDate, Function<Crypto, BigDecimal> function) {
-        double oneDayStats = getStats(endDate - 86400000 , endDate, function);
-        double oneWeekStats = getStats(endDate - 86400000 , endDate, function);
-        double oneMonthStats = getStats(endDate - 86400000 , endDate, function);
+    private Stats getCompleteStats(Instant endDate, Function<Crypto, BigDecimal> function) {
+        double oneDayStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
+        double oneWeekStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
+        double oneMonthStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
-    private double getStats(Long startDate, Long endDate, Function<Crypto, BigDecimal> function) {
-        List<Crypto> lastDayCryptos = cryptoRepository.findByCreatedAtBetween(startDate, endDate);
+    private double getStats(Instant startDate, Instant endDate, Function<Crypto, BigDecimal> function) {
+        List<Crypto> lastDayCryptos = cryptoRepository.findByCreatedAtBetween(startDate.toEpochMilli(),
+                                                                              endDate.toEpochMilli());
         int size = lastDayCryptos.size();
         long count = lastDayCryptos.stream()
                 .filter(crypto -> function.apply(crypto).compareTo(crypto.getNextDayMaxPrice()) < 0)
@@ -114,20 +109,19 @@ public class CryptoService {
     @Async
     @Time
     @Transactional
-//    @Scheduled(cron = "5 * * * * ?")
+    @Scheduled(cron = "0 */5 * * * ?")
     void updateAll() {
         BinanceApi api = new BinanceApi();
-        BinanceExchangeInfo binanceExchangeInfo = null;
         try {
-            binanceExchangeInfo = api.exchangeInfo();
+            api.exchangeInfo()
+                    .getSymbols()
+                    .stream()
+                    .map(BinanceExchangeSymbol::getSymbol)
+                    .map(BinanceSymbol::getSymbol)
+                    .forEach(symbol -> saveData(api, symbol));
         } catch (BinanceApiException e) {
-            throw new RuntimeException("Problem during exchange info", e);
+            throw new RuntimeException("Problem during binance exchange info", e);
         }
-
-        binanceExchangeInfo.getSymbols().stream()
-                .map(BinanceExchangeSymbol::getSymbol)
-                .map(BinanceSymbol::getSymbol)
-                .forEach(symbol -> saveData(api, symbol));
     }
 
     private void saveData(BinanceApi api, String symbol) {
@@ -135,7 +129,7 @@ public class CryptoService {
         try {
             klines = api.klines(new BinanceSymbol(symbol), ONE_DAY, 1, null);
         } catch (BinanceApiException e) {
-            throw new RuntimeException("wrong symbol", e);
+            throw new RuntimeException("Problem during binance klines", e);
         }
         BinanceCandlestick binanceCandlestick = klines.get(0);
 
@@ -162,14 +156,13 @@ public class CryptoService {
                       Function<Crypto, BigDecimal> function,
                       CryptoType cryptoType,
                       Long now) {
-        List<Crypto> updatedCryptos = cryptos.stream()
+        List<Crypto> filteredCryptos = cryptos.stream()
                 .filter(crypto -> function.apply(crypto).compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto -> crypto.setCryptoType(cryptoType))
                 .peek(crypto -> crypto.setCreatedAt(now))
                 .peek(crypto -> crypto.setId(null))
                 .collect(Collectors.toList());
-        cryptoRepository.saveAll(updatedCryptos);
-        cryptoRepository.flush();
+        cryptoRepository.saveAll(filteredCryptos);
     }
 }
 

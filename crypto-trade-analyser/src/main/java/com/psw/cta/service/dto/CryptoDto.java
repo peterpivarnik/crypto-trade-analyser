@@ -15,6 +15,10 @@ import java.util.List;
 @ToString
 public class CryptoDto {
 
+    public CryptoDto(BinanceExchangeSymbol binanceExchangeSymbol) {
+        this.binanceExchangeSymbol = binanceExchangeSymbol;
+    }
+
     private List<BinanceCandlestick> fifteenMinutesCandleStickData;
     private LinkedTreeMap<String, Object> ticker24hr;
     private LinkedTreeMap<String, Object> depth20;

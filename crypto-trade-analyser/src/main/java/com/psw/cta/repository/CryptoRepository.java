@@ -23,7 +23,7 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     @Transactional
     @Modifying
     @Query("UPDATE Crypto c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date AND c.nextDayMaxPrice < :maxValue")
-    void update(@Param("maxValue") BigDecimal maxValue,
+    int update(@Param("maxValue") BigDecimal maxValue,
                 @Param("symbol") String symbol,
                 @Param("date") Long date);
 

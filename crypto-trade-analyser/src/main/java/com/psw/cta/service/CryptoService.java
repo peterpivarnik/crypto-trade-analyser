@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.webcerebrium.binance.datatype.BinanceInterval.ONE_DAY;
+import static com.webcerebrium.binance.datatype.BinanceInterval.FIFTEEN_MIN;
 
 @Component
 public class CryptoService {
@@ -106,25 +106,26 @@ public class CryptoService {
 
 
     @Time
-    @Scheduled(cron = "0 */10 * * * ?")
+    @Scheduled(cron = "0 */15 * * * ?")
     public void updateAll() {
         BinanceApi api = new BinanceApi();
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
-        cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli())
-                .forEach(symbol -> saveData(api, symbol, beforeOneDay));
+        int sum = cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
+                .mapToInt(symbol -> saveData(api, symbol, beforeOneDay))
+                .sum();
+        System.out.println("Total updates: " + sum);
     }
 
-    private void saveData(BinanceApi api, String symbol, Instant beforeOneDay) {
-        System.out.println("Updating symbol: " + symbol);
+    private int saveData(BinanceApi api, String symbol, Instant beforeOneDay) {
         List<BinanceCandlestick> klines;
         try {
-            klines = api.klines(new BinanceSymbol(symbol), ONE_DAY, 1, null);
+            klines = api.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1, null);
         } catch (BinanceApiException e) {
             throw new RuntimeException("Problem during binance klines", e);
         }
-        BinanceCandlestick binanceCandlestick = klines.get(0);
-        cryptoRepository.update(binanceCandlestick.getHigh(), symbol, beforeOneDay.toEpochMilli());
+        BigDecimal lastFifteenMinuteMax = klines.get(0).getHigh();
+        return cryptoRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli());
     }
 
     @Async

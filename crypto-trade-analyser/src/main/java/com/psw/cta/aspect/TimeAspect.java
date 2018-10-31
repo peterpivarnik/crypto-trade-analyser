@@ -16,16 +16,14 @@ class TimeAspect {
 
     @Around("@annotation(Time)")
     public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
+        String methodName = joinPoint.getSignature().toShortString();
         final LocalDateTime startTime = LocalDateTime.now();
-        log.info("Starting at: " + startTime);
+        log.info(methodName + " started at: " + startTime);
         final Object proceed = joinPoint.proceed();
         final LocalDateTime endTime = LocalDateTime.now();
-        log.info("Ending at: " + endTime);
+        log.info(methodName + " ended at: " + endTime);
         final Duration duration = Duration.between(startTime, endTime);
-
-        log.info(String.format("Execution of method %s tooks %d miliseconds",
-                               joinPoint.getSignature().toShortString(),
-                               duration.toMillis()));
+        log.info(methodName + " execution  tooks " + duration.toMillis() + " miliseconds");
         return proceed;
     }
 }

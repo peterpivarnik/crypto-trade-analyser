@@ -98,7 +98,7 @@ Vagrant.configure(2) do |config|
     sudo sed -i "s/^Listen 80$/Listen 8888/" /etc/httpd/conf/httpd.conf    # Configure Apache
     sudo yum install -y php                              # Install PHP
     sudo yum install -y php-pgsql                        # Install php-pg extension
-    sudo ln -s /vagrant/vm/tools/adminer /var/www/html/adminer    # Link Adminer
+    sudo ln -s /vagrant/adminer /var/www/html/adminer    # Link Adminer
     sudo systemctl enable httpd                          # Enable Apache
     sudo systemctl restart httpd                           # Start Apache
   SHELL

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,10 +20,13 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
 
     List<Crypto> findByCryptoType(CryptoType cryptoType);
 
+    @Transactional
     @Modifying
     @Query("UPDATE Crypto c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date AND c.nextDayMaxPrice < :maxValue")
     void update(@Param("maxValue") BigDecimal maxValue,
                 @Param("symbol") String symbol,
                 @Param("date") Long date);
 
+    @Query("SELECT DISTINCT c.symbol FROM Crypto c WHERE c.createdAt > :date")
+    List<String> findUniqueSymbols(@Param("date") Long date);
 }

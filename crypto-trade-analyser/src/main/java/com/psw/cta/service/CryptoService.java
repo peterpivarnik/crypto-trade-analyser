@@ -15,7 +15,6 @@ import com.psw.cta.service.factory.StatsFactory;
 import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceExchangeSymbol;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -106,25 +105,18 @@ public class CryptoService {
     }
 
 
-    @Async
     @Time
-    @Transactional
-    @Scheduled(cron = "0 */5 * * * ?")
-    void updateAll() {
+    @Scheduled(cron = "0 */10 * * * ?")
+    public void updateAll() {
         BinanceApi api = new BinanceApi();
-        try {
-            api.exchangeInfo()
-                    .getSymbols()
-                    .stream()
-                    .map(BinanceExchangeSymbol::getSymbol)
-                    .map(BinanceSymbol::getSymbol)
-                    .forEach(symbol -> saveData(api, symbol));
-        } catch (BinanceApiException e) {
-            throw new RuntimeException("Problem during binance exchange info", e);
-        }
+        Instant now = Instant.now();
+        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
+        cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli())
+                .forEach(symbol -> saveData(api, symbol, beforeOneDay));
     }
 
-    private void saveData(BinanceApi api, String symbol) {
+    private void saveData(BinanceApi api, String symbol, Instant beforeOneDay) {
+        System.out.println("Updating symbol: " + symbol);
         List<BinanceCandlestick> klines;
         try {
             klines = api.klines(new BinanceSymbol(symbol), ONE_DAY, 1, null);
@@ -132,15 +124,11 @@ public class CryptoService {
             throw new RuntimeException("Problem during binance klines", e);
         }
         BinanceCandlestick binanceCandlestick = klines.get(0);
-
-        Instant now = Instant.now();
-        Long beforeOneDay = now.minus(1, ChronoUnit.DAYS).toEpochMilli();
-        cryptoRepository.update(binanceCandlestick.getHigh(), symbol, beforeOneDay);
+        cryptoRepository.update(binanceCandlestick.getHigh(), symbol, beforeOneDay.toEpochMilli());
     }
 
     @Async
     @Time
-    @Transactional
     void saveAll(List<CryptoDto> cryptoDtos) {
         List<Crypto> cryptos = cryptoDtos.stream()
                 .map(cryptoDto -> cryptoDtoFactory.createCrypto(cryptoDto))

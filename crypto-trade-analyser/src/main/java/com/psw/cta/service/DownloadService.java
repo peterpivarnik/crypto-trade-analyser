@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-class DownloadServiceImpl {
+class DownloadService {
 
     @Autowired
     private CryptoService cryptoService;

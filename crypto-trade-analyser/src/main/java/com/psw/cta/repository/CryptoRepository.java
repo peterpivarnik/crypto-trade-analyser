@@ -24,9 +24,20 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     @Modifying
     @Query("UPDATE Crypto c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date AND c.nextDayMaxPrice < :maxValue")
     int update(@Param("maxValue") BigDecimal maxValue,
-                @Param("symbol") String symbol,
-                @Param("date") Long date);
+               @Param("symbol") String symbol,
+               @Param("date") Long date);
 
     @Query("SELECT DISTINCT c.symbol FROM Crypto c WHERE c.createdAt > :date")
     List<String> findUniqueSymbols(@Param("date") Long date);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate")
+    double findAllStats(@Param("cryptoType") CryptoType cryptoType,
+                        @Param("startDate") Long startDate,
+                        @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.currentPrice")
+    double findValidStats(@Param("cryptoType") CryptoType cryptoType,
+                          @Param("startDate") Long startDate,
+                          @Param("endDate") Long endDate);
+
 }

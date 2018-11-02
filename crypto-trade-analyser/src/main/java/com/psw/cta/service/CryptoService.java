@@ -16,6 +16,7 @@ import com.webcerebrium.binance.api.BinanceApi;
 import com.webcerebrium.binance.api.BinanceApiException;
 import com.webcerebrium.binance.datatype.BinanceCandlestick;
 import com.webcerebrium.binance.datatype.BinanceSymbol;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,9 +30,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.psw.cta.entity.CryptoType.*;
 import static com.webcerebrium.binance.datatype.BinanceInterval.FIFTEEN_MIN;
 
 @Component
+@Slf4j
 public class CryptoService {
 
     @Autowired
@@ -58,37 +61,36 @@ public class CryptoService {
     }
 
     @Transactional
+    @Time
     public CompleteStats getStats() {
         Instant endDate = Instant.now();
-        Stats stats2H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage2h);
-        Stats stats4H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage5h);
-        Stats stats10H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage10h);
-        Stats stats24H = getCompleteStats(endDate, Crypto::getPriceToSellPercentage24h);
+        Instant beforeOneDay = endDate.minus(1, ChronoUnit.DAYS);
+        Stats stats2H = getCompleteStats(TYPE_2H, beforeOneDay);
+        Stats stats4H = getCompleteStats(TYPE_5H, beforeOneDay);
+        Stats stats10H = getCompleteStats(TYPE_10H, beforeOneDay);
+        Stats stats24H = getCompleteStats(TYPE_24H, beforeOneDay);
         return completeStatsFactory.createCompleteStats(stats2H, stats4H, stats10H, stats24H);
     }
 
-    private Stats getCompleteStats(Instant endDate, Function<Crypto, BigDecimal> function) {
-        double oneDayStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
-        double oneWeekStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
-        double oneMonthStats = getStats(endDate.minus(1, ChronoUnit.DAYS), endDate, function);
+    private Stats getCompleteStats(CryptoType cryptoType, Instant endDate) {
+        double oneDayStats = getStats(cryptoType, endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
+        double oneWeekStats = getStats(cryptoType, endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
+        double oneMonthStats = getStats(cryptoType, endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
-    private double getStats(Instant startDate, Instant endDate, Function<Crypto, BigDecimal> function) {
-        List<Crypto> lastDayCryptos = cryptoRepository.findByCreatedAtBetween(startDate.toEpochMilli(),
-                                                                              endDate.toEpochMilli());
-        int size = lastDayCryptos.size();
-        long count = lastDayCryptos.stream()
-                .filter(crypto -> function.apply(crypto).compareTo(crypto.getNextDayMaxPrice()) < 0)
-                .count();
-        return size > 0 ? (double) count / (double) size * 100 : -1;
+    private double getStats(CryptoType cryptoType, Long startDate, Long endDate) {
+        double validStats = cryptoRepository.findValidStats(cryptoType, startDate, endDate);
+        double allStats = cryptoRepository.findAllStats(cryptoType, startDate, endDate);
+        return validStats / allStats;
     }
 
+    @Time
     public AverageProfit getAverageProfit() {
-        BigDecimal average2H = getAverage(CryptoType.TYPE_2H, Crypto::getPriceToSellPercentage2h);
-        BigDecimal average5H = getAverage(CryptoType.TYPE_5H, Crypto::getPriceToSellPercentage5h);
-        BigDecimal average10H = getAverage(CryptoType.TYPE_10H, Crypto::getPriceToSellPercentage10h);
-        BigDecimal average24H = getAverage(CryptoType.TYPE_24H, Crypto::getPriceToSellPercentage24h);
+        BigDecimal average2H = getAverage(TYPE_2H, Crypto::getPriceToSellPercentage2h);
+        BigDecimal average5H = getAverage(TYPE_5H, Crypto::getPriceToSellPercentage5h);
+        BigDecimal average10H = getAverage(TYPE_10H, Crypto::getPriceToSellPercentage10h);
+        BigDecimal average24H = getAverage(TYPE_24H, Crypto::getPriceToSellPercentage24h);
         return new AverageProfit(average2H, average5H, average10H, average24H);
     }
 
@@ -114,7 +116,7 @@ public class CryptoService {
         int sum = cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
                 .mapToInt(symbol -> saveData(api, symbol, beforeOneDay))
                 .sum();
-        System.out.println("Total updates: " + sum);
+        log.info("Total updates: " + sum);
     }
 
     private int saveData(BinanceApi api, String symbol, Instant beforeOneDay) {
@@ -135,10 +137,10 @@ public class CryptoService {
                 .map(cryptoDto -> cryptoDtoFactory.createCrypto(cryptoDto))
                 .collect(Collectors.toList());
         Long now = Instant.now().toEpochMilli();
-        save(cryptos, Crypto::getPriceToSellPercentage2h, CryptoType.TYPE_2H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage5h, CryptoType.TYPE_5H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage10h, CryptoType.TYPE_10H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage24h, CryptoType.TYPE_24H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage2h, TYPE_2H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage5h, TYPE_5H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage10h, TYPE_10H, now);
+        save(cryptos, Crypto::getPriceToSellPercentage24h, TYPE_24H, now);
     }
 
     private void save(List<Crypto> cryptos,

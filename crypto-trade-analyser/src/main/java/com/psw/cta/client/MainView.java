@@ -4,7 +4,7 @@ import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.entity.CryptoType;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
-import com.psw.cta.service.CryptoService;
+import com.psw.cta.service.CacheService;
 import com.psw.cta.service.dto.AverageProfit;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
@@ -29,16 +29,16 @@ import java.util.stream.Collectors;
 @Theme(Lumo.class)
 public class MainView extends VerticalLayout {
 
-    public MainView(@Autowired CryptoService cryptoService) {
+    public MainView(@Autowired CacheService cacheService) {
         Component mainLabel = getLabel("Crypto trade analyser");
-        Component allTablesLayout = getAllTablesLayout(cryptoService);
+        Component allTablesLayout = getAllTablesLayout(cacheService);
         add(mainLabel, allTablesLayout);
     }
 
-    private Component getAllTablesLayout(CryptoService cryptoService) {
-        List<CryptoResult> actualCryptos = cryptoService.getActualCryptos();
-        CompleteStats stats = cryptoService.getStats();
-        AverageProfit averageProfit = cryptoService.getAverageProfit();
+    private Component getAllTablesLayout(CacheService cacheService) {
+        List<CryptoResult> actualCryptos = cacheService.getCryptos();
+        CompleteStats stats = cacheService.getCompleteStats();
+        AverageProfit averageProfit = cacheService.getAverageProfit();
         Component tablesLayout2H = getTablesLayout(actualCryptos,
                                                    CryptoResult::getPriceToSell2h,
                                                    CryptoResult::getPriceToSellPercentage2h,
@@ -98,7 +98,7 @@ public class MainView extends VerticalLayout {
                                         CryptoType type) {
         Grid<CryptoResult> grid = new Grid<>();
         List<CryptoResult> filteredCryptos = actualCryptos.stream()
-                .filter(cryptoResult -> cryptoResult.getCryptoType().equals(type))
+                .filter(cryptoResult -> type.equals(cryptoResult.getCryptoType()))
                 .collect(Collectors.toList());
         grid.setItems(filteredCryptos);
         grid.addColumn(cryptoResult -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(cryptoResult.getCreatedAt()),

@@ -53,9 +53,24 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
                         @Param("startDate") Long startDate,
                         @Param("endDate") Long endDate);
 
-    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.currentPrice")
-    double findValidStats(@Param("cryptoType") CryptoType cryptoType,
-                          @Param("startDate") Long startDate,
-                          @Param("endDate") Long endDate);
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell2h")
+    double findValidStats2H(@Param("cryptoType") CryptoType cryptoType,
+                            @Param("startDate") Long startDate,
+                            @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell5h")
+    double findValidStats5H(@Param("cryptoType") CryptoType cryptoType,
+                            @Param("startDate") Long startDate,
+                            @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell10h")
+    double findValidStats10H(@Param("cryptoType") CryptoType cryptoType,
+                             @Param("startDate") Long startDate,
+                             @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell24h")
+    double findValidStats24H(@Param("cryptoType") CryptoType cryptoType,
+                             @Param("startDate") Long startDate,
+                             @Param("endDate") Long endDate);
 
 }

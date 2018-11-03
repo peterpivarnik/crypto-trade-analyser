@@ -66,29 +66,74 @@ public class CryptoService {
     public CompleteStats getStats() {
         Instant endDate = Instant.now();
         Instant beforeOneDay = endDate.minus(1, ChronoUnit.DAYS);
-        Stats stats2H = getCompleteStats(TYPE_2H, beforeOneDay);
-        Stats stats4H = getCompleteStats(TYPE_5H, beforeOneDay);
-        Stats stats10H = getCompleteStats(TYPE_10H, beforeOneDay);
-        Stats stats24H = getCompleteStats(TYPE_24H, beforeOneDay);
+        Stats stats2H = getCompleteStats2h(beforeOneDay);
+        Stats stats4H = getCompleteStats5h(beforeOneDay);
+        Stats stats10H = getCompleteStats10h(beforeOneDay);
+        Stats stats24H = getCompleteStats24h(beforeOneDay);
         return completeStatsFactory.createCompleteStats(stats2H, stats4H, stats10H, stats24H);
     }
 
-    private Stats getCompleteStats(CryptoType cryptoType, Instant endDate) {
-        double oneDayStats = getStats(cryptoType,
-                                      endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
-                                      endDate.toEpochMilli());
-        double oneWeekStats = getStats(cryptoType,
-                                       endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
-                                       endDate.toEpochMilli());
-        double oneMonthStats = getStats(cryptoType,
-                                        endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+    private Stats getCompleteStats2h(Instant endDate) {
+        double oneDayStats = getStats2h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
                                         endDate.toEpochMilli());
+        double oneWeekStats = getStats2h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+                                         endDate.toEpochMilli());
+        double oneMonthStats = getStats2h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+                                          endDate.toEpochMilli());
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
-    private double getStats(CryptoType cryptoType, Long startDate, Long endDate) {
-        double validStats = cryptoRepository.findValidStats(cryptoType, startDate, endDate);
-        double allStats = cryptoRepository.findAllStats(cryptoType, startDate, endDate);
+    private Stats getCompleteStats5h(Instant endDate) {
+        double oneDayStats = getStats5h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
+                                        endDate.toEpochMilli());
+        double oneWeekStats = getStats5h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+                                         endDate.toEpochMilli());
+        double oneMonthStats = getStats5h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+                                          endDate.toEpochMilli());
+        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
+    }
+
+    private Stats getCompleteStats10h(Instant endDate) {
+        double oneDayStats = getStats10h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
+                                         endDate.toEpochMilli());
+        double oneWeekStats = getStats10h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+                                          endDate.toEpochMilli());
+        double oneMonthStats = getStats10h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+                                           endDate.toEpochMilli());
+        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
+    }
+
+    private Stats getCompleteStats24h(Instant endDate) {
+        double oneDayStats = getStats24h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
+                                         endDate.toEpochMilli());
+        double oneWeekStats = getStats24h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+                                          endDate.toEpochMilli());
+        double oneMonthStats = getStats24h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+                                           endDate.toEpochMilli());
+        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
+    }
+
+    private double getStats2h(Long startDate, Long endDate) {
+        double validStats = cryptoRepository.findValidStats2H(TYPE_2H, startDate, endDate);
+        double allStats = cryptoRepository.findAllStats(TYPE_2H, startDate, endDate);
+        return validStats / allStats * 100;
+    }
+
+    private double getStats5h(Long startDate, Long endDate) {
+        double validStats = cryptoRepository.findValidStats5H(TYPE_5H, startDate, endDate);
+        double allStats = cryptoRepository.findAllStats(TYPE_5H, startDate, endDate);
+        return validStats / allStats * 100;
+    }
+
+    private double getStats10h(Long startDate, Long endDate) {
+        double validStats = cryptoRepository.findValidStats10H(TYPE_10H, startDate, endDate);
+        double allStats = cryptoRepository.findAllStats(TYPE_10H, startDate, endDate);
+        return validStats / allStats * 100;
+    }
+
+    private double getStats24h(Long startDate, Long endDate) {
+        double validStats = cryptoRepository.findValidStats24H(TYPE_24H, startDate, endDate);
+        double allStats = cryptoRepository.findAllStats(TYPE_24H, startDate, endDate);
         return validStats / allStats * 100;
     }
 

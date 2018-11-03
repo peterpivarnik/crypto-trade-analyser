@@ -49,6 +49,7 @@ public class CryptoService {
     @Autowired
     private CryptoDtoFactory cryptoDtoFactory;
 
+    @Time
     @Transactional
     public List<CryptoResult> getActualCryptos() {
         Instant now = Instant.now();
@@ -73,39 +74,37 @@ public class CryptoService {
     }
 
     private Stats getCompleteStats(CryptoType cryptoType, Instant endDate) {
-        double oneDayStats = getStats(cryptoType, endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
-        double oneWeekStats = getStats(cryptoType, endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
-        double oneMonthStats = getStats(cryptoType, endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(), endDate.toEpochMilli());
+        double oneDayStats = getStats(cryptoType,
+                                      endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
+                                      endDate.toEpochMilli());
+        double oneWeekStats = getStats(cryptoType,
+                                       endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+                                       endDate.toEpochMilli());
+        double oneMonthStats = getStats(cryptoType,
+                                        endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+                                        endDate.toEpochMilli());
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
     private double getStats(CryptoType cryptoType, Long startDate, Long endDate) {
         double validStats = cryptoRepository.findValidStats(cryptoType, startDate, endDate);
         double allStats = cryptoRepository.findAllStats(cryptoType, startDate, endDate);
-        return validStats / allStats;
+        return validStats / allStats * 100;
     }
 
     @Time
     public AverageProfit getAverageProfit() {
-        BigDecimal average2H = getAverage(TYPE_2H, Crypto::getPriceToSellPercentage2h);
-        BigDecimal average5H = getAverage(TYPE_5H, Crypto::getPriceToSellPercentage5h);
-        BigDecimal average10H = getAverage(TYPE_10H, Crypto::getPriceToSellPercentage10h);
-        BigDecimal average24H = getAverage(TYPE_24H, Crypto::getPriceToSellPercentage24h);
+        Instant now = Instant.now();
+        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
+        Instant beforeTwoDays = now.minus(2, ChronoUnit.DAYS);
+        Long startDate = beforeTwoDays.toEpochMilli();
+        Long endDate = beforeOneDay.toEpochMilli();
+        BigDecimal average2H = cryptoRepository.findAveragePriceToSellPercentage2h(TYPE_2H, startDate, endDate);
+        BigDecimal average5H = cryptoRepository.findAveragePriceToSellPercentage5h(TYPE_5H, startDate, endDate);
+        BigDecimal average10H = cryptoRepository.findAveragePriceToSellPercentage10h(TYPE_10H, startDate, endDate);
+        BigDecimal average24H = cryptoRepository.findAveragePriceToSellPercentage24h(TYPE_24H, startDate, endDate);
         return new AverageProfit(average2H, average5H, average10H, average24H);
     }
-
-    private BigDecimal getAverage(CryptoType byCryptoType, Function<Crypto, BigDecimal> function) {
-        List<Crypto> cryptos = cryptoRepository.findByCryptoType(byCryptoType);
-        int size = cryptos.size();
-        if (size == 0) {
-            return BigDecimal.ZERO;
-        }
-        return cryptos.stream()
-                .map(function)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .divide(new BigDecimal(size), 8, BigDecimal.ROUND_UP);
-    }
-
 
     @Time
     @Scheduled(cron = "0 */15 * * * ?")

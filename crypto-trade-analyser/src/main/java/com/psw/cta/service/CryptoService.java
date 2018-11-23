@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,9 +69,7 @@ public class CryptoService {
         Instant beforeOneDay = endDate.minus(1, ChronoUnit.DAYS);
         Stats stats2H = getCompleteStats2h(beforeOneDay);
         Stats stats4H = getCompleteStats5h(beforeOneDay);
-        Stats stats10H = getCompleteStats10h(beforeOneDay);
-        Stats stats24H = getCompleteStats24h(beforeOneDay);
-        return completeStatsFactory.createCompleteStats(stats2H, stats4H, stats10H, stats24H);
+        return completeStatsFactory.createCompleteStats(stats2H, stats4H);
     }
 
     private Stats getCompleteStats2h(Instant endDate) {
@@ -93,26 +92,6 @@ public class CryptoService {
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
 
-    private Stats getCompleteStats10h(Instant endDate) {
-        double oneDayStats = getStats10h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
-                                         endDate.toEpochMilli());
-        double oneWeekStats = getStats10h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
-                                          endDate.toEpochMilli());
-        double oneMonthStats = getStats10h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
-                                           endDate.toEpochMilli());
-        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
-    }
-
-    private Stats getCompleteStats24h(Instant endDate) {
-        double oneDayStats = getStats24h(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
-                                         endDate.toEpochMilli());
-        double oneWeekStats = getStats24h(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
-                                          endDate.toEpochMilli());
-        double oneMonthStats = getStats24h(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
-                                           endDate.toEpochMilli());
-        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
-    }
-
     private double getStats2h(Long startDate, Long endDate) {
         double validStats = cryptoRepository.findValidStats2H(TYPE_2H, startDate, endDate);
         double allStats = cryptoRepository.findAllStats(TYPE_2H, startDate, endDate);
@@ -125,18 +104,6 @@ public class CryptoService {
         return validStats / allStats * 100;
     }
 
-    private double getStats10h(Long startDate, Long endDate) {
-        double validStats = cryptoRepository.findValidStats10H(TYPE_10H, startDate, endDate);
-        double allStats = cryptoRepository.findAllStats(TYPE_10H, startDate, endDate);
-        return validStats / allStats * 100;
-    }
-
-    private double getStats24h(Long startDate, Long endDate) {
-        double validStats = cryptoRepository.findValidStats24H(TYPE_24H, startDate, endDate);
-        double allStats = cryptoRepository.findAllStats(TYPE_24H, startDate, endDate);
-        return validStats / allStats * 100;
-    }
-
     @Time
     public AverageProfit getAverageProfit() {
         Instant now = Instant.now();
@@ -144,11 +111,13 @@ public class CryptoService {
         Instant beforeTwoDays = now.minus(2, ChronoUnit.DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
-        BigDecimal average2H = cryptoRepository.findAveragePriceToSellPercentage2h(TYPE_2H, startDate, endDate);
-        BigDecimal average5H = cryptoRepository.findAveragePriceToSellPercentage5h(TYPE_5H, startDate, endDate);
-        BigDecimal average10H = cryptoRepository.findAveragePriceToSellPercentage10h(TYPE_10H, startDate, endDate);
-        BigDecimal average24H = cryptoRepository.findAveragePriceToSellPercentage24h(TYPE_24H, startDate, endDate);
-        return new AverageProfit(average2H, average5H, average10H, average24H);
+        Optional<BigDecimal> average2H = cryptoRepository.findAveragePriceToSellPercentage2h(TYPE_2H,
+                                                                                             startDate,
+                                                                                             endDate);
+        Optional<BigDecimal> average5H = cryptoRepository.findAveragePriceToSellPercentage5h(TYPE_5H,
+                                                                                             startDate,
+                                                                                             endDate);
+        return new AverageProfit(average2H.orElse(BigDecimal.ZERO), average5H.orElse(BigDecimal.ZERO));
     }
 
     @Time
@@ -181,18 +150,26 @@ public class CryptoService {
                 .map(cryptoDto -> cryptoDtoFactory.createCrypto(cryptoDto))
                 .collect(Collectors.toList());
         Long now = Instant.now().toEpochMilli();
-        save(cryptos, Crypto::getPriceToSellPercentage2h, TYPE_2H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage5h, TYPE_5H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage10h, TYPE_10H, now);
-        save(cryptos, Crypto::getPriceToSellPercentage24h, TYPE_24H, now);
+        save(cryptos,
+             crypto -> crypto.getPriceToSellPercentage2h().compareTo(new BigDecimal("0.5")) > 0
+//                       && crypto.getWeight2h().compareTo(new BigDecimal("10000")) > 0
+                ,
+             TYPE_2H,
+             now);
+        save(cryptos,
+             crypto -> crypto.getPriceToSellPercentage5h().compareTo(new BigDecimal("0.5")) > 0
+//                       && crypto.getWeight5h().compareTo(new BigDecimal("10000")) > 0
+                ,
+             TYPE_5H,
+             now);
     }
 
     private void save(List<Crypto> cryptos,
-                      Function<Crypto, BigDecimal> function,
+                      Function<Crypto, Boolean> function,
                       CryptoType cryptoType,
                       Long now) {
         List<Crypto> filteredCryptos = cryptos.stream()
-                .filter(crypto -> function.apply(crypto).compareTo(new BigDecimal("0.5")) > 0)
+                .filter(function::apply)
                 .peek(crypto -> crypto.setCryptoType(cryptoType))
                 .peek(crypto -> crypto.setCreatedAt(now))
                 .peek(crypto -> crypto.setId(null))

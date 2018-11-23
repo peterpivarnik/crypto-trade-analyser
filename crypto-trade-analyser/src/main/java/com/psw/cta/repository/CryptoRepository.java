@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecificationExecutor<Crypto> {
@@ -19,24 +20,14 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     List<Crypto> findByCreatedAtBetween(Long startDate, Long endDate);
 
     @Query("SELECT AVG(c.priceToSellPercentage2h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    BigDecimal findAveragePriceToSellPercentage2h(@Param("cryptoType") CryptoType cryptoType,
-                                                  @Param("startDate") Long startDate,
-                                                  @Param("endDate") Long endDate);
+    Optional<BigDecimal> findAveragePriceToSellPercentage2h(@Param("cryptoType") CryptoType cryptoType,
+                                                            @Param("startDate") Long startDate,
+                                                            @Param("endDate") Long endDate);
 
     @Query("SELECT AVG(c.priceToSellPercentage5h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    BigDecimal findAveragePriceToSellPercentage5h(@Param("cryptoType") CryptoType cryptoType,
-                                                  @Param("startDate") Long startDate,
-                                                  @Param("endDate") Long endDate);
-
-    @Query("SELECT AVG(c.priceToSellPercentage10h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    BigDecimal findAveragePriceToSellPercentage10h(@Param("cryptoType") CryptoType cryptoType,
-                                                   @Param("startDate") Long startDate,
-                                                   @Param("endDate") Long endDate);
-
-    @Query("SELECT AVG(c.priceToSellPercentage24h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    BigDecimal findAveragePriceToSellPercentage24h(@Param("cryptoType") CryptoType cryptoType,
-                                                   @Param("startDate") Long startDate,
-                                                   @Param("endDate") Long endDate);
+    Optional<BigDecimal> findAveragePriceToSellPercentage5h(@Param("cryptoType") CryptoType cryptoType,
+                                                            @Param("startDate") Long startDate,
+                                                            @Param("endDate") Long endDate);
 
     @Transactional
     @Modifying
@@ -62,15 +53,5 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     double findValidStats5H(@Param("cryptoType") CryptoType cryptoType,
                             @Param("startDate") Long startDate,
                             @Param("endDate") Long endDate);
-
-    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell10h")
-    double findValidStats10H(@Param("cryptoType") CryptoType cryptoType,
-                             @Param("startDate") Long startDate,
-                             @Param("endDate") Long endDate);
-
-    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell24h")
-    double findValidStats24H(@Param("cryptoType") CryptoType cryptoType,
-                             @Param("startDate") Long startDate,
-                             @Param("endDate") Long endDate);
 
 }

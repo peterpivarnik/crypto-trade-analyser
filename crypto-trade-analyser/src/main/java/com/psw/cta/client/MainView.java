@@ -51,19 +51,7 @@ public class MainView extends VerticalLayout {
                                                    stats.getStats5H(),
                                                    CryptoType.TYPE_5H,
                                                    averageProfit.getAverage5H());
-        Component tablesLayout10H = getTablesLayout(actualCryptos,
-                                                    CryptoResult::getPriceToSell10h,
-                                                    CryptoResult::getPriceToSellPercentage10h,
-                                                    stats.getStats10H(),
-                                                    CryptoType.TYPE_10H,
-                                                    averageProfit.getAverage10H());
-        Component tablesLayout24H = getTablesLayout(actualCryptos,
-                                                    CryptoResult::getPriceToSell24h,
-                                                    CryptoResult::getPriceToSellPercentage24h,
-                                                    stats.getStats24H(),
-                                                    CryptoType.TYPE_24H,
-                                                    averageProfit.getAverage24H());
-        return new VerticalLayout(tablesLayout2H, tablesLayout5H, tablesLayout10H, tablesLayout24H);
+        return new VerticalLayout(tablesLayout2H, tablesLayout5H);
     }
 
     private Component getTablesLayout(List<CryptoResult> actualCryptos,

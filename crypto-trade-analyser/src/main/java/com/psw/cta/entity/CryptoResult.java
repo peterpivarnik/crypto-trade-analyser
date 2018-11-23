@@ -16,23 +16,11 @@ public interface CryptoResult {
 
     BigDecimal getPriceToSell5h();
 
-    BigDecimal getPriceToSell10h();
-
-    BigDecimal getPriceToSell24h();
-
     BigDecimal getPriceToSellPercentage2h();
 
     BigDecimal getPriceToSellPercentage5h();
 
-    BigDecimal getPriceToSellPercentage10h();
-
-    BigDecimal getPriceToSellPercentage24h();
-
     BigDecimal getWeight2h();
 
     BigDecimal getWeight5h();
-
-    BigDecimal getWeight10h();
-
-    BigDecimal getWeight24h();
 }

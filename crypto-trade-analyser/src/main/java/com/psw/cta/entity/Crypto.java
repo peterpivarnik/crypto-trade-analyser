@@ -48,28 +48,12 @@ public class Crypto implements CryptoResult {
     private BigDecimal sumDiffsPerc5h;
 
     @NotNull
-    @Column(name = "sum_diff_percent_10h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal sumDiffsPerc10h;
-
-    @NotNull
-    @Column(name = "sum_diff_percent_24h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal sumDiffsPerc24h;
-
-    @NotNull
     @Column(name = "price_to_sell_2h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal priceToSell2h;
 
     @NotNull
     @Column(name = "price_to_sell_5h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal priceToSell5h;
-
-    @NotNull
-    @Column(name = "price_to_sell_10h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal priceToSell10h;
-
-    @NotNull
-    @Column(name = "price_to_sell_24h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal priceToSell24h;
 
     @NotNull
     @Column(name = "price_to_sell_percentage_2h", updatable = false, nullable = false, precision = 20, scale = 8)
@@ -80,28 +64,12 @@ public class Crypto implements CryptoResult {
     private BigDecimal priceToSellPercentage5h;
 
     @NotNull
-    @Column(name = "price_to_sell_percentage_10h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal priceToSellPercentage10h;
-
-    @NotNull
-    @Column(name = "price_to_sell_percentage_24h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal priceToSellPercentage24h;
-
-    @NotNull
     @Column(name = "weight_2h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal weight2h;
 
     @NotNull
     @Column(name = "weight_5h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal weight5h;
-
-    @NotNull
-    @Column(name = "weight_10h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal weight10h;
-
-    @NotNull
-    @Column(name = "weight_24h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal weight24h;
 
     @NotNull
     @Enumerated(EnumType.STRING)

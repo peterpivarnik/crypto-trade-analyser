@@ -20,12 +20,12 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     List<Crypto> findByCreatedAtBetween(Long startDate, Long endDate);
 
     @Query("SELECT AVG(c.priceToSellPercentage2h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    Optional<BigDecimal> findAveragePriceToSellPercentage2h(@Param("cryptoType") CryptoType cryptoType,
+    Optional<Double> findAveragePriceToSellPercentage2h(@Param("cryptoType") CryptoType cryptoType,
                                                             @Param("startDate") Long startDate,
                                                             @Param("endDate") Long endDate);
 
     @Query("SELECT AVG(c.priceToSellPercentage5h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    Optional<BigDecimal> findAveragePriceToSellPercentage5h(@Param("cryptoType") CryptoType cryptoType,
+    Optional<Double> findAveragePriceToSellPercentage5h(@Param("cryptoType") CryptoType cryptoType,
                                                             @Param("startDate") Long startDate,
                                                             @Param("endDate") Long endDate);
 
@@ -38,6 +38,9 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
 
     @Query("SELECT DISTINCT c.symbol FROM Crypto c WHERE c.createdAt > :date")
     List<String> findUniqueSymbols(@Param("date") Long date);
+
+    @Query("SELECT DISTINCT c.createdAt FROM Crypto c WHERE c.createdAt > :from and c.createdAt < :to")
+    List<Long> findUniqueCreatedAt(@Param("from") Long from, @Param("to") Long to);
 
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate")
     double findAllStats(@Param("cryptoType") CryptoType cryptoType,
@@ -54,4 +57,5 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
                             @Param("startDate") Long startDate,
                             @Param("endDate") Long endDate);
 
+    List<Crypto> findByCreatedAt(Long createdAt);
 }

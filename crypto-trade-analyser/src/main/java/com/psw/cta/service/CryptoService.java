@@ -4,18 +4,17 @@ import com.psw.cta.aspect.Time;
 import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.entity.CryptoType;
+import com.psw.cta.exception.CryptoTradeAnalyserException;
 import com.psw.cta.repository.CryptoRepository;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
 import com.psw.cta.service.dto.AverageProfit;
+import com.psw.cta.service.dto.BinanceCandlestick;
+import com.psw.cta.service.dto.BinanceSymbol;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.factory.CompleteStatsFactory;
 import com.psw.cta.service.factory.CryptoDtoFactory;
 import com.psw.cta.service.factory.StatsFactory;
-import com.webcerebrium.binance.api.BinanceApi;
-import com.webcerebrium.binance.api.BinanceApiException;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceSymbol;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -31,8 +30,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.psw.cta.entity.CryptoType.*;
-import static com.webcerebrium.binance.datatype.BinanceInterval.FIFTEEN_MIN;
+import static com.psw.cta.entity.CryptoType.TYPE_2H;
+import static com.psw.cta.entity.CryptoType.TYPE_5H;
+import static com.psw.cta.service.dto.BinanceInterval.FIFTEEN_MIN;
 
 @Component
 @Slf4j
@@ -49,6 +49,9 @@ public class CryptoService {
 
     @Autowired
     private CryptoDtoFactory cryptoDtoFactory;
+
+    @Autowired
+    private BinanceService binanceService;
 
     @Time
     @Transactional
@@ -111,32 +114,31 @@ public class CryptoService {
         Instant beforeTwoDays = now.minus(2, ChronoUnit.DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
-        Optional<BigDecimal> average2H = cryptoRepository.findAveragePriceToSellPercentage2h(TYPE_2H,
-                                                                                             startDate,
-                                                                                             endDate);
-        Optional<BigDecimal> average5H = cryptoRepository.findAveragePriceToSellPercentage5h(TYPE_5H,
-                                                                                             startDate,
-                                                                                             endDate);
-        return new AverageProfit(average2H.orElse(BigDecimal.ZERO), average5H.orElse(BigDecimal.ZERO));
+        Optional<Double> average2H = cryptoRepository.findAveragePriceToSellPercentage2h(TYPE_2H,
+                                                                                         startDate,
+                                                                                         endDate);
+        Optional<Double> average5H = cryptoRepository.findAveragePriceToSellPercentage5h(TYPE_5H,
+                                                                                         startDate,
+                                                                                         endDate);
+        return new AverageProfit(new BigDecimal(average2H.orElse(0d)), new BigDecimal(average5H.orElse(0d)));
     }
 
     @Time
     @Scheduled(cron = "0 */15 * * * ?")
     public void updateAll() {
-        BinanceApi api = new BinanceApi();
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
         int sum = cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
-                .mapToInt(symbol -> saveData(api, symbol, beforeOneDay))
+                .mapToInt(symbol -> saveData(symbol, beforeOneDay))
                 .sum();
         log.info("Total updates: " + sum);
     }
 
-    private int saveData(BinanceApi api, String symbol, Instant beforeOneDay) {
+    private int saveData(String symbol, Instant beforeOneDay) {
         List<BinanceCandlestick> klines;
         try {
-            klines = api.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1, null);
-        } catch (BinanceApiException e) {
+            klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1);
+        } catch (CryptoTradeAnalyserException e) {
             throw new RuntimeException("Problem during binance klines", e);
         }
         BigDecimal lastFifteenMinuteMax = klines.get(0).getHigh();

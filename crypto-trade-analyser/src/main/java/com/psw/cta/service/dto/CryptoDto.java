@@ -1,8 +1,6 @@
 package com.psw.cta.service.dto;
 
 import com.google.gson.internal.LinkedTreeMap;
-import com.webcerebrium.binance.datatype.BinanceCandlestick;
-import com.webcerebrium.binance.datatype.BinanceExchangeSymbol;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

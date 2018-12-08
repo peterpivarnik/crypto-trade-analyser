@@ -32,17 +32,16 @@ public class BinanceService {
         return binanceRequest.read().asJsonObject();
     }
 
-    List<BinanceCandlestick> klines(BinanceSymbol symbol,
-                                    BinanceInterval interval,
-                                    int limit) throws CryptoTradeAnalyserException {
+    List<BinanceCandlestick> klines(BinanceSymbol symbol, BinanceInterval interval, int limit)
+            throws CryptoTradeAnalyserException {
 
         String requestUrl = baseUrl +
-                         "v1/klines?symbol=" +
-                         symbol.get() +
-                         "&interval=" +
-                         interval.toString() +
-                         "&limit=" +
-                         limit;
+                            "v1/klines?symbol=" +
+                            symbol.get() +
+                            "&interval=" +
+                            interval.getValue() +
+                            "&limit=" +
+                            limit;
         JsonArray jsonElements = (new BinanceRequest(requestUrl)).read().asJsonArray();
         List<BinanceCandlestick> list = new LinkedList<>();
         for (JsonElement e : jsonElements) list.add(new BinanceCandlestick(e.getAsJsonArray()));

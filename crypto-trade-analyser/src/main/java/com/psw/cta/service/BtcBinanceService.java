@@ -145,7 +145,7 @@ class BtcBinanceService {
 
     private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
-        return calculateSumDiffsPercentage(cryptoDto, size);
+        return calculateSumDiffsPercentage(cryptoDto, 0);
     }
 
     private BigDecimal calculateSumDiffsPercentage(CryptoDto cryptoDto, int size) {

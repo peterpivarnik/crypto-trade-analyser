@@ -24,12 +24,16 @@ public class CryptoDto {
 
     private BigDecimal currentPrice;
     private BigDecimal volume;
+    private BigDecimal sumDiffsPerc1h;
     private BigDecimal sumDiffsPerc2h;
     private BigDecimal sumDiffsPerc5h;
+    private BigDecimal priceToSell1h;
     private BigDecimal priceToSell2h;
     private BigDecimal priceToSell5h;
+    private BigDecimal priceToSellPercentage1h;
     private BigDecimal priceToSellPercentage2h;
     private BigDecimal priceToSellPercentage5h;
+    private BigDecimal weight1h;
     private BigDecimal weight2h;
     private BigDecimal weight5h;
 }

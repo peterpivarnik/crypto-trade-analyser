@@ -39,6 +39,12 @@ public class MainView extends VerticalLayout {
         List<CryptoResult> actualCryptos = cacheService.getCryptos();
         CompleteStats stats = cacheService.getCompleteStats();
         AverageProfit averageProfit = cacheService.getAverageProfit();
+        Component tablesLayout1H = getTablesLayout(actualCryptos,
+                                                   CryptoResult::getPriceToSell1h,
+                                                   CryptoResult::getPriceToSellPercentage1h,
+                                                   stats.getStats1H(),
+                                                   CryptoType.TYPE_1H,
+                                                   averageProfit.getAverage2H());
         Component tablesLayout2H = getTablesLayout(actualCryptos,
                                                    CryptoResult::getPriceToSell2h,
                                                    CryptoResult::getPriceToSellPercentage2h,
@@ -51,7 +57,7 @@ public class MainView extends VerticalLayout {
                                                    stats.getStats5H(),
                                                    CryptoType.TYPE_5H,
                                                    averageProfit.getAverage5H());
-        return new VerticalLayout(tablesLayout2H, tablesLayout5H);
+        return new VerticalLayout(tablesLayout1H, tablesLayout2H, tablesLayout5H);
     }
 
     private Component getTablesLayout(List<CryptoResult> actualCryptos,

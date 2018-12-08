@@ -19,6 +19,11 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
 
     List<Crypto> findByCreatedAtBetween(Long startDate, Long endDate);
 
+    @Query("SELECT AVG(c.priceToSellPercentage1h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
+    Optional<Double> findAveragePriceToSellPercentage1h(@Param("cryptoType") CryptoType cryptoType,
+                                                        @Param("startDate") Long startDate,
+                                                        @Param("endDate") Long endDate);
+
     @Query("SELECT AVG(c.priceToSellPercentage2h) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
     Optional<Double> findAveragePriceToSellPercentage2h(@Param("cryptoType") CryptoType cryptoType,
                                                             @Param("startDate") Long startDate,
@@ -46,6 +51,11 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     double findAllStats(@Param("cryptoType") CryptoType cryptoType,
                         @Param("startDate") Long startDate,
                         @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell1h")
+    double findValidStats1H(@Param("cryptoType") CryptoType cryptoType,
+                            @Param("startDate") Long startDate,
+                            @Param("endDate") Long endDate);
 
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell2h")
     double findValidStats2H(@Param("cryptoType") CryptoType cryptoType,

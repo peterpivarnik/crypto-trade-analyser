@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -38,25 +39,34 @@ class BtcBinanceService {
     public void downloadData() {
         try {
             List<LinkedTreeMap<String, Object>> tickers = getAll24hTickers();
-            List<CryptoDto> cryptoDtos = binanceService.exchangeInfo().getSymbols().parallelStream()
+            List<CryptoDto> cryptoDtos = binanceService.exchangeInfo()
+                    .getSymbols()
+                    .parallelStream()
                     .map(CryptoDto::new)
                     .filter(dto -> dto.getBinanceExchangeSymbol().getSymbol().getSymbol().endsWith("BTC"))
                     .filter(dto -> dto.getBinanceExchangeSymbol().getStatus().equals("TRADING"))
                     .peek(cryptoDto -> cryptoDto.setTicker24hr(get24hTicker(tickers, cryptoDto)))
-                    .peek(cryptoDto -> cryptoDto.setVolume(provideVolume(cryptoDto)))
+                    .peek(cryptoDto -> cryptoDto.setVolume(calculateVolume(cryptoDto)))
                     .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
                     .peek(cryptoDto -> cryptoDto.setDepth20(getDepth(cryptoDto)))
-                    .peek(cryptoDto -> cryptoDto.setCurrentPrice(provideCurrentPrice(cryptoDto)))
+                    .peek(cryptoDto -> cryptoDto.setCurrentPrice(calculateCurrentPrice(cryptoDto)))
                     .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                     .peek(cryptoDto -> cryptoDto.setFifteenMinutesCandleStickData(getCandleStickData(cryptoDto)))
+                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc1h(calculateSumDiffsPerc(cryptoDto, 4)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc2h(calculateSumDiffsPerc(cryptoDto, 8)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc5h(calculateSumDiffsPerc(cryptoDto, 20)))
+                    .peek(cryptoDto -> cryptoDto.setPriceToSell1h(calculatePriceToSell(cryptoDto, 4)))
                     .peek(cryptoDto -> cryptoDto.setPriceToSell2h(calculatePriceToSell(cryptoDto, 8)))
                     .peek(cryptoDto -> cryptoDto.setPriceToSell5h(calculatePriceToSell(cryptoDto, 20)))
+                    .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage1h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell1h(),
+                                                                                                           cryptoDto.getCurrentPrice())))
                     .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage2h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell2h(),
                                                                                                            cryptoDto.getCurrentPrice())))
                     .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage5h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell5h(),
                                                                                                            cryptoDto.getCurrentPrice())))
+                    .peek(cryptoDto -> cryptoDto.setWeight1h(calculateWeight(cryptoDto,
+                                                                             cryptoDto.getPriceToSell1h(),
+                                                                             cryptoDto.getPriceToSellPercentage1h())))
                     .peek(cryptoDto -> cryptoDto.setWeight2h(calculateWeight(cryptoDto,
                                                                              cryptoDto.getPriceToSell2h(),
                                                                              cryptoDto.getPriceToSellPercentage2h())))
@@ -85,7 +95,7 @@ class BtcBinanceService {
                 .orElseThrow(() -> new RuntimeException("Dto with symbol: " + symbol + "not found"));
     }
 
-    private BigDecimal provideVolume(CryptoDto cryptoDto) {
+    private BigDecimal calculateVolume(CryptoDto cryptoDto) {
         if (cryptoDto.getTicker24hr().containsKey("quoteVolume")) {
             return new BigDecimal((String) cryptoDto.getTicker24hr().get("quoteVolume"));
         } else {
@@ -110,7 +120,7 @@ class BtcBinanceService {
     }
 
     @SuppressWarnings({"unchecked"})
-    private BigDecimal provideCurrentPrice(CryptoDto cryptoDto) {
+    private BigDecimal calculateCurrentPrice(CryptoDto cryptoDto) {
         ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
         return asks.parallelStream()
                 .map(data -> (new BigDecimal((String) ((ArrayList<Object>) data).get(0))))
@@ -127,11 +137,11 @@ class BtcBinanceService {
         }
     }
 
-    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto, int dataToSkip) {
+    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto, int dataToKeep) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
-        if (size - dataToSkip < 0) return BigDecimal.ZERO;
+        if (size - dataToKeep < 0) return BigDecimal.ZERO;
         return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .skip(size - dataToSkip)
+                .skip(size - dataToKeep)
                 .map(data -> getPercentualDifference(data, cryptoDto.getCurrentPrice()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

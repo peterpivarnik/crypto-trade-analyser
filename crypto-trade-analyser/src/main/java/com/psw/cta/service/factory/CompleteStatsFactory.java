@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class CompleteStatsFactory {
 
-    public CompleteStats createCompleteStats(Stats stats2h, Stats stats5h) {
-        return new CompleteStatsImpl(stats2h, stats5h);
+    public CompleteStats createCompleteStats(Stats stats1h,Stats stats2h, Stats stats5h) {
+        return new CompleteStatsImpl(stats1h, stats2h, stats5h);
 
     }
 }

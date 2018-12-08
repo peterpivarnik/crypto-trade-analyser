@@ -42,6 +42,9 @@ public class StatisticService {
     private void saveStatistic(Long createdAt) {
         List<Crypto> cryptos = cryptoRepository.findByCreatedAt(createdAt);
         int all = cryptos.size();
+        long valid1H = cryptos.stream()
+                .filter(crypto -> crypto.getNextDayMaxPrice().compareTo(crypto.getPriceToSell1h()) >= 0)
+                .count();
         long valid2H = cryptos.stream()
                 .filter(crypto -> crypto.getNextDayMaxPrice().compareTo(crypto.getPriceToSell2h()) >= 0)
                 .count();
@@ -49,6 +52,7 @@ public class StatisticService {
                 .filter(crypto -> crypto.getNextDayMaxPrice().compareTo(crypto.getPriceToSell5h()) >= 0)
                 .count();
         Statistic statistic = statisticFactory.create(createdAt,
+                                                      new BigDecimal(((double) valid1H) / all * 100),
                                                       new BigDecimal(((double) valid2H) / all * 100),
                                                       new BigDecimal(((double) valid5H) / all * 100));
         statisticRepository.save(statistic);

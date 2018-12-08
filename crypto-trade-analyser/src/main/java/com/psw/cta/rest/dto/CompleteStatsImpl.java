@@ -7,11 +7,13 @@ import lombok.ToString;
 @ToString
 public class CompleteStatsImpl implements CompleteStats {
 
-    private Stats Stats2H;
-    private Stats Stats5H;
+    private Stats stats1H;
+    private Stats stats2H;
+    private Stats stats5H;
 
-    public CompleteStatsImpl(Stats stats2H, Stats stats5H) {
-        Stats2H = stats2H;
-        Stats5H = stats5H;
+    public CompleteStatsImpl(Stats stats1H, Stats stats2H, Stats stats5H) {
+        this.stats1H = stats1H;
+        this.stats2H = stats2H;
+        this.stats5H = stats5H;
     }
 }

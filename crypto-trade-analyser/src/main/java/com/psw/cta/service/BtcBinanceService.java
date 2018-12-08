@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -52,6 +51,7 @@ class BtcBinanceService {
                     .peek(cryptoDto -> cryptoDto.setCurrentPrice(calculateCurrentPrice(cryptoDto)))
                     .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                     .peek(cryptoDto -> cryptoDto.setFifteenMinutesCandleStickData(getCandleStickData(cryptoDto)))
+                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc1Day(calculateSumDiffsPerc(cryptoDto)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc1h(calculateSumDiffsPerc(cryptoDto, 4)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc2h(calculateSumDiffsPerc(cryptoDto, 8)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc5h(calculateSumDiffsPerc(cryptoDto, 20)))
@@ -137,11 +137,20 @@ class BtcBinanceService {
         }
     }
 
-    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto, int dataToKeep) {
+    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto, int numberOfDataToKeep) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
-        if (size - dataToKeep < 0) return BigDecimal.ZERO;
+        if (size - numberOfDataToKeep < 0) return BigDecimal.ZERO;
+        return calculateSumDiffsPercentage(cryptoDto, size - numberOfDataToKeep);
+    }
+
+    private BigDecimal calculateSumDiffsPerc(CryptoDto cryptoDto) {
+        int size = cryptoDto.getFifteenMinutesCandleStickData().size();
+        return calculateSumDiffsPercentage(cryptoDto, size);
+    }
+
+    private BigDecimal calculateSumDiffsPercentage(CryptoDto cryptoDto, int size) {
         return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .skip(size - dataToKeep)
+                .skip(size)
                 .map(data -> getPercentualDifference(data, cryptoDto.getCurrentPrice()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -161,11 +170,11 @@ class BtcBinanceService {
                 .divide(new BigDecimal("4"), 8, BigDecimal.ROUND_UP);
     }
 
-    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto, int dataToSkip) {
+    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto, int numberOfDataToKeep) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
-        if (size - dataToSkip < 0) return BigDecimal.ZERO;
+        if (size - numberOfDataToKeep < 0) return BigDecimal.ZERO;
         return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .skip(size - dataToSkip)
+                .skip(size - numberOfDataToKeep)
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO)

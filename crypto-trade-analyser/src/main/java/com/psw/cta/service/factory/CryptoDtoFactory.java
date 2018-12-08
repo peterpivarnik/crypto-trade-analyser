@@ -18,6 +18,7 @@ public class CryptoDtoFactory {
         crypto.setPriceToSellPercentage1h(cryptoDto.getPriceToSellPercentage1h());
         crypto.setPriceToSellPercentage2h(cryptoDto.getPriceToSellPercentage2h());
         crypto.setPriceToSellPercentage5h(cryptoDto.getPriceToSellPercentage5h());
+        crypto.setSumDiffsPerc1Day(cryptoDto.getSumDiffsPerc1Day());
         crypto.setSumDiffsPerc1h(cryptoDto.getSumDiffsPerc1h());
         crypto.setSumDiffsPerc2h(cryptoDto.getSumDiffsPerc2h());
         crypto.setSumDiffsPerc5h(cryptoDto.getSumDiffsPerc5h());

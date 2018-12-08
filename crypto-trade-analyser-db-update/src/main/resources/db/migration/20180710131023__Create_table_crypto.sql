@@ -5,6 +5,7 @@ CREATE TABLE crypto (
     symbol VARCHAR(10) NOT NULL,
     current_price NUMERIC(20, 8),
     volume NUMERIC(20, 8),
+    sum_diff_percent_1day NUMERIC(20, 8),
     sum_diff_percent_1h NUMERIC(20, 8),
     sum_diff_percent_2h NUMERIC(20, 8),
     sum_diff_percent_5h NUMERIC(20, 8),

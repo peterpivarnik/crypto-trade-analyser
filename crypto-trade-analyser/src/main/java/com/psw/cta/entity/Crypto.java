@@ -40,6 +40,10 @@ public class Crypto implements CryptoResult {
     private BigDecimal volume;
 
     @NotNull
+    @Column(name = "sum_diff_percent_1day", updatable = true, nullable = false, precision = 20, scale = 8)
+    private BigDecimal sumDiffsPerc1Day;
+
+    @NotNull
     @Column(name = "sum_diff_percent_1h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal sumDiffsPerc1h;
 

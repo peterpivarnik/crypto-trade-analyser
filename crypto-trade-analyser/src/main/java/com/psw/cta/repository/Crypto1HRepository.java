@@ -2,6 +2,7 @@ package com.psw.cta.repository;
 
 import com.psw.cta.entity.Crypto1H;
 import com.psw.cta.entity.CryptoType;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,7 +18,7 @@ import java.util.Optional;
 @Repository
 public interface Crypto1HRepository extends JpaRepository<Crypto1H, Long>, JpaSpecificationExecutor<Crypto1H> {
 
-    List<Crypto1H> findByCreatedAtBetween(Long startDate, Long endDate);
+    List<Crypto1H> findByCreatedAtBetween(Long startDate, Long endDate, Sort sort);
 
     @Query("SELECT AVG(c.priceToSellPercentage) FROM Crypto1H c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
     Optional<Double> findAveragePriceToSellPercentage(@Param("cryptoType") CryptoType cryptoType,

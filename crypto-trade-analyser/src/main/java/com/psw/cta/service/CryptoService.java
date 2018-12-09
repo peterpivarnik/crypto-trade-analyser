@@ -9,10 +9,11 @@ import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
 import com.psw.cta.service.dto.*;
 import com.psw.cta.service.factory.CompleteStatsFactory;
-import com.psw.cta.service.factory.CryptoDtoFactory;
+import com.psw.cta.service.factory.CryptoFactory;
 import com.psw.cta.service.factory.StatsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -48,7 +49,7 @@ public class CryptoService {
     private CompleteStatsFactory completeStatsFactory;
 
     @Autowired
-    private CryptoDtoFactory cryptoDtoFactory;
+    private CryptoFactory cryptoFactory;
 
     @Autowired
     private BinanceService binanceService;
@@ -58,24 +59,32 @@ public class CryptoService {
     public ActualCryptos getActualCryptos() {
         Instant now = Instant.now();
         Instant beforeMinute = now.minus(1, ChronoUnit.MINUTES);
+
         List<CryptoResult> cryptos1H = crypto1HRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
-                                                                                 now.toEpochMilli())
+                                                                                 now.toEpochMilli(),
+                                                                                 sortByWeightAsc())
                 .stream()
                 .map(crypto -> (CryptoResult) crypto)
                 .collect(Collectors.toList());
 
         List<CryptoResult> cryptos2H = crypto2HRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
-                                                                                 now.toEpochMilli())
+                                                                                 now.toEpochMilli(),
+                                                                                 sortByWeightAsc())
                 .stream()
                 .map(crypto -> (CryptoResult) crypto)
                 .collect(Collectors.toList());
 
         List<CryptoResult> cryptos5H = crypto5HRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
-                                                                                 now.toEpochMilli())
+                                                                                 now.toEpochMilli(),
+                                                                                 sortByWeightAsc())
                 .stream()
                 .map(crypto -> (CryptoResult) crypto)
                 .collect(Collectors.toList());
         return new ActualCryptos(cryptos1H, cryptos2H, cryptos5H);
+    }
+
+    private Sort sortByWeightAsc() {
+        return new Sort(Sort.Direction.DESC, "weight");
     }
 
     @Transactional
@@ -209,7 +218,7 @@ public class CryptoService {
     void saveAll(List<CryptoDto> cryptoDtos) {
         Long now = Instant.now().toEpochMilli();
         cryptoDtos.stream()
-                .map(cryptoDto -> cryptoDtoFactory.createCrypto1H(cryptoDto))
+                .map(cryptoDto -> cryptoFactory.createCrypto1H(cryptoDto))
                 .filter(crypto1H -> crypto1H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto1H -> crypto1H.setCryptoType(TYPE_1H))
                 .peek(crypto1H -> crypto1H.setCreatedAt(now))
@@ -217,7 +226,7 @@ public class CryptoService {
                 .forEach(crypto1H -> crypto1HRepository.save(crypto1H));
 
         cryptoDtos.stream()
-                .map(cryptoDto -> cryptoDtoFactory.createCrypto2H(cryptoDto))
+                .map(cryptoDto -> cryptoFactory.createCrypto2H(cryptoDto))
                 .filter(crypto2H -> crypto2H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto2H -> crypto2H.setCryptoType(TYPE_2H))
                 .peek(crypto2H -> crypto2H.setCreatedAt(now))
@@ -225,7 +234,7 @@ public class CryptoService {
                 .forEach(crypto2H -> crypto2HRepository.save(crypto2H));
 
         cryptoDtos.stream()
-                .map(cryptoDto -> cryptoDtoFactory.createCrypto5H(cryptoDto))
+                .map(cryptoDto -> cryptoFactory.createCrypto5H(cryptoDto))
                 .filter(crypto5H -> crypto5H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(crypto5H -> crypto5H.setCryptoType(TYPE_5H))
                 .peek(crypto5H -> crypto5H.setCreatedAt(now))

@@ -9,7 +9,7 @@ import com.psw.cta.service.dto.CryptoDto;
 import java.math.BigDecimal;
 
 @Component
-public class CryptoDtoFactory {
+public class CryptoFactory {
 
     public Crypto1H createCrypto1H(CryptoDto cryptoDto) {
         Crypto1H crypto = new Crypto1H();

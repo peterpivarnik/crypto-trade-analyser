@@ -3,6 +3,7 @@ package com.psw.cta.rest;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.service.CacheService;
+import com.psw.cta.service.dto.ActualCryptos;
 import com.psw.cta.service.dto.AverageProfit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +19,7 @@ public class CryptoRestController {
     private CacheService cacheService;
 
     @RequestMapping(value = "/crypto", method = RequestMethod.GET, produces = "application/json")
-    public List<CryptoResult> getCrypto() {
+    public ActualCryptos getCrypto() {
         return cacheService.getCryptos();
     }
 

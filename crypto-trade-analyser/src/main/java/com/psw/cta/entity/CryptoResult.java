@@ -12,16 +12,8 @@ public interface CryptoResult {
 
     BigDecimal getCurrentPrice();
 
-    BigDecimal getPriceToSell1h();
+    BigDecimal getPriceToSell();
 
-    BigDecimal getPriceToSell2h();
-
-    BigDecimal getPriceToSell5h();
-
-    BigDecimal getPriceToSellPercentage1h();
-
-    BigDecimal getPriceToSellPercentage2h();
-
-    BigDecimal getPriceToSellPercentage5h();
+    BigDecimal getPriceToSellPercentage();
 
 }

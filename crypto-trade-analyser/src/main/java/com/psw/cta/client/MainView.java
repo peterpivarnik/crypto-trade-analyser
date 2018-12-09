@@ -5,6 +5,7 @@ import com.psw.cta.entity.CryptoType;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
 import com.psw.cta.service.CacheService;
+import com.psw.cta.service.dto.ActualCryptos;
 import com.psw.cta.service.dto.AverageProfit;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
@@ -22,7 +23,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Route
@@ -36,59 +36,46 @@ public class MainView extends VerticalLayout {
     }
 
     private Component getAllTablesLayout(CacheService cacheService) {
-        List<CryptoResult> actualCryptos = cacheService.getCryptos();
+        ActualCryptos actualCryptos = cacheService.getCryptos();
         CompleteStats stats = cacheService.getCompleteStats();
         AverageProfit averageProfit = cacheService.getAverageProfit();
-        Component tablesLayout1H = getTablesLayout(actualCryptos,
-                                                   CryptoResult::getPriceToSell1h,
-                                                   CryptoResult::getPriceToSellPercentage1h,
+        Component tablesLayout1H = getTablesLayout(actualCryptos.getCrypto1H(),
                                                    stats.getStats1H(),
                                                    CryptoType.TYPE_1H,
-                                                   averageProfit.getAverage2H());
-        Component tablesLayout2H = getTablesLayout(actualCryptos,
-                                                   CryptoResult::getPriceToSell2h,
-                                                   CryptoResult::getPriceToSellPercentage2h,
+                                                   averageProfit.getAverage1H(),
+                                                   "Actual cryptos: Variant 1");
+        Component tablesLayout2H = getTablesLayout(actualCryptos.getCrypto2H(),
                                                    stats.getStats2H(),
                                                    CryptoType.TYPE_2H,
-                                                   averageProfit.getAverage2H());
-        Component tablesLayout5H = getTablesLayout(actualCryptos,
-                                                   CryptoResult::getPriceToSell5h,
-                                                   CryptoResult::getPriceToSellPercentage5h,
+                                                   averageProfit.getAverage2H(),
+                                                   "Actual cryptos: Variant 2");
+        Component tablesLayout5H = getTablesLayout(actualCryptos.getCrypto5H(),
                                                    stats.getStats5H(),
                                                    CryptoType.TYPE_5H,
-                                                   averageProfit.getAverage5H());
+                                                   averageProfit.getAverage5H(),
+                                                   "Actual cryptos: Variant 5");
         return new VerticalLayout(tablesLayout1H, tablesLayout2H, tablesLayout5H);
     }
 
     private Component getTablesLayout(List<CryptoResult> actualCryptos,
-                                      Function<CryptoResult, BigDecimal> priceToSellFunction,
-                                      Function<CryptoResult, BigDecimal> priceToSellPercFunction,
                                       Stats stats,
                                       CryptoType type,
-                                      BigDecimal average) {
-        Component actualCryptoLayout = getActualCryptoLayout(actualCryptos,
-                                                             priceToSellFunction,
-                                                             priceToSellPercFunction,
-                                                             type);
+                                      BigDecimal average,
+                                      String labelActualCryptos) {
+        Component actualCryptoLayout = getActualCryptoLayout(actualCryptos, type, labelActualCryptos);
         Component statisticsLayout = getStatisticsLayout(stats, average);
         return new HorizontalLayout(actualCryptoLayout, statisticsLayout);
     }
 
     private Component getActualCryptoLayout(List<CryptoResult> actualCryptos,
-                                            Function<CryptoResult, BigDecimal> priceToSellFunction,
-                                            Function<CryptoResult, BigDecimal> priceToSellPercFunction,
-                                            CryptoType type) {
-        Component actualCryptoLabel = getLabel("Actual cryptos");
+                                            CryptoType type, String labelActualCryptos) {
+        Component actualCryptoLabel = getLabel(labelActualCryptos);
         Component cryptoResultGrid = getCryptoJsonGrid(actualCryptos,
-                                                       priceToSellFunction,
-                                                       priceToSellPercFunction,
                                                        type);
         return new VerticalLayout(actualCryptoLabel, cryptoResultGrid);
     }
 
     private Component getCryptoJsonGrid(List<CryptoResult> actualCryptos,
-                                        Function<CryptoResult, BigDecimal> priceToSellFunction,
-                                        Function<CryptoResult, BigDecimal> priceToSellPercFunction,
                                         CryptoType type) {
         Grid<CryptoResult> grid = new Grid<>();
         List<CryptoResult> filteredCryptos = actualCryptos.stream()
@@ -100,8 +87,8 @@ public class MainView extends VerticalLayout {
                 .setHeader("Date");
         grid.addColumn(CryptoResult::getSymbol).setHeader("Symbol");
         grid.addColumn(CryptoResult::getCurrentPrice).setHeader("Current price");
-        grid.addColumn(priceToSellFunction::apply).setHeader("Price to sell");
-        grid.addColumn(priceToSellPercFunction::apply).setHeader("Percent");
+        grid.addColumn(CryptoResult::getPriceToSell).setHeader("Price to sell");
+        grid.addColumn(CryptoResult::getPriceToSellPercentage).setHeader("Percent");
         grid.setWidth("1000px");
         return grid;
     }

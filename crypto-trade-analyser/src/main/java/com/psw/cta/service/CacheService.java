@@ -1,15 +1,14 @@
 package com.psw.cta.service;
 
 import com.psw.cta.aspect.Time;
-import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.rest.dto.CompleteStats;
+import com.psw.cta.service.dto.ActualCryptos;
 import com.psw.cta.service.dto.AverageProfit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
 
 @Service
 public class CacheService {
@@ -46,7 +45,7 @@ public class CacheService {
         return averageProfit;
     }
 
-    public List<CryptoResult> getCryptos() {
+    public ActualCryptos getCryptos() {
         return cryptoService.getActualCryptos();
     }
 }

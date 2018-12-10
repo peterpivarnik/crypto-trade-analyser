@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.entity.CryptoType.*;
-import static com.psw.cta.service.dto.BinanceInterval.FIFTEEN_MIN;
+import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
 
 @Component
 @Slf4j
@@ -177,40 +177,55 @@ public class CryptoService {
     }
 
     @Time
-    @Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "0 */5 * * * ?")
     public void updateAll() {
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
         int sum1H = crypto1HRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
-                .mapToInt(symbol -> saveData1H(symbol, beforeOneDay))
+                .mapToInt(symbol -> saveData1H(symbol, now))
                 .sum();
 
         int sum2H = crypto2HRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
-                .mapToInt(symbol -> saveData2H(symbol, beforeOneDay))
+                .mapToInt(symbol -> saveData2H(symbol, now))
                 .sum();
 
         int sum5H = crypto5HRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
-                .mapToInt(symbol -> saveData5H(symbol, beforeOneDay))
+                .mapToInt(symbol -> saveData5H(symbol, now))
                 .sum();
         log.info("Total 1H updates: " + sum1H + ", toatal 2H updates: " + sum2H + ", total 5H updates: " + sum5H);
     }
 
-    private int saveData1H(String symbol, Instant beforeOneDay) {
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1);
-        BigDecimal lastFifteenMinuteMax = klines.get(0).getHigh();
-        return crypto1HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli());
+    private int saveData1H(String symbol, Instant now) {
+        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
+        Instant before15Min = now.minus(15, ChronoUnit.MINUTES);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        BigDecimal lastFifteenMinuteMax = klines.stream()
+                .map(BinanceCandlestick::getHigh)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+        return crypto1HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
     }
 
-    private int saveData2H(String symbol, Instant beforeOneDay) {
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1);
-        BigDecimal lastFifteenMinuteMax = klines.get(0).getHigh();
-        return crypto2HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli());
+    private int saveData2H(String symbol, Instant now) {
+        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
+        Instant before15Min = now.minus(15, ChronoUnit.MINUTES);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        BigDecimal lastFifteenMinuteMax = klines.stream()
+                .map(BinanceCandlestick::getHigh)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+        return crypto2HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
     }
 
-    private int saveData5H(String symbol, Instant beforeOneDay) {
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 1);
-        BigDecimal lastFifteenMinuteMax = klines.get(0).getHigh();
-        return crypto5HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli());
+    private int saveData5H(String symbol, Instant now) {
+        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
+        Instant before15Min = now.minus(15, ChronoUnit.MINUTES);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        BigDecimal lastFifteenMinuteMax = klines.stream()
+                .map(BinanceCandlestick::getHigh)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+        return crypto5HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
     }
 
     @Async

@@ -27,10 +27,11 @@ public interface Crypto5HRepository extends JpaRepository<Crypto5H, Long>, JpaSp
 
     @Transactional
     @Modifying
-    @Query("UPDATE Crypto5H c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date AND c.nextDayMaxPrice < :maxValue")
+    @Query("UPDATE Crypto5H c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date c.createdAt < :to AND c.nextDayMaxPrice < :maxValue")
     int update(@Param("maxValue") BigDecimal maxValue,
                @Param("symbol") String symbol,
-               @Param("date") Long date);
+               @Param("date") Long date,
+               @Param("to") Long to);
 
     @Query("SELECT DISTINCT c.symbol FROM Crypto5H c WHERE c.createdAt > :date")
     List<String> findUniqueSymbols(@Param("date") Long date);

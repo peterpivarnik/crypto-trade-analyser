@@ -27,10 +27,11 @@ public interface Crypto1HRepository extends JpaRepository<Crypto1H, Long>, JpaSp
 
     @Transactional
     @Modifying
-    @Query("UPDATE Crypto1H c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :date AND c.nextDayMaxPrice < :maxValue")
+    @Query("UPDATE Crypto1H c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :from AND c.createdAt < :to AND c.nextDayMaxPrice < :maxValue")
     int update(@Param("maxValue") BigDecimal maxValue,
                @Param("symbol") String symbol,
-               @Param("date") Long date);
+               @Param("from") Long from,
+               @Param("to") Long to);
 
     @Query("SELECT DISTINCT c.symbol FROM Crypto1H c WHERE c.createdAt > :date")
     List<String> findUniqueSymbols(@Param("date") Long date);

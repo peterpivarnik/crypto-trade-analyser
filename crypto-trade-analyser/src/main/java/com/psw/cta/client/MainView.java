@@ -1,7 +1,6 @@
 package com.psw.cta.client;
 
 import com.psw.cta.entity.CryptoResult;
-import com.psw.cta.entity.CryptoType;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
 import com.psw.cta.service.CacheService;
@@ -23,7 +22,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Route
 @Theme(Lumo.class)
@@ -41,17 +39,14 @@ public class MainView extends VerticalLayout {
         AverageProfit averageProfit = cacheService.getAverageProfit();
         Component tablesLayout1H = getTablesLayout(actualCryptos.getCrypto1H(),
                                                    stats.getStats1H(),
-                                                   CryptoType.TYPE_1H,
                                                    averageProfit.getAverage1H(),
                                                    "Actual cryptos: Variant 1");
         Component tablesLayout2H = getTablesLayout(actualCryptos.getCrypto2H(),
                                                    stats.getStats2H(),
-                                                   CryptoType.TYPE_2H,
                                                    averageProfit.getAverage2H(),
                                                    "Actual cryptos: Variant 2");
         Component tablesLayout5H = getTablesLayout(actualCryptos.getCrypto5H(),
                                                    stats.getStats5H(),
-                                                   CryptoType.TYPE_5H,
                                                    averageProfit.getAverage5H(),
                                                    "Actual cryptos: Variant 5");
         return new VerticalLayout(tablesLayout1H, tablesLayout2H, tablesLayout5H);
@@ -59,29 +54,23 @@ public class MainView extends VerticalLayout {
 
     private Component getTablesLayout(List<CryptoResult> actualCryptos,
                                       Stats stats,
-                                      CryptoType type,
                                       BigDecimal average,
                                       String labelActualCryptos) {
-        Component actualCryptoLayout = getActualCryptoLayout(actualCryptos, type, labelActualCryptos);
+        Component actualCryptoLayout = getActualCryptoLayout(actualCryptos, labelActualCryptos);
         Component statisticsLayout = getStatisticsLayout(stats, average);
         return new HorizontalLayout(actualCryptoLayout, statisticsLayout);
     }
 
     private Component getActualCryptoLayout(List<CryptoResult> actualCryptos,
-                                            CryptoType type, String labelActualCryptos) {
+                                            String labelActualCryptos) {
         Component actualCryptoLabel = getLabel(labelActualCryptos);
-        Component cryptoResultGrid = getCryptoJsonGrid(actualCryptos,
-                                                       type);
+        Component cryptoResultGrid = getCryptoJsonGrid(actualCryptos);
         return new VerticalLayout(actualCryptoLabel, cryptoResultGrid);
     }
 
-    private Component getCryptoJsonGrid(List<CryptoResult> actualCryptos,
-                                        CryptoType type) {
+    private Component getCryptoJsonGrid(List<CryptoResult> actualCryptos) {
         Grid<CryptoResult> grid = new Grid<>();
-        List<CryptoResult> filteredCryptos = actualCryptos.stream()
-                .filter(cryptoResult -> type.equals(cryptoResult.getCryptoType()))
-                .collect(Collectors.toList());
-        grid.setItems(filteredCryptos);
+        grid.setItems(actualCryptos);
         grid.addColumn(cryptoResult -> ZonedDateTime.ofInstant(Instant.ofEpochMilli(cryptoResult.getCreatedAt()),
                                                                ZoneOffset.systemDefault()))
                 .setHeader("Date");

@@ -1,7 +1,6 @@
 package com.psw.cta.repository;
 
 import com.psw.cta.entity.Crypto1H;
-import com.psw.cta.entity.CryptoType;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -20,9 +19,8 @@ public interface Crypto1HRepository extends JpaRepository<Crypto1H, Long>, JpaSp
 
     List<Crypto1H> findByCreatedAtBetween(Long startDate, Long endDate, Sort sort);
 
-    @Query("SELECT AVG(c.priceToSellPercentage) FROM Crypto1H c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  and created_at < :endDate")
-    Optional<Double> findAveragePriceToSellPercentage(@Param("cryptoType") CryptoType cryptoType,
-                                                      @Param("startDate") Long startDate,
+    @Query("SELECT AVG(c.priceToSellPercentage) FROM Crypto1H c WHERE c.createdAt > :startDate  and c.createdAt < :endDate")
+    Optional<Double> findAveragePriceToSellPercentage(@Param("startDate") Long startDate,
                                                       @Param("endDate") Long endDate);
 
     @Transactional
@@ -39,14 +37,12 @@ public interface Crypto1HRepository extends JpaRepository<Crypto1H, Long>, JpaSp
     @Query("SELECT DISTINCT c.createdAt FROM Crypto1H c WHERE c.createdAt > :from and c.createdAt < :to")
     List<Long> findUniqueCreatedAt(@Param("from") Long from, @Param("to") Long to);
 
-    @Query("SELECT COUNT(*) FROM Crypto1H c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate")
-    double findAllStats(@Param("cryptoType") CryptoType cryptoType,
-                        @Param("startDate") Long startDate,
+    @Query("SELECT COUNT(*) FROM Crypto1H c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate")
+    double findAllStats(@Param("startDate") Long startDate,
                         @Param("endDate") Long endDate);
 
-    @Query("SELECT COUNT(*) FROM Crypto1H c WHERE c.cryptoType = :cryptoType AND c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell")
-    double findValidStats1H(@Param("cryptoType") CryptoType cryptoType,
-                            @Param("startDate") Long startDate,
+    @Query("SELECT COUNT(*) FROM Crypto1H c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell")
+    double findValidStats1H(@Param("startDate") Long startDate,
                             @Param("endDate") Long endDate);
 
     List<Crypto1H> findByCreatedAt(Long createdAt);

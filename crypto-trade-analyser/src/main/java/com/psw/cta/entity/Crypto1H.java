@@ -60,11 +60,6 @@ public class Crypto1H implements CryptoResult {
     private BigDecimal weight;
 
     @NotNull
-    @Enumerated(EnumType.STRING)
-    @Column(name = "crypto_type", updatable = false, nullable = false, precision = 20, scale = 8)
-    private CryptoType cryptoType;
-
-    @NotNull
     @Column(name = "created_at", updatable = false, nullable = false)
     private Long createdAt;
 

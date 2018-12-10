@@ -8,8 +8,6 @@ public interface CryptoResult {
 
     String getSymbol();
 
-    CryptoType getCryptoType();
-
     BigDecimal getCurrentPrice();
 
     BigDecimal getPriceToSell();

@@ -22,11 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.psw.cta.entity.CryptoType.*;
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
 
 @Component
@@ -129,8 +129,8 @@ public class CryptoService {
     }
 
     private double getStats1h(Long startDate, Long endDate) {
-        double validStats = crypto1HRepository.findValidStats1H(TYPE_1H, startDate, endDate);
-        double allStats = crypto1HRepository.findAllStats(TYPE_1H, startDate, endDate);
+        double validStats = crypto1HRepository.findValidStats1H(startDate, endDate);
+        double allStats = crypto1HRepository.findAllStats(startDate, endDate);
         if (allStats == 0) {
             return 0d;
         }
@@ -138,8 +138,8 @@ public class CryptoService {
     }
 
     private double getStats2h(Long startDate, Long endDate) {
-        double validStats = crypto2HRepository.findValidStats2H(TYPE_2H, startDate, endDate);
-        double allStats = crypto2HRepository.findAllStats(TYPE_2H, startDate, endDate);
+        double validStats = crypto2HRepository.findValidStats2H(startDate, endDate);
+        double allStats = crypto2HRepository.findAllStats(startDate, endDate);
         if (allStats == 0) {
             return 0d;
         }
@@ -147,8 +147,8 @@ public class CryptoService {
     }
 
     private double getStats5h(Long startDate, Long endDate) {
-        double validStats = crypto5HRepository.findValidStats5H(TYPE_5H, startDate, endDate);
-        double allStats = crypto5HRepository.findAllStats(TYPE_5H, startDate, endDate);
+        double validStats = crypto5HRepository.findValidStats5H(startDate, endDate);
+        double allStats = crypto5HRepository.findAllStats(startDate, endDate);
         if (allStats == 0) {
             return 0d;
         }
@@ -162,22 +162,16 @@ public class CryptoService {
         Instant beforeTwoDays = now.minus(2, ChronoUnit.DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
-        Optional<Double> average1H = crypto1HRepository.findAveragePriceToSellPercentage(TYPE_1H,
-                                                                                         startDate,
-                                                                                         endDate);
-        Optional<Double> average2H = crypto2HRepository.findAveragePriceToSellPercentage(TYPE_2H,
-                                                                                         startDate,
-                                                                                         endDate);
-        Optional<Double> average5H = crypto5HRepository.findAveragePriceToSellPercentage(TYPE_5H,
-                                                                                         startDate,
-                                                                                         endDate);
+        Optional<Double> average1H = crypto1HRepository.findAveragePriceToSellPercentage(startDate, endDate);
+        Optional<Double> average2H = crypto2HRepository.findAveragePriceToSellPercentage(startDate, endDate);
+        Optional<Double> average5H = crypto5HRepository.findAveragePriceToSellPercentage(startDate, endDate);
         return new AverageProfit(new BigDecimal(average1H.orElse(0d)),
                                  new BigDecimal(average2H.orElse(0d)),
                                  new BigDecimal(average5H.orElse(0d)));
     }
 
     @Time
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */15 * * * ?")
     public void updateAll() {
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
@@ -201,9 +195,12 @@ public class CryptoService {
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
-                .max(BigDecimal::compareTo)
+                .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
-        return crypto1HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
+        return crypto1HRepository.update(lastFifteenMinuteMax,
+                                         symbol,
+                                         beforeOneDay.toEpochMilli(),
+                                         before15Min.toEpochMilli());
     }
 
     private int saveData2H(String symbol, Instant now) {
@@ -212,9 +209,12 @@ public class CryptoService {
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
-                .max(BigDecimal::compareTo)
+                .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
-        return crypto2HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
+        return crypto2HRepository.update(lastFifteenMinuteMax,
+                                         symbol,
+                                         beforeOneDay.toEpochMilli(),
+                                         before15Min.toEpochMilli());
     }
 
     private int saveData5H(String symbol, Instant now) {
@@ -223,9 +223,12 @@ public class CryptoService {
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
-                .max(BigDecimal::compareTo)
+                .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
-        return crypto5HRepository.update(lastFifteenMinuteMax, symbol, beforeOneDay.toEpochMilli(), before15Min.toEpochMilli());
+        return crypto5HRepository.update(lastFifteenMinuteMax,
+                                         symbol,
+                                         beforeOneDay.toEpochMilli(),
+                                         before15Min.toEpochMilli());
     }
 
     @Async
@@ -235,7 +238,6 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto1H(cryptoDto))
                 .filter(crypto1H -> crypto1H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(crypto1H -> crypto1H.setCryptoType(TYPE_1H))
                 .peek(crypto1H -> crypto1H.setCreatedAt(now))
                 .peek(crypto1H -> crypto1H.setId(null))
                 .forEach(crypto1H -> crypto1HRepository.save(crypto1H));
@@ -243,7 +245,6 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto2H(cryptoDto))
                 .filter(crypto2H -> crypto2H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(crypto2H -> crypto2H.setCryptoType(TYPE_2H))
                 .peek(crypto2H -> crypto2H.setCreatedAt(now))
                 .peek(crypto2H -> crypto2H.setId(null))
                 .forEach(crypto2H -> crypto2HRepository.save(crypto2H));
@@ -251,7 +252,6 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto5H(cryptoDto))
                 .filter(crypto5H -> crypto5H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(crypto5H -> crypto5H.setCryptoType(TYPE_5H))
                 .peek(crypto5H -> crypto5H.setCreatedAt(now))
                 .peek(crypto5H -> crypto5H.setId(null))
                 .forEach(crypto5H -> crypto5HRepository.save(crypto5H));

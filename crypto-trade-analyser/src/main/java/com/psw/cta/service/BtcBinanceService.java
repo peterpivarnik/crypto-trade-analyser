@@ -21,7 +21,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -173,14 +175,23 @@ class BtcBinanceService {
     private BigDecimal calculatePriceToSell(CryptoDto cryptoDto, int numberOfDataToKeep) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
         if (size - numberOfDataToKeep < 0) return BigDecimal.ZERO;
-        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+        List<BinanceCandlestick> skip = cryptoDto.getFifteenMinutesCandleStickData().stream()
                 .skip(size - numberOfDataToKeep)
+                .collect(Collectors.toList());
+        List<BigDecimal> high = skip.stream()
                 .map(BinanceCandlestick::getHigh)
-                .max(Comparator.naturalOrder())
-                .orElse(BigDecimal.ZERO)
-                .subtract(cryptoDto.getCurrentPrice())
-                .divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP)
+                .collect(Collectors.toList());
+        Optional<BigDecimal> max = high.stream()
+                .max(Comparator.naturalOrder());
+        BigDecimal bigDecimal = max
+                .orElse(BigDecimal.ZERO);
+        BigDecimal subtract = bigDecimal
+                .subtract(cryptoDto.getCurrentPrice());
+        BigDecimal divide = subtract
+                .divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
+        BigDecimal add = divide
                 .add(cryptoDto.getCurrentPrice());
+        return add;
     }
 
     private BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal currentPrice) {

@@ -12,7 +12,6 @@ CREATE TABLE crypto_1H (
     price_to_sell NUMERIC(20, 8),
     price_to_sell_percentage NUMERIC(20, 8),
     weight NUMERIC(20, 8),
-    crypto_type VARCHAR(15),
     created_at BIGINT,
     next_day_max_price NUMERIC(20,8) DEFAULT 0,
 
@@ -29,7 +28,6 @@ CREATE TABLE crypto_2H (
     price_to_sell NUMERIC(20, 8),
     price_to_sell_percentage NUMERIC(20, 8),
     weight NUMERIC(20, 8),
-    crypto_type VARCHAR(15),
     created_at BIGINT,
     next_day_max_price NUMERIC(20,8) DEFAULT 0,
 
@@ -46,7 +44,6 @@ CREATE TABLE crypto_5H (
     price_to_sell NUMERIC(20, 8),
     price_to_sell_percentage NUMERIC(20, 8),
     weight NUMERIC(20, 8),
-    crypto_type VARCHAR(15),
     created_at BIGINT,
     next_day_max_price NUMERIC(20,8) DEFAULT 0,
 

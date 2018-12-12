@@ -16,7 +16,6 @@ public class CryptoFactory {
         crypto.setCurrentPrice(cryptoDto.getCurrentPrice());
         crypto.setPriceToSell(cryptoDto.getPriceToSell1h());
         crypto.setPriceToSellPercentage(cryptoDto.getPriceToSellPercentage1h());
-        crypto.setSumDiffsPerc1Day(cryptoDto.getSumDiffsPerc1Day());
         crypto.setSumDiffsPerc(cryptoDto.getSumDiffsPerc1h());
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());
@@ -30,7 +29,6 @@ public class CryptoFactory {
         crypto.setCurrentPrice(cryptoDto.getCurrentPrice());
         crypto.setPriceToSell(cryptoDto.getPriceToSell2h());
         crypto.setPriceToSellPercentage(cryptoDto.getPriceToSellPercentage2h());
-        crypto.setSumDiffsPerc1Day(cryptoDto.getSumDiffsPerc1Day());
         crypto.setSumDiffsPerc(cryptoDto.getSumDiffsPerc2h());
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());
@@ -44,7 +42,6 @@ public class CryptoFactory {
         crypto.setCurrentPrice(cryptoDto.getCurrentPrice());
         crypto.setPriceToSell(cryptoDto.getPriceToSell5h());
         crypto.setPriceToSellPercentage(cryptoDto.getPriceToSellPercentage5h());
-        crypto.setSumDiffsPerc1Day(cryptoDto.getSumDiffsPerc1Day());
         crypto.setSumDiffsPerc(cryptoDto.getSumDiffsPerc5h());
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());

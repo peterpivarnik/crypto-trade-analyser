@@ -238,6 +238,7 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto1H(cryptoDto))
                 .filter(crypto1H -> crypto1H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                .filter(crypto1H -> crypto1H.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                 .peek(crypto1H -> crypto1H.setCreatedAt(now))
                 .peek(crypto1H -> crypto1H.setId(null))
                 .forEach(crypto1H -> crypto1HRepository.save(crypto1H));
@@ -245,6 +246,7 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto2H(cryptoDto))
                 .filter(crypto2H -> crypto2H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                .filter(crypto1H -> crypto1H.getSumDiffsPerc().compareTo(new BigDecimal("8")) < 0)
                 .peek(crypto2H -> crypto2H.setCreatedAt(now))
                 .peek(crypto2H -> crypto2H.setId(null))
                 .forEach(crypto2H -> crypto2HRepository.save(crypto2H));
@@ -252,6 +254,7 @@ public class CryptoService {
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto5H(cryptoDto))
                 .filter(crypto5H -> crypto5H.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                .filter(crypto1H -> crypto1H.getSumDiffsPerc().compareTo(new BigDecimal("20")) < 0)
                 .peek(crypto5H -> crypto5H.setCreatedAt(now))
                 .peek(crypto5H -> crypto5H.setId(null))
                 .forEach(crypto5H -> crypto5HRepository.save(crypto5H));

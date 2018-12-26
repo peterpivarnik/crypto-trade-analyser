@@ -25,14 +25,15 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
 
-        <org.springframework.boot.version>2.0.6.RELEASE</org.springframework.boot.version>
+        <org.springframework.boot.version>2.1.1.RELEASE</org.springframework.boot.version>
         <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
         <org.postgresql.version>42.2.5</org.postgresql.version>
-        <org.flywaydb.version>5.2.0</org.flywaydb.version>
+        <org.flywaydb.version>5.2.4</org.flywaydb.version>
 
-        <org.projectlombok.version>1.18.2</org.projectlombok.version>
-        <com.vaadin.version>11.0.1</com.vaadin.version>
-        <vaadin-spring.version>10.0.5</vaadin-spring.version>
+        <org.projectlombok.version>1.18.4</org.projectlombok.version>
+        <!--<com.vaadin.version>11.0.1</com.vaadin.version>-->
+        <!--<vaadin-spring.version>10.0.5</vaadin-spring.version>-->
+        <com.google.code.gson.version>2.8.5</com.google.code.gson.version>
     </properties>
 
     <dependencies>
@@ -101,7 +102,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.5</version>
+            <version>${com.google.code.gson.version}</version>
         </dependency>
 
     </dependencies>

@@ -5,12 +5,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.psw.cta</groupId>
-    <artifactId>crypto-trade-analyser-parent</artifactId>
+    <artifactId>crypto-trade-analyser</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <name>Crypto trade analyser</name>
     <description>Crypto trade analyser</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.1.1.RELEASE</version>
+        <relativePath /> <!-- lookup parent from repository -->
+    </parent>
 
     <properties>
         <project.version>0.0.1-SNAPSHOT</project.version>
@@ -28,18 +35,8 @@
         <vaadin-spring.version>10.0.5</vaadin-spring.version>
     </properties>
 
-    <modules>
-        <module>crypto-trade-analyser-db-update</module>
-        <module>crypto-trade-analyser</module>
-        <module>crypto-trade-analyser-vagrant</module>
-    </modules>
-
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-            <version>${org.springframework.boot.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -56,17 +53,18 @@
             <version>${org.springframework.boot.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-spring-boot-starter</artifactId>
-            <version>${com.vaadin.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-spring</artifactId>
-            <version>${vaadin-spring.version}</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.vaadin</groupId>-->
+            <!--<artifactId>vaadin-spring-boot-starter</artifactId>-->
+            <!--<version>${com.vaadin.version}</version>-->
+        <!--</dependency>-->
+
+        <!--<dependency>-->
+            <!--<groupId>com.vaadin</groupId>-->
+            <!--<artifactId>vaadin-spring</artifactId>-->
+            <!--<version>${vaadin-spring.version}</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>javax.servlet</groupId>
@@ -102,17 +100,17 @@
 
     </dependencies>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-bom</artifactId>
-                <version>${com.vaadin.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <!--<dependencyManagement>-->
+        <!--<dependencies>-->
+            <!--<dependency>-->
+                <!--<groupId>com.vaadin</groupId>-->
+                <!--<artifactId>vaadin-bom</artifactId>-->
+                <!--<version>${com.vaadin.version}</version>-->
+                <!--<type>pom</type>-->
+                <!--<scope>import</scope>-->
+            <!--</dependency>-->
+        <!--</dependencies>-->
+    <!--</dependencyManagement>-->
 
     <build>
         <plugins>
@@ -124,8 +122,40 @@
                     <target>8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <!-- Build an executable JAR -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.psw.cta.CryptoTradeAnalyserApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <finalName>uber-${artifactId}-${version}</finalName>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+
     <organization>
         <name>PSoftware, s.r.o.</name>
     </organization>

@@ -1,2 +1,2 @@
-cd C:\Users\Peter\IdeaProjects\crypto-trade-analyser\crypto-trade-analyser-vagrant\src\main\resources
+cd C:\Users\Peter\IdeaProjects\crypto-trade-analyser\src\main\resources\vagrant
 vagrant up

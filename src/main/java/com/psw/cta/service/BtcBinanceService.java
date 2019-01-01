@@ -52,6 +52,7 @@ class BtcBinanceService {
                     .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                     .peek(cryptoDto -> cryptoDto.setFifteenMinutesCandleStickData(getCandleStickData(cryptoDto)))
                     .peek(cryptoDto -> cryptoDto.setSumDiffsPerc(calculateSumDiffsPerc(cryptoDto, 4)))
+                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc10h(calculateSumDiffsPerc(cryptoDto, 40)))
                     .peek(cryptoDto -> cryptoDto.setPriceToSell(calculatePriceToSell(cryptoDto, 4)))
                     .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage(calculatePriceToSellPercentage(cryptoDto.getPriceToSell(),
                                                                                                          cryptoDto.getCurrentPrice())))

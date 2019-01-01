@@ -15,6 +15,7 @@ public class CryptoFactory {
         crypto.setPriceToSell(cryptoDto.getPriceToSell());
         crypto.setPriceToSellPercentage(cryptoDto.getPriceToSellPercentage());
         crypto.setSumDiffsPerc(cryptoDto.getSumDiffsPerc());
+        crypto.setSumDiffsPerc10h(cryptoDto.getSumDiffsPerc10h());
         crypto.setSymbol(cryptoDto.getBinanceExchangeSymbol().getSymbol().getSymbol());
         crypto.setVolume(cryptoDto.getVolume());
         crypto.setWeight(cryptoDto.getWeight());

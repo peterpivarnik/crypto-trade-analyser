@@ -25,6 +25,7 @@ public class CryptoDto {
     private BigDecimal currentPrice;
     private BigDecimal volume;
     private BigDecimal sumDiffsPerc;
+    private BigDecimal sumDiffsPerc10h;
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal weight;

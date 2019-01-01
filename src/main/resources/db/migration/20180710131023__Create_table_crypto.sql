@@ -6,6 +6,7 @@ CREATE TABLE crypto (
     current_price NUMERIC(20, 8),
     volume NUMERIC(20, 8),
     sum_diff_percent NUMERIC(20, 8),
+    sum_diff_percent10h NUMERIC(20, 8),
     price_to_sell NUMERIC(20, 8),
     price_to_sell_percentage NUMERIC(20, 8),
     weight NUMERIC(20, 8),

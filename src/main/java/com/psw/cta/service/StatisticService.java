@@ -41,11 +41,14 @@ public class StatisticService {
 
     private void saveStatistic(Long createdAt) {
         List<Crypto> cryptos1H = cryptoRepository.findByCreatedAt(createdAt);
-        int all1H = cryptos1H.size();
-        long valid1H = cryptos1H.stream()
+        long all = cryptos1H.size();
+        long valid = cryptos1H.stream()
                 .filter(crypto -> crypto.getNextDayMaxPrice().compareTo(crypto.getPriceToSell()) >= 0)
                 .count();
-        Statistic statistic = statisticFactory.create(createdAt, new BigDecimal(((double) valid1H) / all1H * 100));
+        Statistic statistic = statisticFactory.create(createdAt,
+                                                      all,
+                                                      valid,
+                                                      new BigDecimal(((double) valid) / all * 100));
         statisticRepository.save(statistic);
     }
 }

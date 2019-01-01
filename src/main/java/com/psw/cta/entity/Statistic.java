@@ -32,6 +32,14 @@ public class Statistic {
     private Long createdAt;
 
     @NotNull
+    @Column(name = "all_cryptos", updatable = false, nullable = false)
+    private Long all;
+
+    @NotNull
+    @Column(name = "valid_cryptos", updatable = false, nullable = false)
+    private Long valid;
+
+    @NotNull
     @Column(name = "probability", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal probability1h;
 }

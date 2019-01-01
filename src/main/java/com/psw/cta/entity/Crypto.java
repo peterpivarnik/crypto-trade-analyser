@@ -12,17 +12,17 @@ import java.math.BigDecimal;
 import static javax.persistence.GenerationType.AUTO;
 
 @Entity
-@Table(schema = "public", name = "crypto_1H")
+@Table(schema = "public", name = "crypto")
 @Cacheable
 @Getter
 @Setter
 @ToString
 @EqualsAndHashCode
-public class Crypto1H implements CryptoResult {
+public class Crypto implements CryptoResult {
 
     @Id
     @NotNull
-    @SequenceGenerator(name = "generator__seq_crypto_id", schema = "public", sequenceName = "seq_crypto_1H_id")
+    @SequenceGenerator(name = "generator__seq_crypto_id", schema = "public", sequenceName = "seq_crypto_id")
     @GeneratedValue(strategy = AUTO, generator = "generator__seq_crypto_id")
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;

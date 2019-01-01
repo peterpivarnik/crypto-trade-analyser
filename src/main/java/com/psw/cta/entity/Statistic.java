@@ -32,15 +32,6 @@ public class Statistic {
     private Long createdAt;
 
     @NotNull
-    @Column(name = "probability_1h", updatable = false, nullable = false, precision = 20, scale = 8)
+    @Column(name = "probability", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal probability1h;
-
-    @NotNull
-    @Column(name = "probability_2h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal probability2h;
-
-
-    @NotNull
-    @Column(name = "probability_5h", updatable = false, nullable = false, precision = 20, scale = 8)
-    private BigDecimal probability5h;
 }

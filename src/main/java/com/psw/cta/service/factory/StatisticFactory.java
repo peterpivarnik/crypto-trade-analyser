@@ -8,12 +8,10 @@ import java.math.BigDecimal;
 @Component
 public class StatisticFactory {
 
-    public Statistic create(Long createdAt, BigDecimal probability1h, BigDecimal probability2h, BigDecimal probability5h) {
+    public Statistic create(Long createdAt, BigDecimal probability) {
         Statistic statistic = new Statistic();
         statistic.setCreatedAt(createdAt);
-        statistic.setProbability1h(probability1h);
-        statistic.setProbability2h(probability2h);
-        statistic.setProbability5h(probability5h);
+        statistic.setProbability1h(probability);
         return statistic;
     }
 }

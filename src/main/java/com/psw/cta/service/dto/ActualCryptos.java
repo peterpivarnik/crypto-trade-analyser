@@ -11,6 +11,4 @@ import java.util.List;
 public class ActualCryptos {
 
     private List<CryptoResult> crypto1H;
-    private List<CryptoResult> crypto2H;
-    private List<CryptoResult> crypto5H;
 }

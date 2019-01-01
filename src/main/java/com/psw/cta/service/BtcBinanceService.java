@@ -51,27 +51,13 @@ class BtcBinanceService {
                     .peek(cryptoDto -> cryptoDto.setCurrentPrice(calculateCurrentPrice(cryptoDto)))
                     .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                     .peek(cryptoDto -> cryptoDto.setFifteenMinutesCandleStickData(getCandleStickData(cryptoDto)))
-                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc1h(calculateSumDiffsPerc(cryptoDto, 4)))
-                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc2h(calculateSumDiffsPerc(cryptoDto, 8)))
-                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc5h(calculateSumDiffsPerc(cryptoDto, 20)))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSell1h(calculatePriceToSell(cryptoDto, 4)))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSell2h(calculatePriceToSell(cryptoDto, 8)))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSell5h(calculatePriceToSell(cryptoDto, 20)))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage1h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell1h(),
-                                                                                                           cryptoDto.getCurrentPrice())))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage2h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell2h(),
-                                                                                                           cryptoDto.getCurrentPrice())))
-                    .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage5h(calculatePriceToSellPercentage(cryptoDto.getPriceToSell5h(),
-                                                                                                           cryptoDto.getCurrentPrice())))
-                    .peek(cryptoDto -> cryptoDto.setWeight1h(calculateWeight(cryptoDto,
-                                                                             cryptoDto.getPriceToSell1h(),
-                                                                             cryptoDto.getPriceToSellPercentage1h())))
-                    .peek(cryptoDto -> cryptoDto.setWeight2h(calculateWeight(cryptoDto,
-                                                                             cryptoDto.getPriceToSell2h(),
-                                                                             cryptoDto.getPriceToSellPercentage2h())))
-                    .peek(cryptoDto -> cryptoDto.setWeight5h(calculateWeight(cryptoDto,
-                                                                             cryptoDto.getPriceToSell5h(),
-                                                                             cryptoDto.getPriceToSellPercentage5h())))
+                    .peek(cryptoDto -> cryptoDto.setSumDiffsPerc(calculateSumDiffsPerc(cryptoDto, 4)))
+                    .peek(cryptoDto -> cryptoDto.setPriceToSell(calculatePriceToSell(cryptoDto, 4)))
+                    .peek(cryptoDto -> cryptoDto.setPriceToSellPercentage(calculatePriceToSellPercentage(cryptoDto.getPriceToSell(),
+                                                                                                         cryptoDto.getCurrentPrice())))
+                    .peek(cryptoDto -> cryptoDto.setWeight(calculateWeight(cryptoDto,
+                                                                           cryptoDto.getPriceToSell(),
+                                                                           cryptoDto.getPriceToSellPercentage())))
                     .collect(Collectors.toList());
             log.info("Actual number of cryptos: " + cryptoDtos.size());
             cryptoService.saveAll(cryptoDtos);

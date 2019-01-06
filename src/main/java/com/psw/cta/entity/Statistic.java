@@ -8,6 +8,7 @@ import lombok.ToString;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static javax.persistence.GenerationType.AUTO;
 
@@ -30,6 +31,10 @@ public class Statistic {
     @NotNull
     @Column(name = "created_at", updatable = false, nullable = false)
     private Long createdAt;
+
+    @NotNull
+    @Column(name = "created_at_date", updatable = false, nullable = false)
+    private LocalDateTime createdAtDate;
 
     @NotNull
     @Column(name = "all_cryptos", updatable = false, nullable = false)

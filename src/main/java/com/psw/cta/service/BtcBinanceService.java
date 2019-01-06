@@ -59,6 +59,9 @@ class BtcBinanceService {
                     .peek(cryptoDto -> cryptoDto.setWeight(calculateWeight(cryptoDto,
                                                                            cryptoDto.getPriceToSell(),
                                                                            cryptoDto.getPriceToSellPercentage())))
+                    .filter(cryptoDto -> cryptoDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                    .filter(cryptoDto -> cryptoDto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+                    .filter(cryptoDto -> cryptoDto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                     .collect(Collectors.toList());
             log.info("Actual number of cryptos: " + cryptoDtos.size());
             cryptoService.saveAll(cryptoDtos);

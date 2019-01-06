@@ -8,6 +8,7 @@ import lombok.ToString;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static javax.persistence.GenerationType.AUTO;
 
@@ -62,6 +63,10 @@ public class Crypto implements CryptoResult {
     @NotNull
     @Column(name = "created_at", updatable = false, nullable = false)
     private Long createdAt;
+
+    @NotNull
+    @Column(name = "created_at_date", updatable = false, nullable = false)
+    private LocalDateTime createdAtDate;
 
     @NotNull
     @Column(name = "next_day_max_price", updatable = true, nullable = false, precision = 20, scale = 8)

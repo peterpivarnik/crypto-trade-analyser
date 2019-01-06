@@ -11,6 +11,7 @@ CREATE TABLE crypto (
     price_to_sell_percentage NUMERIC(20, 8),
     weight NUMERIC(20, 8),
     created_at BIGINT,
+    created_at_date TIMESTAMP,
     next_day_max_price NUMERIC(20,8) DEFAULT 0,
 
     CONSTRAINT pk_crypto_id PRIMARY KEY (id)

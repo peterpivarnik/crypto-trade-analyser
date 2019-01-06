@@ -19,10 +19,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
@@ -134,14 +138,11 @@ public class CryptoService {
     @Async
     @Time
     void saveAll(List<CryptoDto> cryptoDtos) {
-        Long now = Instant.now().toEpochMilli();
+        Instant now = Instant.now();
+        Long nowMillis = now.toEpochMilli();
+        LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Bratislava"));
         cryptoDtos.stream()
-                .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto))
-                .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .filter(crypto -> crypto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                .filter(crypto -> crypto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                .peek(crypto -> crypto.setCreatedAt(now))
-                .peek(crypto -> crypto.setId(null))
+                .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
                 .forEach(crypto -> cryptoRepository.save(crypto));
     }
 }

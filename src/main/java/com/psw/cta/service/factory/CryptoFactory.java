@@ -5,11 +5,12 @@ import com.psw.cta.service.dto.CryptoDto;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Component
 public class CryptoFactory {
 
-    public Crypto createCrypto(CryptoDto cryptoDto) {
+    public Crypto createCrypto(CryptoDto cryptoDto, Long nowMillis, LocalDateTime nowDate) {
         Crypto crypto = new Crypto();
         crypto.setCurrentPrice(cryptoDto.getCurrentPrice());
         crypto.setPriceToSell(cryptoDto.getPriceToSell());
@@ -20,6 +21,9 @@ public class CryptoFactory {
         crypto.setVolume(cryptoDto.getVolume());
         crypto.setWeight(cryptoDto.getWeight());
         crypto.setNextDayMaxPrice(BigDecimal.ZERO);
+        crypto.setId(null);
+        crypto.setCreatedAt(nowMillis);
+        crypto.setCreatedAtDate(nowDate);
         return crypto;
     }
 }

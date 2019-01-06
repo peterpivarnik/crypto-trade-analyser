@@ -139,6 +139,7 @@ public class CryptoService {
                 .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto))
                 .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                 .filter(crypto -> crypto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+                .filter(crypto -> crypto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                 .peek(crypto -> crypto.setCreatedAt(now))
                 .peek(crypto -> crypto.setId(null))
                 .forEach(crypto -> cryptoRepository.save(crypto));

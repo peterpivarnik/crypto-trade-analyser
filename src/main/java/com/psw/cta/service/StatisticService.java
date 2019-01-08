@@ -40,9 +40,9 @@ public class StatisticService {
     }
 
     private void saveStatistic(Long createdAt) {
-        List<Crypto> cryptos1H = cryptoRepository.findByCreatedAt(createdAt);
-        long all = cryptos1H.size();
-        long valid = cryptos1H.stream()
+        List<Crypto> cryptos = cryptoRepository.findByCreatedAt(createdAt);
+        long all = cryptos.size();
+        long valid = cryptos.stream()
                 .filter(crypto -> crypto.getNextDayMaxPrice().compareTo(crypto.getPriceToSell()) >= 0)
                 .count();
         Statistic statistic = statisticFactory.create(createdAt,

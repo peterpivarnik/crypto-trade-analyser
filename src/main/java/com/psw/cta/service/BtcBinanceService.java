@@ -63,8 +63,11 @@ class BtcBinanceService {
                     .filter(cryptoDto -> cryptoDto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                     .filter(cryptoDto -> cryptoDto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                     .collect(Collectors.toList());
-            log.info("Actual number of cryptos: " + cryptoDtos.size());
-            cryptoService.saveAll(cryptoDtos);
+            int cryptosSize = cryptoDtos.size();
+            log.info("Actual number of cryptos: " + cryptosSize);
+            if (cryptosSize > 5) {
+                cryptoService.saveAll(cryptoDtos);
+            }
         } catch (CryptoTradeAnalyserException e) {
             e.printStackTrace();
         }

@@ -140,7 +140,7 @@ public class CryptoService {
     void saveAll(List<CryptoDto> cryptoDtos) {
         Instant now = Instant.now();
         Long nowMillis = now.toEpochMilli();
-        LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Bratislava"));
+        LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
         cryptoDtos.stream()
                 .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
                 .forEach(crypto -> cryptoRepository.save(crypto));

@@ -28,7 +28,7 @@ public class BinanceService {
 
     JsonObject depth(BinanceSymbol symbol, int limit) throws CryptoTradeAnalyserException {
         BinanceRequest binanceRequest =
-                new BinanceRequest(baseUrl + "v1/depth?symbol=" + symbol.get() + "&limit=" + limit);
+                new BinanceRequest(baseUrl + "v1/depth?symbol=" + symbol.getSymbol() + "&limit=" + limit);
         return binanceRequest.read().asJsonObject();
     }
 
@@ -37,7 +37,7 @@ public class BinanceService {
 
         String requestUrl = baseUrl +
                             "v1/klines?symbol=" +
-                            symbol.get() +
+                            symbol.getSymbol() +
                             "&interval=" +
                             interval.getValue() +
                             "&limit=" +

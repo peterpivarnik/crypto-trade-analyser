@@ -59,7 +59,11 @@
             <artifactId>spring-boot-starter-security</artifactId>
             <version>${org.springframework.boot.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <version>${org.springframework.boot.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
@@ -104,6 +108,16 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${com.google.code.gson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-server</artifactId>
+            <version>8.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4</version>
         </dependency>
 
 

@@ -21,12 +21,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
@@ -58,7 +56,7 @@ public class CryptoService {
 
         List<CryptoResult> cryptos1H = cryptoRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
                                                                                now.toEpochMilli(),
-                                                                               sortByWeightAsc())
+                                                                               sortByPriceToSellPercentage())
                 .stream()
                 .map(crypto -> (CryptoResult) crypto)
                 .collect(Collectors.toList());
@@ -66,8 +64,8 @@ public class CryptoService {
         return new ActualCryptos(cryptos1H);
     }
 
-    private Sort sortByWeightAsc() {
-        return new Sort(Sort.Direction.DESC, "weight");
+    private Sort sortByPriceToSellPercentage() {
+        return new Sort(Sort.Direction.DESC, "priceToSellPercentage");
     }
 
     @Transactional

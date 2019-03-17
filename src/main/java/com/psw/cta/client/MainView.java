@@ -5,18 +5,16 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.dom.Style;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.theme.Theme;
-import com.vaadin.flow.theme.lumo.Lumo;
+import com.vaadin.flow.spring.annotation.SpringComponent;
 
 import static com.psw.cta.client.ClientUtils.getLabel;
 
-@Route("")
-@Theme(Lumo.class)
-public class MainView extends VerticalLayout {
+@SpringComponent
+public class MainView {
 
     private AnalysisLayout analysisLayout;
     private StatisticLayout statisticLayout;
@@ -32,14 +30,13 @@ public class MainView extends VerticalLayout {
         this.statisticLayout = statisticLayout;
         this.faqLayout = faqLayout;
         this.contactLayout = contactLayout;
-        this.add(getMainLayout(cacheService));
     }
 
-    private VerticalLayout getMainLayout(CacheService cacheService) {
+    public VerticalLayout getMainLayout() {
         HorizontalLayout mainLabelLayout = getMainLabelLayout();
         HorizontalLayout contentLayout = new HorizontalLayout();
-        addAnalysisLayout(contentLayout, cacheService);
-        HorizontalLayout buttonLayout = getButtonLayout(cacheService, contentLayout);
+        addAnalysisLayout(contentLayout);
+        HorizontalLayout buttonLayout = getButtonLayout(contentLayout);
         VerticalLayout mainLayout = new VerticalLayout(mainLabelLayout, buttonLayout, contentLayout);
         mainLayout.setHorizontalComponentAlignment(Alignment.CENTER, mainLabelLayout, buttonLayout, contentLayout);
         return mainLayout;
@@ -54,13 +51,13 @@ public class MainView extends VerticalLayout {
         return new HorizontalLayout(mainLabel);
     }
 
-    private HorizontalLayout getButtonLayout(CacheService cacheService, HorizontalLayout contentLayout) {
+    private HorizontalLayout getButtonLayout(HorizontalLayout contentLayout) {
         Button analysisButton = new Button("Analysis",
                                            (ComponentEventListener<ClickEvent<Button>>) buttonClickEvent -> addAnalysisLayout(
-                                                   contentLayout, cacheService));
+                                                   contentLayout));
         Button statisticButton = new Button("Statistics",
                                             (ComponentEventListener<ClickEvent<Button>>) buttonClickEvent -> addStatisticLayout(
-                                                    contentLayout, cacheService));
+                                                    contentLayout));
         Button faqButton = new Button("FAQ",
                                       (ComponentEventListener<ClickEvent<Button>>) buttonClickEvent -> addFaqLayout(
                                               contentLayout));
@@ -70,12 +67,12 @@ public class MainView extends VerticalLayout {
         return new HorizontalLayout(analysisButton, statisticButton, faqButton, contactButton);
     }
 
-    private void addAnalysisLayout(HorizontalLayout contentLayout, CacheService cacheService) {
+    private void addAnalysisLayout(HorizontalLayout contentLayout) {
         contentLayout.removeAll();
         contentLayout.add(analysisLayout.getLayout());
     }
 
-    private void addStatisticLayout(HorizontalLayout contentLayout, CacheService cacheService) {
+    private void addStatisticLayout(HorizontalLayout contentLayout) {
         contentLayout.removeAll();
         contentLayout.add(statisticLayout.getLayout());
     }

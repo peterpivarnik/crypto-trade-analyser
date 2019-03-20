@@ -15,20 +15,20 @@ import java.util.Properties;
 @Component
 public class CryptoMailSender {
 
+    private CryptoMailProperties cryptoMailProperties;
+
+    public CryptoMailSender(CryptoMailProperties cryptoMailProperties) {
+        this.cryptoMailProperties = cryptoMailProperties;
+    }
+
     public void send(String mail, String question) {
-        String to = "cryptotradeanalyser@gmail.com";
+        String to = cryptoMailProperties.getMailAddress();
         String subject = "CTA Question nr: " + Instant.now().toEpochMilli();
-        final String from = "cryptotradeanalyser@gmail.com";
-        final String password = "cta#123456";
+        final String from = cryptoMailProperties.getMailAddress();
+        final String password = cryptoMailProperties.getMailPassword();
 
         Properties properties = prepareProperties();
-        Session session = Session.getDefaultInstance(
-                properties,
-                new javax.mail.Authenticator() {
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(from, password);
-                    }
-                });
+        Session session = prepareSession(from, password, properties);
 
         try {
             Transport transport = session.getTransport();
@@ -40,6 +40,29 @@ public class CryptoMailSender {
         } catch (MessagingException e) {
             throw new RuntimeException("Problem during sending mail", e);
         }
+    }
+
+    private Properties prepareProperties() {
+        Properties props = new Properties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.host", "smtp.gmail.com");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.port", "465");
+        props.put("mail.debug", "true");
+        props.put("mail.smtp.socketFactory.port", "465");
+        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        props.put("mail.smtp.socketFactory.fallback", "false");
+        return props;
+    }
+
+    private Session prepareSession(String from, String password, Properties properties) {
+        return Session.getDefaultInstance(
+                properties,
+                new javax.mail.Authenticator() {
+                    protected PasswordAuthentication getPasswordAuthentication() {
+                        return new PasswordAuthentication(from, password);
+                    }
+                });
     }
 
     private MimeMessage prepareMimeMessage(String mail,
@@ -55,19 +78,6 @@ public class CryptoMailSender {
         message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
         message.addRecipient(Message.RecipientType.TO, new InternetAddress(mail));
         return message;
-    }
-
-    private Properties prepareProperties() {
-        Properties props = new Properties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.host", "smtp.gmail.com");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.port", "465");
-        props.put("mail.debug", "true");
-        props.put("mail.smtp.socketFactory.port", "465");
-        props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-        props.put("mail.smtp.socketFactory.fallback", "false");
-        return props;
     }
 }
 

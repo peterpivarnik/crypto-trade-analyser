@@ -7,18 +7,28 @@ import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
 @SpringComponent
-public class FaqLayout {
+class FaqLayout {
 
-    public HorizontalLayout getLayout() {
+    HorizontalLayout getLayout() {
         return new HorizontalLayout(createFaqLayout());
     }
 
     private VerticalLayout createFaqLayout() {
-        VerticalLayout faq1 = createFaq("How does it works? ", "It works very well. ");
-        VerticalLayout faq2 = createFaq(
-                "jiaschd iuwdh oiuqwhd wouidhqowudh wohoqwhdo qwhdo qowdh oqoqwhd oqwihd oqwidh qowidh qowid qowidh oqwidh oqwd oiqwhd ? ",
-                "ohwqfufh ioeufh oiuhwef owehfo hefoihweo fiwheofi hoeifh oweifoiwef owiejf oiwefoi weoif oweifo iwefoi oiwef oweif owefoij ofij owjowiejf owejfoi wefoiwe ofwef oweifj oweifjo ewiwoeifj owiejfoqiwjf pwijf oiwjf pweijf pweijfpi wejpijwf wefij ");
-        return new VerticalLayout(faq1, faq2);
+        VerticalLayout faq1 = createFaq("What is source of the analysis data for Crypto Trade Analyser (CTA)? ",
+                                        "Data are taken from the web page www.binance.com ");
+        VerticalLayout faq2 = createFaq("How often are data updated? ",
+                                        "Data are updated every minute");
+        VerticalLayout faq3 = createFaq("After what time price will be at Price for sell? ",
+                                        "Usually in 24 hours");
+        VerticalLayout faq4 = createFaq("Why I can not see updated data? ",
+                                        "For update of data you have to refresh the web page");
+        VerticalLayout faq5 = createFaq("Why there are no data on analysis page? ",
+                                        "This can have two reasons. Either exchange binance.com is currently down (check the webpage), or it is simply bad time for investing.");
+        VerticalLayout faq6 = createFaq("Should I invest my money according CTA?",
+                                        "NO! CTA is only analysing tool with some prediction. Investing money according CTA analysis is not recommended!");
+        VerticalLayout faq7 = createFaq("How are statistics calculated?",
+                                        "Statistics are calculating for last 24 hours. After 24 hours data for last day, last week and last month are displayed.");
+        return new VerticalLayout(faq1, faq2, faq3, faq4, faq5, faq6, faq7);
     }
 
     private VerticalLayout createFaq(String questionText, String answerText) {

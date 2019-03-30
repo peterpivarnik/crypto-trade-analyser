@@ -6,13 +6,10 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 
-import static java.time.Instant.ofEpochMilli;
-import static java.time.ZoneId.systemDefault;
 import static java.time.ZonedDateTime.ofInstant;
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 @SpringComponent
 public class AnalysisLayout {
@@ -31,7 +28,7 @@ public class AnalysisLayout {
     private Grid<CryptoResult> getCryptoJsonGrid(List<CryptoResult> actualCryptos) {
         Grid<CryptoResult> grid = new Grid<>();
         grid.setItems(actualCryptos);
-        grid.addColumn(this::getZonedDateTime).setHeader("Date");
+        grid.addColumn(this::getLifeTime).setHeader("Life time");
         grid.addColumn(CryptoResult::getSymbol).setHeader("Symbol");
         grid.addColumn(CryptoResult::getCurrentPrice).setHeader("Current price");
         grid.addColumn(CryptoResult::getPriceToSell).setHeader("Price to sell");
@@ -41,8 +38,8 @@ public class AnalysisLayout {
         return grid;
     }
 
-    private String getZonedDateTime(CryptoResult cryptoResult) {
-        ZonedDateTime zonedDateTime = ofInstant(ofEpochMilli(cryptoResult.getCreatedAt()), systemDefault());
-        return zonedDateTime.format(ISO_LOCAL_DATE_TIME);
+    private String getLifeTime(CryptoResult cryptoResult) {
+        long lifeTime = (Instant.now().toEpochMilli() - cryptoResult.getCreatedAt()) / 1000;
+        return "" + lifeTime + " seconds";
     }
 }

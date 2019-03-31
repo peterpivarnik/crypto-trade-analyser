@@ -11,7 +11,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
-import static com.psw.cta.client.ClientUtils.getLabel;
+import static com.psw.cta.client.ClientUtils.createLabel;
 
 @SpringComponent
 public class MainView {
@@ -43,7 +43,7 @@ public class MainView {
     }
 
     private HorizontalLayout getMainLabelLayout() {
-        Label mainLabel = getLabel("Crypto Trade Analyser");
+        Label mainLabel = createLabel("Crypto Trade Analyser");
         Style style = mainLabel.getStyle();
         style.set("font-size", "200%");
         style.set("font-weight", "bold");

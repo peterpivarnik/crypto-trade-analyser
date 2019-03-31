@@ -34,7 +34,7 @@ public class ContactLayout {
     }
 
     private Label prepareContactLabel() {
-        Label contactLabel = ClientUtils.getLabel("If you have any question you can contact us here: ");
+        Label contactLabel = ClientUtils.createLabel("If you have any question you can contact us here: ");
         contactLabel.setWidth("400px");
         Style style = contactLabel.getStyle();
         style.set("font-weight", "bold");

@@ -6,9 +6,14 @@ import com.vaadin.flow.component.textfield.TextField;
 
 public class ClientUtils {
 
-    public static Label getLabel(String text) {
-        Label label = new Label();
+    public static Label createLabel(String text) {
+        Label label = createLabel();
         label.setText(text);
+        return label;
+    }
+
+    public static Label createLabel() {
+        Label label = new Label();
         label.setWidth("350px");
         return label;
     }

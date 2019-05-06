@@ -1,5 +1,6 @@
-package com.psw.cta.client;
+package com.psw.cta.client.service;
 
+import com.psw.cta.client.factory.ClientFactory;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.service.CacheService;
 import com.vaadin.flow.component.Component;
@@ -10,25 +11,24 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import java.time.Instant;
 import java.util.List;
 
-import static com.psw.cta.client.ClientUtils.getLayoutLabel;
 import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
 
 @SpringComponent
-public class AnalysisLayout {
+public class AnalysisService {
 
     private CacheService cacheService;
+    private ClientFactory clientFactory;
 
-    public AnalysisLayout(CacheService cacheService) {
+    public AnalysisService(CacheService cacheService, ClientFactory clientFactory) {
         this.cacheService = cacheService;
+        this.clientFactory = clientFactory;
     }
 
-    public VerticalLayout getLayout() {
+    VerticalLayout getAnalysisLayout() {
         List<CryptoResult> actualCryptos = cacheService.getCryptos().getCrypto1H();
-        Component layoutLabel = getLayoutLabel("Analysis", "100%");
+        Component layoutLabel = clientFactory.createLayoutLabel("Analysis", "100%");
         Grid<CryptoResult> cryptoJsonGrid = getCryptoJsonGrid(actualCryptos);
-        VerticalLayout analysisLayout = new VerticalLayout(layoutLabel, cryptoJsonGrid);
-        analysisLayout.setDefaultHorizontalComponentAlignment(CENTER);
-        return analysisLayout;
+        return clientFactory.createVerticalLayout(layoutLabel, cryptoJsonGrid);
     }
 
     private Grid<CryptoResult> getCryptoJsonGrid(List<CryptoResult> actualCryptos) {

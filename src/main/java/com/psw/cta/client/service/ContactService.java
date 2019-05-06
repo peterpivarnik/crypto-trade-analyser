@@ -1,5 +1,6 @@
-package com.psw.cta.client;
+package com.psw.cta.client.service;
 
+import com.psw.cta.client.factory.ClientFactory;
 import com.psw.cta.mail.CryptoMailSender;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -14,39 +15,32 @@ import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import org.apache.commons.lang3.StringUtils;
 
-import static com.psw.cta.client.ClientUtils.createButton;
-import static com.psw.cta.client.ClientUtils.createTextField;
-import static com.psw.cta.client.ClientUtils.getLayoutLabel;
-import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
-
 @SpringComponent
-public class ContactLayout {
+public class ContactService {
 
     private CryptoMailSender cryptoMailSender;
+    private ClientFactory clientFactory;
 
-    public ContactLayout(CryptoMailSender cryptoMailSender) {
+    public ContactService(CryptoMailSender cryptoMailSender, ClientFactory clientFactory) {
         this.cryptoMailSender = cryptoMailSender;
+        this.clientFactory = clientFactory;
     }
 
-    VerticalLayout getLayout() {
-        Component layoutLabel = getLayoutLabel("Contact", "100%");
+    VerticalLayout getContactLayout() {
+        Component layoutLabel = clientFactory.createLayoutLabel("Contact", "100%");
         Label contactLabel = prepareContactLabel();
         TextField contactMail = prepareContactMail();
-        TextArea contactQuestion = prepareContactQuestion();
+        TextArea contactQuestion = clientFactory.createTextArea("Your question: ");
         Button submitButton = prepareSubmitButton(contactMail, contactQuestion);
-        VerticalLayout verticalLayout = new VerticalLayout(layoutLabel,
-                                                           contactLabel,
-                                                           contactMail,
-                                                           contactQuestion,
-                                                           submitButton);
-        verticalLayout.setDefaultHorizontalComponentAlignment(CENTER);
-        Style style = verticalLayout.getStyle();
-        style.set("background-color", "var(--lumo-contrast-10pct)");
-        return verticalLayout;
+        return clientFactory.createVerticalLayout(layoutLabel,
+                                                  contactLabel,
+                                                  contactMail,
+                                                  contactQuestion,
+                                                  submitButton);
     }
 
     private Label prepareContactLabel() {
-        Label contactLabel = ClientUtils.createLabel("If you have any question you can contact us here: ");
+        Label contactLabel = clientFactory.createLabel("If you have any question you can contact us here: ");
         contactLabel.setWidth("400px");
         Style style = contactLabel.getStyle();
         style.set("font-weight", "bold");
@@ -54,7 +48,7 @@ public class ContactLayout {
     }
 
     private TextField prepareContactMail() {
-        TextField contactMail = createTextField("Your email adress: ");
+        TextField contactMail = clientFactory.createTextField("Your email adress: ");
         contactMail.setHeight("150px");
         Binder<TextField> binder = new Binder<>();
         binder.forField(contactMail)
@@ -63,14 +57,9 @@ public class ContactLayout {
         return contactMail;
     }
 
-    private TextArea prepareContactQuestion() {
-        TextArea contactQuestion = new TextArea("Your question: ");
-        contactQuestion.setSizeUndefined();
-        return contactQuestion;
-    }
 
     private Button prepareSubmitButton(TextField contactMail, TextArea contactQuestion) {
-        Button submitButton = createButton("Submit");
+        Button submitButton = clientFactory.createButton("Submit");
         submitButton.addClickListener(event -> onEvent(contactMail, contactQuestion));
         return submitButton;
     }

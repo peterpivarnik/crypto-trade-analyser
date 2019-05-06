@@ -1,8 +1,10 @@
 package com.psw.cta.client;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.dom.Style;
 
 public class ClientUtils {
 
@@ -14,7 +16,7 @@ public class ClientUtils {
 
     public static Label createLabel() {
         Label label = new Label();
-        label.setWidth("350px");
+//        label.setWidth("350px");
         return label;
     }
 
@@ -33,5 +35,14 @@ public class ClientUtils {
         Button button = new Button();
         button.setText(label);
         return button;
+    }
+
+    public static Label getLayoutLabel(String labelName, String labelSize) {
+        Label mainLabel = createLabel(labelName);
+        Style style = mainLabel.getStyle();
+        style.set("font-size", labelSize);
+        style.set("font-weight", "bold");
+        style.set("color", "var(--lumo-primary-text-color)");
+        return mainLabel;
     }
 }

@@ -1,6 +1,7 @@
 package com.psw.cta.client;
 
 import com.psw.cta.mail.CryptoMailSender;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
@@ -15,6 +16,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import static com.psw.cta.client.ClientUtils.createButton;
 import static com.psw.cta.client.ClientUtils.createTextField;
+import static com.psw.cta.client.ClientUtils.getLayoutLabel;
+import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
 
 @SpringComponent
 public class ContactLayout {
@@ -26,11 +29,20 @@ public class ContactLayout {
     }
 
     VerticalLayout getLayout() {
+        Component layoutLabel = getLayoutLabel("Contact", "100%");
         Label contactLabel = prepareContactLabel();
         TextField contactMail = prepareContactMail();
         TextArea contactQuestion = prepareContactQuestion();
         Button submitButton = prepareSubmitButton(contactMail, contactQuestion);
-        return new VerticalLayout(contactLabel, contactMail, contactQuestion, submitButton);
+        VerticalLayout verticalLayout = new VerticalLayout(layoutLabel,
+                                                           contactLabel,
+                                                           contactMail,
+                                                           contactQuestion,
+                                                           submitButton);
+        verticalLayout.setDefaultHorizontalComponentAlignment(CENTER);
+        Style style = verticalLayout.getStyle();
+        style.set("background-color", "var(--lumo-contrast-10pct)");
+        return verticalLayout;
     }
 
     private Label prepareContactLabel() {
@@ -53,7 +65,7 @@ public class ContactLayout {
 
     private TextArea prepareContactQuestion() {
         TextArea contactQuestion = new TextArea("Your question: ");
-        contactQuestion.setSizeFull();
+        contactQuestion.setSizeUndefined();
         return contactQuestion;
     }
 

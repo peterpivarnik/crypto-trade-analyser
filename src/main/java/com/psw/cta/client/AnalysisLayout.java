@@ -2,6 +2,7 @@ package com.psw.cta.client;
 
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.service.CacheService;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.spring.annotation.SpringComponent;
@@ -9,7 +10,8 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import java.time.Instant;
 import java.util.List;
 
-import static java.time.ZonedDateTime.ofInstant;
+import static com.psw.cta.client.ClientUtils.getLayoutLabel;
+import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
 
 @SpringComponent
 public class AnalysisLayout {
@@ -22,7 +24,11 @@ public class AnalysisLayout {
 
     public VerticalLayout getLayout() {
         List<CryptoResult> actualCryptos = cacheService.getCryptos().getCrypto1H();
-        return new VerticalLayout(getCryptoJsonGrid(actualCryptos));
+        Component layoutLabel = getLayoutLabel("Analysis", "100%");
+        Grid<CryptoResult> cryptoJsonGrid = getCryptoJsonGrid(actualCryptos);
+        VerticalLayout analysisLayout = new VerticalLayout(layoutLabel, cryptoJsonGrid);
+        analysisLayout.setDefaultHorizontalComponentAlignment(CENTER);
+        return analysisLayout;
     }
 
     private Grid<CryptoResult> getCryptoJsonGrid(List<CryptoResult> actualCryptos) {
@@ -33,7 +39,7 @@ public class AnalysisLayout {
         grid.addColumn(CryptoResult::getCurrentPrice).setHeader("Current price");
         grid.addColumn(CryptoResult::getPriceToSell).setHeader("Price to sell");
         grid.addColumn(CryptoResult::getPriceToSellPercentage).setHeader("Percent");
-        grid.setWidth("1000px");
+        grid.setWidthFull();
         grid.setHeightByRows(true);
         return grid;
     }

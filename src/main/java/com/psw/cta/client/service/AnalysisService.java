@@ -11,8 +11,6 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 import java.time.Instant;
 import java.util.List;
 
-import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
-
 @SpringComponent
 public class AnalysisService {
 

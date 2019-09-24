@@ -18,6 +18,7 @@ public class CryptoDto {
     }
 
     private List<BinanceCandlestick> fifteenMinutesCandleStickData;
+    private List<BinanceCandlestick> threeMonthsCandleStickData;
     private LinkedTreeMap<String, Object> ticker24hr;
     private LinkedTreeMap<String, Object> depth20;
     private BinanceExchangeSymbol binanceExchangeSymbol;
@@ -29,4 +30,5 @@ public class CryptoDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal weight;
+
 }

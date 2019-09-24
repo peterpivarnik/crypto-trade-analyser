@@ -10,11 +10,14 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 
+import static java.util.Collections.emptyList;
+
 @Service
 public class CacheService {
 
     private CompleteStats completeStats;
     private AverageProfit averageProfit;
+    private ActualCryptos actualCryptos = new ActualCryptos(emptyList());
 
     @Autowired
     private CryptoService cryptoService;
@@ -46,6 +49,10 @@ public class CacheService {
     }
 
     public ActualCryptos getCryptos() {
-        return cryptoService.getActualCryptos();
+        return actualCryptos;
+    }
+
+    public void setActualCryptos(ActualCryptos actualCryptos) {
+        this.actualCryptos = actualCryptos;
     }
 }

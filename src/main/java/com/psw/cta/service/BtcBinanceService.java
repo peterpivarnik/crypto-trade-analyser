@@ -7,17 +7,19 @@ import com.google.gson.JsonObject;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.psw.cta.aspect.Time;
+import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
-import com.psw.cta.service.dto.BinanceCandlestick;
-import com.psw.cta.service.dto.BinanceInterval;
-import com.psw.cta.service.dto.BinanceSymbol;
-import com.psw.cta.service.dto.CryptoDto;
+import com.psw.cta.service.dto.*;
+import com.psw.cta.service.factory.CryptoFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -35,6 +37,12 @@ class BtcBinanceService {
 
     @Autowired
     private BinanceService binanceService;
+
+    @Autowired
+    private CacheService cacheService;
+
+    @Autowired
+    private CryptoFactory cryptoFactory;
 
     @Time
     @Scheduled(cron = "0 * * * * ?")
@@ -75,7 +83,14 @@ class BtcBinanceService {
             int cryptosSize = cryptoDtos.size();
             log.info("Actual number of cryptos: " + cryptosSize);
             if (cryptosSize > 5) {
-                cryptoService.saveAll(cryptoDtos);
+                Instant now = Instant.now();
+                Long nowMillis = now.toEpochMilli();
+                LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
+                List<CryptoResult> actualCryptos = cryptoDtos.stream()
+                        .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
+                        .collect(Collectors.toList());
+                cacheService.setActualCryptos(new ActualCryptos(actualCryptos));
+                cryptoService.saveAll(actualCryptos);
             }
         } catch (CryptoTradeAnalyserException e) {
             e.printStackTrace();

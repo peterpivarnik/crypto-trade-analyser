@@ -1,13 +1,16 @@
 package com.psw.cta.service;
 
 import com.psw.cta.aspect.Time;
+import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.repository.CryptoRepository;
 import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.Stats;
-import com.psw.cta.service.dto.*;
+import com.psw.cta.service.dto.ActualCryptos;
+import com.psw.cta.service.dto.AverageProfit;
+import com.psw.cta.service.dto.BinanceCandlestick;
+import com.psw.cta.service.dto.BinanceSymbol;
 import com.psw.cta.service.factory.CompleteStatsFactory;
-import com.psw.cta.service.factory.CryptoFactory;
 import com.psw.cta.service.factory.StatsFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
@@ -41,9 +42,6 @@ public class CryptoService {
 
     @Autowired
     private CompleteStatsFactory completeStatsFactory;
-
-    @Autowired
-    private CryptoFactory cryptoFactory;
 
     @Autowired
     private BinanceService binanceService;
@@ -135,13 +133,8 @@ public class CryptoService {
 
     @Async
     @Time
-    void saveAll(List<CryptoDto> cryptoDtos) {
-        Instant now = Instant.now();
-        Long nowMillis = now.toEpochMilli();
-        LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
-        cryptoDtos.stream()
-                .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
-                .forEach(crypto -> cryptoRepository.save(crypto));
+    void saveAll(List<CryptoResult> cryptoDtos) {
+        cryptoDtos.forEach(crypto -> cryptoRepository.save((Crypto) crypto));
     }
 }
 

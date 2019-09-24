@@ -22,12 +22,6 @@ public class CacheService {
     @Autowired
     private CryptoService cryptoService;
 
-    @PostConstruct
-    public void init() {
-        updateAverageProfit();
-        updateCompleteStats();
-    }
-
     @Scheduled(cron = "0 */15 * * * ?")
     public void updateCompleteStats() {
         this.completeStats = cryptoService.getStats();

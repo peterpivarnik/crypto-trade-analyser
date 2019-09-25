@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.psw.cta.aspect.Time;
+import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
 import com.psw.cta.service.dto.*;
@@ -48,8 +49,11 @@ class BtcBinanceService {
     @Scheduled(cron = "0 * * * * ?")
     public void downloadData() {
         try {
+            Instant now = Instant.now();
+            Long nowMillis = now.toEpochMilli();
+            LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
             List<LinkedTreeMap<String, Object>> tickers = getAll24hTickers();
-            List<CryptoDto> cryptoDtos = binanceService.exchangeInfo()
+            List<Crypto> cryptos = binanceService.exchangeInfo()
                     .getSymbols()
                     .parallelStream()
                     .map(CryptoDto::new)
@@ -70,7 +74,7 @@ class BtcBinanceService {
                                                                                          96)))
                     .peek(dto -> dto.setSumDiffsPerc(calculateSumDiffsPerc(dto, 4)))
                     .peek(dto -> dto.setSumDiffsPerc10h(calculateSumDiffsPerc(dto, 40)))
-                    .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto, 4)))
+                    .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto)))
                     .peek(dto -> dto.setPriceToSellPercentage(calculatePriceToSellPercentage(dto.getPriceToSell(),
                                                                                              dto.getCurrentPrice())))
                     .peek(dto -> dto.setWeight(calculateWeight(dto,
@@ -79,19 +83,14 @@ class BtcBinanceService {
                     .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                     .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                     .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+                    .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
                     .collect(Collectors.toList());
-            int cryptosSize = cryptoDtos.size();
+            int cryptosSize = cryptos.size();
             log.info("Actual number of cryptos: " + cryptosSize);
-            if (cryptosSize > 5) {
-                Instant now = Instant.now();
-                Long nowMillis = now.toEpochMilli();
-                LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
-                List<CryptoResult> actualCryptos = cryptoDtos.stream()
-                        .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
-                        .collect(Collectors.toList());
-                cacheService.setActualCryptos(new ActualCryptos(actualCryptos));
-                cryptoService.saveAll(actualCryptos);
-            }
+            cacheService.setActualCryptos(new ActualCryptos(cryptos.stream()
+                                                                    .map(crypto -> (CryptoResult) crypto)
+                                                                    .collect(Collectors.toList())));
+            cryptoService.saveAll(cryptos);
         } catch (CryptoTradeAnalyserException e) {
             e.printStackTrace();
         }
@@ -181,11 +180,11 @@ class BtcBinanceService {
                 .divide(new BigDecimal("4"), 8, BigDecimal.ROUND_UP);
     }
 
-    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto, int numberOfDataToKeep) {
+    private BigDecimal calculatePriceToSell(CryptoDto cryptoDto) {
         int size = cryptoDto.getFifteenMinutesCandleStickData().size();
-        if (size - numberOfDataToKeep < 0) return BigDecimal.ZERO;
+        if (size - 4 < 0) return BigDecimal.ZERO;
         return cryptoDto.getFifteenMinutesCandleStickData().stream()
-                .skip(size - numberOfDataToKeep)
+                .skip(size - 4)
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO)

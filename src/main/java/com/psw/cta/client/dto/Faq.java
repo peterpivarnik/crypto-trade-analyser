@@ -36,7 +36,7 @@ public class Faq {
         faqs.add(new Faq("How often are data updated? ",
                          "Data are updated every minute"));
         faqs.add(new Faq("Why I can not see updated data? ",
-                         "For update of data you have to refresh the web page"));
+                         "For updateNextDayMaxPrice of data you have to refresh the web page"));
         faqs.add(new Faq("Why there are no data on analysis page? ",
                          "This can have two reasons. Either exchange binance.com is currently down (check the webpage), or it is simply bad time for investing."));
         faqs.add(new Faq("Should I invest my money according CTA?",

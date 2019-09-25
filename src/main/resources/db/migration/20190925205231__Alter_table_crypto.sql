@@ -1,0 +1,2 @@
+ALTER TABLE crypto ADD COLUMN next_2day_max_price NUMERIC(20,8) DEFAULT 0;
+ALTER TABLE crypto ADD COLUMN next_week_max_price NUMERIC(20,8) DEFAULT 0;

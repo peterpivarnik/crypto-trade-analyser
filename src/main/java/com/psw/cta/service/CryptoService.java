@@ -22,13 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
+import static java.time.temporal.ChronoUnit.*;
 
 @Component
 @Slf4j
@@ -50,7 +50,7 @@ public class CryptoService {
     @Transactional
     public ActualCryptos getActualCryptos() {
         Instant now = Instant.now();
-        Instant beforeMinute = now.minus(1, ChronoUnit.MINUTES);
+        Instant beforeMinute = now.minus(1, MINUTES);
 
         List<CryptoResult> cryptos1H = cryptoRepository.findByCreatedAtBetween(beforeMinute.toEpochMilli(),
                                                                                now.toEpochMilli(),
@@ -68,19 +68,19 @@ public class CryptoService {
 
     @Transactional
     @Time
-    public CompleteStats getStats() {
+    CompleteStats getStats() {
         Instant endDate = Instant.now();
-        Instant beforeOneDay = endDate.minus(1, ChronoUnit.DAYS);
+        Instant beforeOneDay = endDate.minus(1, DAYS);
         Stats stats1H = getCompleteStats(beforeOneDay);
         return completeStatsFactory.createCompleteStats(stats1H);
     }
 
     private Stats getCompleteStats(Instant endDate) {
-        double oneDayStats = getStats(endDate.minus(1, ChronoUnit.DAYS).toEpochMilli(),
+        double oneDayStats = getStats(endDate.minus(1, DAYS).toEpochMilli(),
                                       endDate.toEpochMilli());
-        double oneWeekStats = getStats(endDate.minus(7, ChronoUnit.DAYS).toEpochMilli(),
+        double oneWeekStats = getStats(endDate.minus(7, DAYS).toEpochMilli(),
                                        endDate.toEpochMilli());
-        double oneMonthStats = getStats(endDate.minus(30, ChronoUnit.DAYS).toEpochMilli(),
+        double oneMonthStats = getStats(endDate.minus(30, DAYS).toEpochMilli(),
                                         endDate.toEpochMilli());
         return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
     }
@@ -95,10 +95,10 @@ public class CryptoService {
     }
 
     @Time
-    public AverageProfit getAverageProfit() {
+    AverageProfit getAverageProfit() {
         Instant now = Instant.now();
-        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
-        Instant beforeTwoDays = now.minus(2, ChronoUnit.DAYS);
+        Instant beforeOneDay = now.minus(1, DAYS);
+        Instant beforeTwoDays = now.minus(2, DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
         Optional<Double> average1H = cryptoRepository.findAveragePriceToSellPercentage(startDate, endDate);
@@ -109,31 +109,41 @@ public class CryptoService {
     @Scheduled(cron = "0 */15 * * * ?")
     public void updateAll() {
         Instant now = Instant.now();
-        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
-        int sum = cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli()).stream()
-                .mapToInt(symbol -> saveData1H(symbol, now))
-                .sum();
+        Instant beforeOneDay = now.minus(1, DAYS);
+        cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli())
+                .forEach(symbol -> saveData1H(symbol, now));
 
-        log.info("Total updates: " + sum);
     }
 
-    private int saveData1H(String symbol, Instant now) {
-        Instant beforeOneDay = now.minus(1, ChronoUnit.DAYS);
-        Instant before15Min = now.minus(15, ChronoUnit.MINUTES);
+    private void saveData1H(String symbol, Instant now) {
+        Instant beforeOneDay = now.minus(1, DAYS);
+        Instant before15Min = now.minus(15, MINUTES);
+        Instant beforeWeek = now.minus(2, DAYS);
+        Instant beforeTwoDays = now.minus(1, WEEKS);
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
-        return cryptoRepository.update(lastFifteenMinuteMax,
-                                       symbol,
-                                       beforeOneDay.toEpochMilli(),
-                                       before15Min.toEpochMilli());
+        cryptoRepository.updateNextDayMaxPrice(lastFifteenMinuteMax,
+                                               symbol,
+                                               beforeOneDay.toEpochMilli(),
+                                               before15Min.toEpochMilli());
+
+        cryptoRepository.updateNext2DayMaxPrice(lastFifteenMinuteMax,
+                                                symbol,
+                                                beforeTwoDays.toEpochMilli(),
+                                                before15Min.toEpochMilli());
+
+        cryptoRepository.updateNextWeekMaxPrice(lastFifteenMinuteMax,
+                                                symbol,
+                                                beforeWeek.toEpochMilli(),
+                                                before15Min.toEpochMilli());
     }
 
     @Async
     @Time
-    void saveAll(List<CryptoResult> cryptoDtos) {
+    <R extends CryptoResult> void saveAll(List<R> cryptoDtos) {
         cryptoDtos.forEach(crypto -> cryptoRepository.save((Crypto) crypto));
     }
 }

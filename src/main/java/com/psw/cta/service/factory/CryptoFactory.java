@@ -21,6 +21,8 @@ public class CryptoFactory {
         crypto.setVolume(cryptoDto.getVolume());
         crypto.setWeight(cryptoDto.getWeight());
         crypto.setNextDayMaxPrice(BigDecimal.ZERO);
+        crypto.setNext2DayMaxPrice(BigDecimal.ZERO);
+        crypto.setNextWeekMaxPrice(BigDecimal.ZERO);
         crypto.setId(null);
         crypto.setCreatedAt(nowMillis);
         crypto.setCreatedAtDate(nowDate);

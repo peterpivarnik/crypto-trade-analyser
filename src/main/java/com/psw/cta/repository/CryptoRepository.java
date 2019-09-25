@@ -26,10 +26,26 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long>, JpaSpecif
     @Transactional
     @Modifying
     @Query("UPDATE Crypto c SET c.nextDayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :from AND c.createdAt < :to AND c.nextDayMaxPrice < :maxValue")
-    int update(@Param("maxValue") BigDecimal maxValue,
-               @Param("symbol") String symbol,
-               @Param("from") Long from,
-               @Param("to") Long to);
+    int updateNextDayMaxPrice(@Param("maxValue") BigDecimal maxValue,
+                              @Param("symbol") String symbol,
+                              @Param("from") Long from,
+                              @Param("to") Long to);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Crypto c SET c.next2DayMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :from AND c.createdAt < :to AND c.next2DayMaxPrice < :maxValue")
+    int updateNext2DayMaxPrice(@Param("maxValue") BigDecimal maxValue,
+                              @Param("symbol") String symbol,
+                              @Param("from") Long from,
+                              @Param("to") Long to);
+
+    @Transactional
+    @Modifying
+    @Query("UPDATE Crypto c SET c.nextWeekMaxPrice = :maxValue WHERE c.symbol = :symbol AND c.createdAt > :from AND c.createdAt < :to AND c.nextWeekMaxPrice < :maxValue")
+    int updateNextWeekMaxPrice(@Param("maxValue") BigDecimal maxValue,
+                              @Param("symbol") String symbol,
+                              @Param("from") Long from,
+                              @Param("to") Long to);
 
     @Query("SELECT DISTINCT c.symbol FROM Crypto c WHERE c.createdAt > :date")
     List<String> findUniqueSymbols(@Param("date") Long date);

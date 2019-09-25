@@ -69,6 +69,14 @@ public class Crypto implements CryptoResult {
     private LocalDateTime createdAtDate;
 
     @NotNull
-    @Column(name = "next_day_max_price", updatable = true, nullable = false, precision = 20, scale = 8)
+    @Column(name = "next_day_max_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal nextDayMaxPrice;
+
+    @NotNull
+    @Column(name = "next_2day_max_price", nullable = false, precision = 20, scale = 8)
+    private BigDecimal next2DayMaxPrice;
+
+    @NotNull
+    @Column(name = "next_week_max_price", nullable = false, precision = 20, scale = 8)
+    private BigDecimal nextWeekMaxPrice;
 }

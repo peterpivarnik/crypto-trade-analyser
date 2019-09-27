@@ -28,7 +28,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
-import static java.time.temporal.ChronoUnit.*;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Component
 @Slf4j
@@ -119,7 +120,7 @@ public class CryptoService {
         Instant beforeOneDay = now.minus(1, DAYS);
         Instant before15Min = now.minus(15, MINUTES);
         Instant beforeWeek = now.minus(2, DAYS);
-        Instant beforeTwoDays = now.minus(1, WEEKS);
+        Instant beforeTwoDays = now.minus(7, DAYS);
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)

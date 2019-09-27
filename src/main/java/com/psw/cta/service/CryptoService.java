@@ -87,8 +87,8 @@ public class CryptoService {
     }
 
     private double getStats(Long startDate, Long endDate) {
-        double validStats = cryptoRepository.findValidStats1H(startDate, endDate);
-        double allStats = cryptoRepository.findAllStats(startDate, endDate);
+        double validStats = cryptoRepository.countByCreatedAtBetweenAndNextDayMaxPrice(startDate, endDate);
+        double allStats = cryptoRepository.countByCreatedAtBetween(startDate, endDate);
         if (allStats == 0) {
             return 0d;
         }
@@ -102,7 +102,7 @@ public class CryptoService {
         Instant beforeTwoDays = now.minus(2, DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
-        Optional<Double> average1H = cryptoRepository.findAveragePriceToSellPercentage(startDate, endDate);
+        Optional<Double> average1H = cryptoRepository.findAveragePriceToSellPercentageByCreatedAtBetween(startDate, endDate);
         return new AverageProfit(new BigDecimal(average1H.orElse(0d)));
     }
 
@@ -111,7 +111,7 @@ public class CryptoService {
     public void updateAll() {
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, DAYS);
-        cryptoRepository.findUniqueSymbols(beforeOneDay.toEpochMilli())
+        cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneDay.toEpochMilli())
                 .forEach(symbol -> saveData1H(symbol, now));
 
     }
@@ -126,20 +126,20 @@ public class CryptoService {
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
                 .orElse(BigDecimal.ZERO);
-        cryptoRepository.updateNextDayMaxPrice(lastFifteenMinuteMax,
-                                               symbol,
-                                               beforeOneDay.toEpochMilli(),
-                                               before15Min.toEpochMilli());
+        cryptoRepository.updateNextDayMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
+                                                                          symbol,
+                                                                          beforeOneDay.toEpochMilli(),
+                                                                          before15Min.toEpochMilli());
 
-        cryptoRepository.updateNext2DayMaxPrice(lastFifteenMinuteMax,
-                                                symbol,
-                                                beforeTwoDays.toEpochMilli(),
-                                                before15Min.toEpochMilli());
+        cryptoRepository.updateNext2DayMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
+                                                                           symbol,
+                                                                           beforeTwoDays.toEpochMilli(),
+                                                                           before15Min.toEpochMilli());
 
-        cryptoRepository.updateNextWeekMaxPrice(lastFifteenMinuteMax,
-                                                symbol,
-                                                beforeWeek.toEpochMilli(),
-                                                before15Min.toEpochMilli());
+        cryptoRepository.updateNextWeekMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
+                                                                           symbol,
+                                                                           beforeWeek.toEpochMilli(),
+                                                                           before15Min.toEpochMilli());
     }
 
     @Async

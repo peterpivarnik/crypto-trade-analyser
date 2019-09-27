@@ -13,18 +13,20 @@ import java.time.LocalDateTime;
 import static javax.persistence.GenerationType.AUTO;
 
 @Entity
-@Table(schema = "public", name = "statistic")
+@Table(schema = "public", name = "statistic_2day")
 @Cacheable
 @Getter
 @Setter
 @ToString
 @EqualsAndHashCode
-public class Statistic {
+public class Statistic2Day {
 
     @Id
     @NotNull
-    @SequenceGenerator(name = "generator__seq_statistic_id", schema = "public", sequenceName = "seq_statistic_id")
-    @GeneratedValue(strategy = AUTO, generator = "generator__seq_statistic_id")
+    @SequenceGenerator(name = "generator__seq_statistic_2day_id",
+                       schema = "public",
+                       sequenceName = "seq_statistic_2day_id")
+    @GeneratedValue(strategy = AUTO, generator = "generator__seq_statistic_2day_id")
     @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 

@@ -112,15 +112,15 @@ public class CryptoService {
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, DAYS);
         cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneDay.toEpochMilli())
-                .forEach(symbol -> saveData1H(symbol, now));
+                .forEach(symbol -> saveData(symbol, now));
 
     }
 
-    private void saveData1H(String symbol, Instant now) {
-        Instant beforeOneDay = now.minus(1, DAYS);
+    private void saveData(String symbol, Instant now) {
         Instant before15Min = now.minus(15, MINUTES);
-        Instant beforeWeek = now.minus(2, DAYS);
-        Instant beforeTwoDays = now.minus(7, DAYS);
+        Instant beforeOneDay = now.minus(1, DAYS);
+        Instant beforeTwoDays = now.minus(2, DAYS);
+        Instant beforeWeek = now.minus(7, DAYS);
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)

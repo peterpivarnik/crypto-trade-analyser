@@ -5,8 +5,6 @@ import com.psw.cta.rest.dto.CompleteStats;
 import com.psw.cta.rest.dto.CompleteStatsImpl;
 import com.psw.cta.rest.dto.StatsImpl;
 import com.psw.cta.service.dto.ActualCryptos;
-import com.psw.cta.service.dto.AverageProfit;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 

@@ -57,8 +57,8 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long> {
                                    @Param("endDate") Long endDate);
 
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell")
-    double countByCreatedAtBetweenAndNextDayMaxPrice(@Param("startDate") Long startDate,
-                                                     @Param("endDate") Long endDate);
+    double countByCreatedAtBetweenAndNextDayMaxPriceHigherOrEqualPriceToSell(@Param("startDate") Long startDate,
+                                                                             @Param("endDate") Long endDate);
 
     List<Crypto> findByCreatedAt(Long createdAt);
 }

@@ -164,7 +164,7 @@ public class CryptoService {
         Instant now = Instant.now();
         Instant beforeOneWeek = now.minus(7, DAYS);
         cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneWeek.toEpochMilli())
-                .forEach(symbol -> saveNextDayMaxPrice(symbol, now));
+                .forEach(symbol -> saveNextWeekMaxPrice(symbol, now));
 
     }
 

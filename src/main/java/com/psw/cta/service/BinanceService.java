@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-public class BinanceService {
+class BinanceService {
 
     private String baseUrl = "https://www.binance.com/api/";
 
@@ -26,9 +26,9 @@ public class BinanceService {
         return new BinanceExchangeInfo(jsonObject);
     }
 
-    JsonObject depth(BinanceSymbol symbol, int limit) throws CryptoTradeAnalyserException {
+    JsonObject depth(BinanceSymbol symbol) throws CryptoTradeAnalyserException {
         BinanceRequest binanceRequest =
-                new BinanceRequest(baseUrl + "v1/depth?symbol=" + symbol.getSymbol() + "&limit=" + limit);
+                new BinanceRequest(baseUrl + "v1/depth?symbol=" + symbol.getSymbol() + "&limit=" + 20);
         return binanceRequest.read().asJsonObject();
     }
 

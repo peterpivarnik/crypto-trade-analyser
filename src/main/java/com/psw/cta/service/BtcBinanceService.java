@@ -13,7 +13,6 @@ import com.psw.cta.exception.CryptoTradeAnalyserException;
 import com.psw.cta.service.dto.*;
 import com.psw.cta.service.factory.CryptoFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -33,17 +32,20 @@ import static com.psw.cta.service.dto.BinanceInterval.ONE_DAY;
 @Slf4j
 class BtcBinanceService {
 
-    @Autowired
     private CryptoService cryptoService;
-
-    @Autowired
     private BinanceService binanceService;
-
-    @Autowired
     private CacheService cacheService;
-
-    @Autowired
     private CryptoFactory cryptoFactory;
+
+    BtcBinanceService(CryptoService cryptoService,
+                      BinanceService binanceService,
+                      CacheService cacheService,
+                      CryptoFactory cryptoFactory) {
+        this.cryptoService = cryptoService;
+        this.binanceService = binanceService;
+        this.cacheService = cacheService;
+        this.cryptoFactory = cryptoFactory;
+    }
 
     @Time
     @Scheduled(cron = "0 * * * * ?")
@@ -121,7 +123,7 @@ class BtcBinanceService {
     private LinkedTreeMap<String, Object> getDepth(CryptoDto cryptoDto) {
         final BinanceSymbol symbol = cryptoDto.getBinanceExchangeSymbol().getSymbol();
         try {
-            final JsonObject depth = binanceService.depth(symbol, 20);
+            final JsonObject depth = binanceService.depth(symbol);
             return getObject(depth);
         } catch (CryptoTradeAnalyserException e) {
             throw new RuntimeException(e);

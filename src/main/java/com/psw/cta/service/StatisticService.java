@@ -9,7 +9,6 @@ import com.psw.cta.repository.CryptoRepository;
 import com.psw.cta.repository.Statistic2DayRepository;
 import com.psw.cta.repository.StatisticRepository;
 import com.psw.cta.repository.StatisticWeekRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -24,17 +23,20 @@ import java.util.List;
 @Service
 public class StatisticService {
 
-    @Autowired
     private StatisticRepository statisticRepository;
-
-    @Autowired
     private Statistic2DayRepository statistic2DayRepository;
-
-    @Autowired
     private StatisticWeekRepository statisticWeekRepository;
-
-    @Autowired
     private CryptoRepository cryptoRepository;
+
+    public StatisticService(StatisticRepository statisticRepository,
+                            Statistic2DayRepository statistic2DayRepository,
+                            StatisticWeekRepository statisticWeekRepository,
+                            CryptoRepository cryptoRepository) {
+        this.statisticRepository = statisticRepository;
+        this.statistic2DayRepository = statistic2DayRepository;
+        this.statisticWeekRepository = statisticWeekRepository;
+        this.cryptoRepository = cryptoRepository;
+    }
 
     @Time
     @Scheduled(cron = "0 */5 * * * ?")
@@ -107,7 +109,7 @@ public class StatisticService {
                     StatisticWeek statisticWeek = new StatisticWeek();
                     statisticWeek.setCreatedAt(createdAt);
                     statisticWeek.setCreatedAtDate(LocalDateTime.ofInstant(Instant.ofEpochMilli(createdAt),
-                                                                       ZoneId.of("Europe/Vienna")));
+                                                                           ZoneId.of("Europe/Vienna")));
                     statisticWeek.setSuccessRate(successRate);
                     statisticWeekRepository.save(statisticWeek);
                 });

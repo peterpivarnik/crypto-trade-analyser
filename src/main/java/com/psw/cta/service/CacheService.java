@@ -10,28 +10,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-
 import static java.util.Collections.emptyList;
 
 @Service
 public class CacheService {
 
+    private CryptoService cryptoService;
+
     private CompleteStats completeStats = new CompleteStatsImpl(new StatsImpl(0, 0, 0));
-    private AverageProfit averageProfit;
     private ActualCryptos actualCryptos = new ActualCryptos(emptyList());
 
-    @Autowired
-    private CryptoService cryptoService;
+    public CacheService(CryptoService cryptoService) {
+        this.cryptoService = cryptoService;
+    }
 
     @Scheduled(cron = "0 */15 * * * ?")
     public void updateCompleteStats() {
         this.completeStats = cryptoService.getStats();
-    }
-
-    @Scheduled(cron = "0 */15 * * * ?")
-    public void updateAverageProfit() {
-        this.averageProfit = cryptoService.getAverageProfit();
     }
 
     @Time
@@ -39,16 +34,11 @@ public class CacheService {
         return completeStats;
     }
 
-    @Time
-    public AverageProfit getAverageProfit() {
-        return averageProfit;
-    }
-
     public ActualCryptos getCryptos() {
         return actualCryptos;
     }
 
-    public void setActualCryptos(ActualCryptos actualCryptos) {
+    void setActualCryptos(ActualCryptos actualCryptos) {
         this.actualCryptos = actualCryptos;
     }
 }

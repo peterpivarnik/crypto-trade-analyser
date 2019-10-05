@@ -13,7 +13,6 @@ import com.psw.cta.service.dto.BinanceSymbol;
 import com.psw.cta.service.factory.CompleteStatsFactory;
 import com.psw.cta.service.factory.StatsFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -28,25 +27,26 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
-import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.*;
 
 @Component
 @Slf4j
 public class CryptoService {
 
-    @Autowired
     private CryptoRepository cryptoRepository;
-
-    @Autowired
     private StatsFactory statsFactory;
-
-    @Autowired
     private CompleteStatsFactory completeStatsFactory;
-
-    @Autowired
     private BinanceService binanceService;
+
+    public CryptoService(CryptoRepository cryptoRepository,
+                         StatsFactory statsFactory,
+                         CompleteStatsFactory completeStatsFactory,
+                         BinanceService binanceService) {
+        this.cryptoRepository = cryptoRepository;
+        this.statsFactory = statsFactory;
+        this.completeStatsFactory = completeStatsFactory;
+        this.binanceService = binanceService;
+    }
 
     @Time
     @Transactional

@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
 import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Component
@@ -102,25 +103,26 @@ public class CryptoService {
         Instant beforeTwoDays = now.minus(2, DAYS);
         Long startDate = beforeTwoDays.toEpochMilli();
         Long endDate = beforeOneDay.toEpochMilli();
-        Optional<Double> average1H = cryptoRepository.findAveragePriceToSellPercentageByCreatedAtBetween(startDate, endDate);
+        Optional<Double>
+                average1H =
+                cryptoRepository.findAveragePriceToSellPercentageByCreatedAtBetween(startDate, endDate);
         return new AverageProfit(new BigDecimal(average1H.orElse(0d)));
     }
 
     @Time
-    @Scheduled(cron = "0 */15 * * * ?")
-    public void updateAll() {
+    @Scheduled(cron = "0 */30 * * * ?")
+    public void updateNextDayMaxPrice() {
         Instant now = Instant.now();
         Instant beforeOneDay = now.minus(1, DAYS);
         cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneDay.toEpochMilli())
-                .forEach(symbol -> saveData(symbol, now));
+                .forEach(symbol -> saveNextDayMaxPrice(symbol, now));
 
     }
 
-    private void saveData(String symbol, Instant now) {
-        Instant before15Min = now.minus(15, MINUTES);
+    private void saveNextDayMaxPrice(String symbol, Instant now) {
+        Instant before30Min = now.minus(30, MINUTES);
         Instant beforeOneDay = now.minus(1, DAYS);
-        Instant beforeTwoDays = now.minus(2, DAYS);
-        Instant beforeWeek = now.minus(7, DAYS);
+
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
@@ -129,17 +131,55 @@ public class CryptoService {
         cryptoRepository.updateNextDayMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
                                                                           symbol,
                                                                           beforeOneDay.toEpochMilli(),
-                                                                          before15Min.toEpochMilli());
+                                                                          before30Min.toEpochMilli());
+    }
 
+    @Time
+    @Scheduled(cron = "0 0 * * * ?")
+    public void updateNext2DayMaxPrice() {
+        Instant now = Instant.now();
+        Instant before2Days = now.minus(2, DAYS);
+        cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(before2Days.toEpochMilli())
+                .forEach(symbol -> saveNext2DaysMaxPrice(symbol, now));
+    }
+
+    private void saveNext2DaysMaxPrice(String symbol, Instant now) {
+        Instant before1Hour = now.minus(7, DAYS);
+        Instant beforeTwoDays = now.minus(2, DAYS);
+
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        BigDecimal lastFifteenMinuteMax = klines.stream()
+                .map(BinanceCandlestick::getHigh)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
         cryptoRepository.updateNext2DayMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
                                                                            symbol,
                                                                            beforeTwoDays.toEpochMilli(),
-                                                                           before15Min.toEpochMilli());
+                                                                           before1Hour.toEpochMilli());
+    }
 
+    @Time
+    @Scheduled(cron = "0 0 */2 * * ?")
+    public void updateNextWeekMaxPrice() {
+        Instant now = Instant.now();
+        Instant beforeOneWeek = now.minus(7, DAYS);
+        cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneWeek.toEpochMilli())
+                .forEach(symbol -> saveNextDayMaxPrice(symbol, now));
+
+    }
+
+    private void saveNextWeekMaxPrice(String symbol, Instant now) {
+        Instant before2Hour = now.minus(2, HOURS);
+        Instant beforeOneWeek = now.minus(7, DAYS);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        BigDecimal lastFifteenMinuteMax = klines.stream()
+                .map(BinanceCandlestick::getHigh)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
         cryptoRepository.updateNextWeekMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
                                                                            symbol,
-                                                                           beforeWeek.toEpochMilli(),
-                                                                           before15Min.toEpochMilli());
+                                                                           beforeOneWeek.toEpochMilli(),
+                                                                           before2Hour.toEpochMilli());
     }
 
     @Async

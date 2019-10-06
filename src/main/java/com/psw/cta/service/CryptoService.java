@@ -4,10 +4,10 @@ import com.psw.cta.aspect.Time;
 import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.repository.CryptoRepository;
+import com.psw.cta.rest.dto.ImmutableSuccessRate;
 import com.psw.cta.rest.dto.SuccessRate;
 import com.psw.cta.service.dto.BinanceCandlestick;
 import com.psw.cta.service.dto.BinanceSymbol;
-import com.psw.cta.service.factory.SuccessRateFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,14 +27,11 @@ import static java.time.temporal.ChronoUnit.*;
 public class CryptoService {
 
     private CryptoRepository cryptoRepository;
-    private SuccessRateFactory successRateFactory;
     private BinanceService binanceService;
 
     public CryptoService(CryptoRepository cryptoRepository,
-                         SuccessRateFactory successRateFactory,
                          BinanceService binanceService) {
         this.cryptoRepository = cryptoRepository;
-        this.successRateFactory = successRateFactory;
         this.binanceService = binanceService;
     }
 
@@ -57,7 +54,11 @@ public class CryptoService {
         double oneDaySuccessRate = nextDayValid / allStats * 100;
         double twoDaySuccessRate = next2DysValid / allStats * 100;
         double oneWeekSuccessRate = nextWeekValid / allStats * 100;
-        return successRateFactory.create(oneDaySuccessRate, twoDaySuccessRate, oneWeekSuccessRate);
+        return ImmutableSuccessRate.builder()
+                .oneDaySuccessRate(oneDaySuccessRate)
+                .twoDaysSuccessRate(twoDaySuccessRate)
+                .oneWeekSuccessRate(oneWeekSuccessRate)
+                .build();
     }
 
     @Time

@@ -1,8 +1,8 @@
 package com.psw.cta.service;
 
 import com.psw.cta.aspect.Time;
+import com.psw.cta.rest.dto.ImmutableSuccessRate;
 import com.psw.cta.rest.dto.SuccessRate;
-import com.psw.cta.rest.dto.SuccessRateImpl;
 import com.psw.cta.service.dto.ActualCryptos;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,11 @@ public class CacheService {
 
     private CryptoService cryptoService;
 
-    private SuccessRate successRate = new SuccessRateImpl(0, 0, 0);
+    private SuccessRate successRate = ImmutableSuccessRate.builder()
+            .oneWeekSuccessRate(0)
+            .twoDaysSuccessRate(0)
+            .oneWeekSuccessRate(0)
+            .build();
     private ActualCryptos actualCryptos = new ActualCryptos(emptyList());
 
     public CacheService(CryptoService cryptoService) {

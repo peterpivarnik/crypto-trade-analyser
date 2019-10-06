@@ -5,7 +5,7 @@ import org.apache.logging.log4j.util.Strings;
 
 public class BinanceSymbol {
 
-    String symbol;
+    private String symbol;
 
     public BinanceSymbol(String symbol) throws CryptoTradeAnalyserException {
         // sanitizing symbol, preventing from common user-input errors

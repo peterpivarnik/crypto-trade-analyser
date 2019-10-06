@@ -61,9 +61,7 @@ class BtcBinanceService {
                     .map(CryptoDto::new)
                     .filter(dto -> dto.getBinanceExchangeSymbol().getSymbol().getSymbol().endsWith("BTC"))
                     .filter(dto -> dto.getBinanceExchangeSymbol().getStatus().equals("TRADING"))
-                    .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto,
-                                                                                      ONE_DAY,
-                                                                                      90)))
+                    .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, ONE_DAY, 90)))
                     .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
                     .peek(dto -> dto.setTicker24hr(get24hTicker(tickers, dto)))
                     .peek(dto -> dto.setVolume(calculateVolume(dto)))
@@ -71,17 +69,12 @@ class BtcBinanceService {
                     .peek(dto -> dto.setDepth20(getDepth(dto)))
                     .peek(dto -> dto.setCurrentPrice(calculateCurrentPrice(dto)))
                     .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                    .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto,
-                                                                                         FIFTEEN_MIN,
-                                                                                         96)))
+                    .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MIN, 96)))
                     .peek(dto -> dto.setSumDiffsPerc(calculateSumDiffsPerc(dto, 4)))
                     .peek(dto -> dto.setSumDiffsPerc10h(calculateSumDiffsPerc(dto, 40)))
                     .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto)))
-                    .peek(dto -> dto.setPriceToSellPercentage(calculatePriceToSellPercentage(dto.getPriceToSell(),
-                                                                                             dto.getCurrentPrice())))
-                    .peek(dto -> dto.setWeight(calculateWeight(dto,
-                                                               dto.getPriceToSell(),
-                                                               dto.getPriceToSellPercentage())))
+                    .peek(dto -> dto.setPriceToSellPercentage(calculatePriceToSellPercentage(dto)))
+                    .peek(dto -> dto.setWeight(calculateWeight(dto)))
                     .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                     .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                     .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
@@ -195,14 +188,18 @@ class BtcBinanceService {
                 .add(cryptoDto.getCurrentPrice());
     }
 
-    private BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal currentPrice) {
+    private BigDecimal calculatePriceToSellPercentage(CryptoDto cryptoDto) {
+        BigDecimal priceToSell = cryptoDto.getPriceToSell();
+        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
         return priceToSell.multiply(new BigDecimal("100"))
                 .divide(currentPrice, 8, BigDecimal.ROUND_UP)
                 .subtract(new BigDecimal("100"));
     }
 
     @SuppressWarnings({"unchecked"})
-    private BigDecimal calculateWeight(CryptoDto cryptoDto, BigDecimal priceToSell, BigDecimal priceToSellPercentage) {
+    private BigDecimal calculateWeight(CryptoDto cryptoDto) {
+        BigDecimal priceToSell = cryptoDto.getPriceToSell();
+        BigDecimal priceToSellPercentage = cryptoDto.getPriceToSellPercentage();
         BigDecimal ratio;
         ArrayList<Object> asks = (ArrayList<Object>) cryptoDto.getDepth20().get("asks");
         final BigDecimal sum = asks.parallelStream()

@@ -15,7 +15,7 @@ public class CacheService {
     private CryptoService cryptoService;
 
     private SuccessRate successRate = ImmutableSuccessRate.builder()
-            .oneWeekSuccessRate(0)
+            .oneDaySuccessRate(0)
             .twoDaysSuccessRate(0)
             .oneWeekSuccessRate(0)
             .build();

@@ -1,7 +1,6 @@
 package com.psw.cta.repository;
 
 import com.psw.cta.entity.Crypto;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,16 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface CryptoRepository extends JpaRepository<Crypto, Long> {
-
-    List<Crypto> findByCreatedAtBetween(Long startDate, Long endDate, Sort sort);
-
-    @Query("SELECT AVG(c.priceToSellPercentage) FROM Crypto c WHERE c.createdAt > :startDate  and c.createdAt < :endDate")
-    Optional<Double> findAveragePriceToSellPercentageByCreatedAtBetween(@Param("startDate") Long startDate,
-                                                                        @Param("endDate") Long endDate);
 
     @Transactional
     @Modifying
@@ -59,6 +51,15 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long> {
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell")
     double countByCreatedAtBetweenAndNextDayMaxPriceHigherOrEqualPriceToSell(@Param("startDate") Long startDate,
                                                                              @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.next2DayMaxPrice >= c.priceToSell")
+    double countByCreatedAtBetweenAndNext2DayMaxPriceHigherOrEqualPriceToSell(@Param("startDate") Long startDate,
+                                                                              @Param("endDate") Long endDate);
+
+    @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextWeekMaxPrice >= c.priceToSell")
+    double countByCreatedAtBetweenAndNextWeekMaxPriceHigherOrEqualPriceToSell(@Param("startDate") Long startDate,
+                                                                              @Param("endDate") Long endDate);
+
 
     List<Crypto> findByCreatedAt(Long createdAt);
 }

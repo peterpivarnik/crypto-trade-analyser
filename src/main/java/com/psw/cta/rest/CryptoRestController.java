@@ -1,6 +1,6 @@
 package com.psw.cta.rest;
 
-import com.psw.cta.rest.dto.CompleteStats;
+import com.psw.cta.rest.dto.SuccessRate;
 import com.psw.cta.service.CacheService;
 import com.psw.cta.service.dto.ActualCryptos;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,8 +22,8 @@ public class CryptoRestController {
     }
 
     @RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
-    public CompleteStats getStats() {
-        return cacheService.getCompleteStats();
+    public SuccessRate getSuccessRate() {
+        return cacheService.getSuccessRate();
     }
 }
 

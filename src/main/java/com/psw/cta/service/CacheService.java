@@ -1,9 +1,8 @@
 package com.psw.cta.service;
 
 import com.psw.cta.aspect.Time;
-import com.psw.cta.rest.dto.CompleteStats;
-import com.psw.cta.rest.dto.CompleteStatsImpl;
-import com.psw.cta.rest.dto.StatsImpl;
+import com.psw.cta.rest.dto.SuccessRate;
+import com.psw.cta.rest.dto.SuccessRateImpl;
 import com.psw.cta.service.dto.ActualCryptos;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ public class CacheService {
 
     private CryptoService cryptoService;
 
-    private CompleteStats completeStats = new CompleteStatsImpl(new StatsImpl(0, 0, 0));
+    private SuccessRate successRate = new SuccessRateImpl(0, 0, 0);
     private ActualCryptos actualCryptos = new ActualCryptos(emptyList());
 
     public CacheService(CryptoService cryptoService) {
@@ -23,13 +22,13 @@ public class CacheService {
     }
 
     @Scheduled(cron = "0 */15 * * * ?")
-    public void updateCompleteStats() {
-        this.completeStats = cryptoService.getStats();
+    public void updateSuccessRate() {
+        this.successRate = cryptoService.getSuccessRate();
     }
 
     @Time
-    public CompleteStats getCompleteStats() {
-        return completeStats;
+    public SuccessRate getSuccessRate() {
+        return successRate;
     }
 
     public ActualCryptos getCryptos() {

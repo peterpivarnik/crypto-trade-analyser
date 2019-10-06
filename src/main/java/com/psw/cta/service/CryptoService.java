@@ -4,12 +4,10 @@ import com.psw.cta.aspect.Time;
 import com.psw.cta.entity.Crypto;
 import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.repository.CryptoRepository;
-import com.psw.cta.rest.dto.CompleteStats;
-import com.psw.cta.rest.dto.Stats;
+import com.psw.cta.rest.dto.SuccessRate;
 import com.psw.cta.service.dto.BinanceCandlestick;
 import com.psw.cta.service.dto.BinanceSymbol;
-import com.psw.cta.service.factory.CompleteStatsFactory;
-import com.psw.cta.service.factory.StatsFactory;
+import com.psw.cta.service.factory.SuccessRateFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,48 +27,37 @@ import static java.time.temporal.ChronoUnit.*;
 public class CryptoService {
 
     private CryptoRepository cryptoRepository;
-    private StatsFactory statsFactory;
-    private CompleteStatsFactory completeStatsFactory;
+    private SuccessRateFactory successRateFactory;
     private BinanceService binanceService;
 
     public CryptoService(CryptoRepository cryptoRepository,
-                         StatsFactory statsFactory,
-                         CompleteStatsFactory completeStatsFactory,
+                         SuccessRateFactory successRateFactory,
                          BinanceService binanceService) {
         this.cryptoRepository = cryptoRepository;
-        this.statsFactory = statsFactory;
-        this.completeStatsFactory = completeStatsFactory;
+        this.successRateFactory = successRateFactory;
         this.binanceService = binanceService;
     }
 
     @Transactional
     @Time
-    CompleteStats getStats() {
-        Instant endDate = Instant.now();
-        Instant beforeOneDay = endDate.minus(1, DAYS);
-        Stats stats1H = getCompleteStats(beforeOneDay);
-        return completeStatsFactory.createCompleteStats(stats1H);
-    }
-
-    private Stats getCompleteStats(Instant endDate) {
-        double oneDayStats = getStats(endDate.minus(1, DAYS).toEpochMilli(),
-                                      endDate.toEpochMilli());
-        double oneWeekStats = getStats(endDate.minus(7, DAYS).toEpochMilli(),
-                                       endDate.toEpochMilli());
-        double oneMonthStats = getStats(endDate.minus(30, DAYS).toEpochMilli(),
-                                        endDate.toEpochMilli());
-        return statsFactory.create(oneDayStats, oneWeekStats, oneMonthStats);
-    }
-
-    private double getStats(Long startDate, Long endDate) {
-        double validStats = cryptoRepository.countByCreatedAtBetweenAndNextDayMaxPriceHigherOrEqualPriceToSell(
-                startDate,
-                endDate);
-        double allStats = cryptoRepository.countByCreatedAtBetween(startDate, endDate);
-        if (allStats == 0) {
-            return 0d;
-        }
-        return validStats / allStats * 100;
+    SuccessRate getSuccessRate() {
+        Instant now = Instant.now();
+        Long before7Days = now.minus(7, DAYS).toEpochMilli();
+        Long before8Days = now.minus(8, DAYS).toEpochMilli();
+        double allStats = cryptoRepository.countByCreatedAtBetween(before8Days, before7Days);
+        double nextDayValid = cryptoRepository.countByCreatedAtBetweenAndNextDayMaxPriceHigherOrEqualPriceToSell(
+                before8Days,
+                before7Days);
+        double next2DysValid = cryptoRepository.countByCreatedAtBetweenAndNext2DayMaxPriceHigherOrEqualPriceToSell(
+                before8Days,
+                before7Days);
+        double nextWeekValid = cryptoRepository.countByCreatedAtBetweenAndNextWeekMaxPriceHigherOrEqualPriceToSell(
+                before8Days,
+                before7Days);
+        double oneDaySuccessRate = nextDayValid / allStats * 100;
+        double twoDaySuccessRate = next2DysValid / allStats * 100;
+        double oneWeekSuccessRate = nextWeekValid / allStats * 100;
+        return successRateFactory.create(oneDaySuccessRate, twoDaySuccessRate, oneWeekSuccessRate);
     }
 
     @Time

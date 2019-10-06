@@ -10,18 +10,18 @@ import com.vaadin.flow.spring.annotation.SpringComponent;
 public class MainViewService {
 
     private AnalysisService analysisService;
-    private StatisticsService statisticsService;
+    private SuccessService successService;
     private FaqService faqService;
     private ContactService contactService;
     private ClientFactory clientFactory;
 
     public MainViewService(AnalysisService analysisService,
-                           StatisticsService statisticsService,
+                           SuccessService successService,
                            FaqService faqService,
                            ContactService contactService,
                            ClientFactory clientFactory) {
         this.analysisService = analysisService;
-        this.statisticsService = statisticsService;
+        this.successService = successService;
         this.faqService = faqService;
         this.contactService = contactService;
         this.clientFactory = clientFactory;
@@ -30,14 +30,14 @@ public class MainViewService {
     public VerticalLayout getMainViewLayout() {
         Label layoutLabel = clientFactory.createLayoutLabel("Crypto Trade Analyser", "200%");
         VerticalLayout analysisLayout = analysisService.getAnalysisLayout();
-        VerticalLayout statisticsLayout = statisticsService.getStatisticLayout();
-        setBackgroundColor(statisticsLayout.getStyle());
+        VerticalLayout successRateLayout = successService.getSuccessRateLayout();
+        setBackgroundColor(successRateLayout.getStyle());
         VerticalLayout faqLayout = faqService.getFaqLayout();
         VerticalLayout contactLayout = contactService.getContactLayout();
         setBackgroundColor(contactLayout.getStyle());
         return clientFactory.createVerticalLayout(layoutLabel,
                                                   analysisLayout,
-                                                  statisticsLayout,
+                                                  successRateLayout,
                                                   faqLayout,
                                                   contactLayout);
     }

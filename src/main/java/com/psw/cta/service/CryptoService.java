@@ -96,7 +96,7 @@ public class CryptoService {
     }
 
     private void saveNext2DaysMaxPrice(String symbol, Instant now) {
-        Instant before1Hour = now.minus(1, HOURS);
+        Instant before30Min = now.minus(30, MINUTES);
         Instant beforeTwoDays = now.minus(2, DAYS);
 
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
@@ -107,7 +107,7 @@ public class CryptoService {
         cryptoRepository.updateNext2DayMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
                                                                            symbol,
                                                                            beforeTwoDays.toEpochMilli(),
-                                                                           before1Hour.toEpochMilli());
+                                                                           before30Min.toEpochMilli());
     }
 
     @Time
@@ -121,7 +121,7 @@ public class CryptoService {
     }
 
     private void saveNextWeekMaxPrice(String symbol, Instant now) {
-        Instant before2Hour = now.minus(2, HOURS);
+        Instant before30Min = now.minus(30, MINUTES);
         Instant beforeOneWeek = now.minus(7, DAYS);
         List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
         BigDecimal lastFifteenMinuteMax = klines.stream()
@@ -131,7 +131,7 @@ public class CryptoService {
         cryptoRepository.updateNextWeekMaxPriceBySymbolAndCreatedAtBetween(lastFifteenMinuteMax,
                                                                            symbol,
                                                                            beforeOneWeek.toEpochMilli(),
-                                                                           before2Hour.toEpochMilli());
+                                                                           before30Min.toEpochMilli());
     }
 
     @Async

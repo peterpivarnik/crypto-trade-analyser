@@ -45,8 +45,7 @@ public interface CryptoRepository extends JpaRepository<Crypto, Long> {
     List<Long> findUniqueCreatedAtByCreatedAtBetween(@Param("from") Long from, @Param("to") Long to);
 
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate")
-    double countByCreatedAtBetween(@Param("startDate") Long startDate,
-                                   @Param("endDate") Long endDate);
+    double countByCreatedAtBetween(@Param("startDate") Long startDate, @Param("endDate") Long endDate);
 
     @Query("SELECT COUNT(*) FROM Crypto c WHERE c.createdAt > :startDate  AND c.createdAt < :endDate AND c.nextDayMaxPrice >= c.priceToSell")
     double countByCreatedAtBetweenAndNextDayMaxPriceHigherOrEqualPriceToSell(@Param("startDate") Long startDate,

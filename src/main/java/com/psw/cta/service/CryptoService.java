@@ -19,8 +19,9 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.psw.cta.service.dto.BinanceInterval.ONE_MIN;
-import static java.time.temporal.ChronoUnit.*;
+import static com.psw.cta.service.dto.BinanceInterval.FIFTEEN_MIN;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Component
 @Slf4j
@@ -75,7 +76,7 @@ public class CryptoService {
         Instant before30Min = now.minus(30, MINUTES);
         Instant beforeOneDay = now.minus(1, DAYS);
 
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 4);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
@@ -99,7 +100,7 @@ public class CryptoService {
         Instant before30Min = now.minus(30, MINUTES);
         Instant beforeTwoDays = now.minus(2, DAYS);
 
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 6);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())
@@ -117,13 +118,12 @@ public class CryptoService {
         Instant beforeOneWeek = now.minus(7, DAYS);
         cryptoRepository.findUniqueSymbolsByCreatedAtGreaterThan(beforeOneWeek.toEpochMilli())
                 .forEach(symbol -> saveNextWeekMaxPrice(symbol, now));
-
     }
 
     private void saveNextWeekMaxPrice(String symbol, Instant now) {
         Instant before30Min = now.minus(30, MINUTES);
         Instant beforeOneWeek = now.minus(7, DAYS);
-        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), ONE_MIN, 15);
+        List<BinanceCandlestick> klines = binanceService.klines(new BinanceSymbol(symbol), FIFTEEN_MIN, 10);
         BigDecimal lastFifteenMinuteMax = klines.stream()
                 .map(BinanceCandlestick::getHigh)
                 .max(Comparator.naturalOrder())

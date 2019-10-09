@@ -11,19 +11,13 @@ public class MainViewService {
 
     private AnalysisService analysisService;
     private SuccessService successService;
-    private FaqService faqService;
-    private ContactService contactService;
     private ClientFactory clientFactory;
 
     public MainViewService(AnalysisService analysisService,
                            SuccessService successService,
-                           FaqService faqService,
-                           ContactService contactService,
                            ClientFactory clientFactory) {
         this.analysisService = analysisService;
         this.successService = successService;
-        this.faqService = faqService;
-        this.contactService = contactService;
         this.clientFactory = clientFactory;
     }
 
@@ -32,14 +26,9 @@ public class MainViewService {
         VerticalLayout analysisLayout = analysisService.getAnalysisLayout();
         VerticalLayout successRateLayout = successService.getSuccessRateLayout();
         setBackgroundColor(successRateLayout.getStyle());
-        VerticalLayout faqLayout = faqService.getFaqLayout();
-        VerticalLayout contactLayout = contactService.getContactLayout();
-        setBackgroundColor(contactLayout.getStyle());
         return clientFactory.createVerticalLayout(layoutLabel,
                                                   analysisLayout,
-                                                  successRateLayout,
-                                                  faqLayout,
-                                                  contactLayout);
+                                                  successRateLayout);
     }
 
     private void setBackgroundColor(Style style) {

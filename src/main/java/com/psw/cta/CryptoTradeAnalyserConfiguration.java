@@ -1,7 +1,5 @@
 package com.psw.cta;
 
-import com.psw.cta.mail.CryptoMailProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -17,7 +15,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 @ComponentScan
 @EnableAsync
 @EnableWebSecurity
-@EnableConfigurationProperties(CryptoMailProperties.class)
 class CryptoTradeAnalyserConfiguration extends WebSecurityConfigurerAdapter {
 
     @Bean

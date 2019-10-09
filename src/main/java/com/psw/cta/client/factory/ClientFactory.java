@@ -1,10 +1,8 @@
 package com.psw.cta.client.factory;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.spring.annotation.SpringComponent;
@@ -14,13 +12,13 @@ import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CE
 @SpringComponent
 public class ClientFactory {
 
-    public Label createLabel(String text) {
+    private Label createLabel(String text) {
         Label label = createLabel();
         label.setText(text);
         return label;
     }
 
-    public Label createLabel() {
+    private Label createLabel() {
         return new Label();
     }
 
@@ -31,16 +29,10 @@ public class ClientFactory {
         return textField;
     }
 
-    public TextField createTextField(String label) {
+    private TextField createTextField(String label) {
         TextField textField = new TextField();
         textField.setLabel(label);
         return textField;
-    }
-
-    public Button createButton(String label) {
-        Button button = new Button();
-        button.setText(label);
-        return button;
     }
 
     public Label createLayoutLabel(String labelName, String labelSize) {
@@ -58,9 +50,4 @@ public class ClientFactory {
         return verticalLayout;
     }
 
-    public TextArea createTextArea(String label) {
-        TextArea contactQuestion = new TextArea(label);
-        contactQuestion.setSizeUndefined();
-        return contactQuestion;
-    }
 }

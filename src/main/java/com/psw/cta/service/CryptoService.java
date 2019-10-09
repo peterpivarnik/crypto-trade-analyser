@@ -8,7 +8,6 @@ import com.psw.cta.rest.dto.ImmutableSuccessRate;
 import com.psw.cta.rest.dto.SuccessRate;
 import com.psw.cta.service.dto.BinanceCandlestick;
 import com.psw.cta.service.dto.BinanceSymbol;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,6 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @Component
-@Slf4j
 public class CryptoService {
 
     private CryptoRepository cryptoRepository;

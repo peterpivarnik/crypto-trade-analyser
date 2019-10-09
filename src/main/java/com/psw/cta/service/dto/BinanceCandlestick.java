@@ -3,24 +3,22 @@ package com.psw.cta.service.dto;
 
 import com.google.gson.JsonArray;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
-import lombok.Data;
 
 import java.math.BigDecimal;
 
-@Data
 public class BinanceCandlestick {
 
-    public Long openTime = null;
-    public BigDecimal open = null;
-    public BigDecimal high = null;
-    public BigDecimal low = null;
-    public BigDecimal close = null;
-    public BigDecimal volume = null;
-    public Long closeTime = null;
-    public BigDecimal quoteAssetVolume = null;
-    public Long numberOfTrades = null;
-    public BigDecimal takerBuyBaseAssetVolume = null;
-    public BigDecimal takerBuyQuoteAssetVolume = null;
+    private Long openTime = null;
+    private BigDecimal open = null;
+    private BigDecimal high = null;
+    private BigDecimal low = null;
+    private BigDecimal close = null;
+    private BigDecimal volume = null;
+    private Long closeTime = null;
+    private BigDecimal quoteAssetVolume = null;
+    private Long numberOfTrades = null;
+    private BigDecimal takerBuyBaseAssetVolume = null;
+    private BigDecimal takerBuyQuoteAssetVolume = null;
 
     public BinanceCandlestick(JsonArray jsonArray) throws CryptoTradeAnalyserException {
         if (jsonArray.size() < 11) {
@@ -38,5 +36,93 @@ public class BinanceCandlestick {
         setNumberOfTrades(jsonArray.get(8).getAsLong());
         setTakerBuyBaseAssetVolume(jsonArray.get(9).getAsBigDecimal());
         setTakerBuyQuoteAssetVolume(jsonArray.get(10).getAsBigDecimal());
+    }
+
+    public Long getOpenTime() {
+        return openTime;
+    }
+
+    public void setOpenTime(Long openTime) {
+        this.openTime = openTime;
+    }
+
+    public BigDecimal getOpen() {
+        return open;
+    }
+
+    public void setOpen(BigDecimal open) {
+        this.open = open;
+    }
+
+    public BigDecimal getHigh() {
+        return high;
+    }
+
+    public void setHigh(BigDecimal high) {
+        this.high = high;
+    }
+
+    public BigDecimal getLow() {
+        return low;
+    }
+
+    public void setLow(BigDecimal low) {
+        this.low = low;
+    }
+
+    public BigDecimal getClose() {
+        return close;
+    }
+
+    public void setClose(BigDecimal close) {
+        this.close = close;
+    }
+
+    public BigDecimal getVolume() {
+        return volume;
+    }
+
+    public void setVolume(BigDecimal volume) {
+        this.volume = volume;
+    }
+
+    public Long getCloseTime() {
+        return closeTime;
+    }
+
+    public void setCloseTime(Long closeTime) {
+        this.closeTime = closeTime;
+    }
+
+    public BigDecimal getQuoteAssetVolume() {
+        return quoteAssetVolume;
+    }
+
+    public void setQuoteAssetVolume(BigDecimal quoteAssetVolume) {
+        this.quoteAssetVolume = quoteAssetVolume;
+    }
+
+    public Long getNumberOfTrades() {
+        return numberOfTrades;
+    }
+
+    public void setNumberOfTrades(Long numberOfTrades) {
+        this.numberOfTrades = numberOfTrades;
+    }
+
+    public BigDecimal getTakerBuyBaseAssetVolume() {
+        return takerBuyBaseAssetVolume;
+    }
+
+    public void setTakerBuyBaseAssetVolume(BigDecimal takerBuyBaseAssetVolume) {
+        this.takerBuyBaseAssetVolume = takerBuyBaseAssetVolume;
+    }
+
+    public BigDecimal getTakerBuyQuoteAssetVolume() {
+        return takerBuyQuoteAssetVolume;
+    }
+
+    public void setTakerBuyQuoteAssetVolume(BigDecimal takerBuyQuoteAssetVolume) {
+        this.takerBuyQuoteAssetVolume = takerBuyQuoteAssetVolume;
     }
 }

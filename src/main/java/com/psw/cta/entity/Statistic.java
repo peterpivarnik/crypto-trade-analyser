@@ -1,10 +1,5 @@
 package com.psw.cta.entity;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -15,10 +10,6 @@ import static javax.persistence.GenerationType.AUTO;
 @Entity
 @Table(schema = "public", name = "statistic")
 @Cacheable
-@Getter
-@Setter
-@ToString
-@EqualsAndHashCode
 public class Statistic {
 
     @Id
@@ -40,4 +31,35 @@ public class Statistic {
     @Column(name = "success_rate", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal successRate;
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Long createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getCreatedAtDate() {
+        return createdAtDate;
+    }
+
+    public void setCreatedAtDate(LocalDateTime createdAtDate) {
+        this.createdAtDate = createdAtDate;
+    }
+
+    public BigDecimal getSuccessRate() {
+        return successRate;
+    }
+
+    public void setSuccessRate(BigDecimal successRate) {
+        this.successRate = successRate;
+    }
 }

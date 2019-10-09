@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
-import lombok.Data;
 import org.apache.logging.log4j.util.Strings;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -20,23 +19,15 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
 
-@Data
 public class BinanceRequest {
 
-    public String userAgent = "Mozilla/5.0 (Windows NT 5.1; rv:19.0) Gecko/20100101 Firefox/19.0";
-    public HttpsURLConnection conn = null;
-    public String requestUrl;
-    public String method = "GET";
-    public String lastResponse = "";
-
-    public Map<String, String> headers = new HashMap<>();
+    private HttpsURLConnection conn = null;
+    private String requestUrl;
+    private String lastResponse = "";
 
     // Internal JSON parser
     private JsonParser jsonParser = new JsonParser();
-    private String requestBody = "";
 
     // Creating public request
     public BinanceRequest(String requestUrl) {
@@ -49,7 +40,6 @@ public class BinanceRequest {
      * @throws CryptoTradeAnalyserException in case of any error
      */
     private void connect() throws CryptoTradeAnalyserException {
-
         TrustManager[] trustAllCerts = new TrustManager[]{
                 new X509TrustManager() {
                     public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -91,14 +81,13 @@ public class BinanceRequest {
         }
 
         try {
+            String method = "GET";
             conn.setRequestMethod(method);
         } catch (ProtocolException e) {
             throw new CryptoTradeAnalyserException("HTTP method error " + e.getMessage());
         }
-        conn.setRequestProperty("User-Agent", getUserAgent());
-        for (String header : headers.keySet()) {
-            conn.setRequestProperty(header, headers.get(header));
-        }
+        String userAgent = "Mozilla/5.0 (Windows NT 5.1; rv:19.0) Gecko/20100101 Firefox/19.0";
+        conn.setRequestProperty("User-Agent", userAgent);
     }
 
     /**
@@ -114,11 +103,12 @@ public class BinanceRequest {
         try {
 
             // posting payload it we do not have it yet
-            if (!Strings.isBlank(getRequestBody())) {
+            String requestBody = "";
+            if (!Strings.isBlank(requestBody)) {
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
                 OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
-                writer.write(getRequestBody());
+                writer.write(requestBody);
                 writer.close();
             }
 
@@ -162,7 +152,7 @@ public class BinanceRequest {
      * @return response as Json Object
      */
     public JsonObject asJsonObject() {
-        return (JsonObject) jsonParser.parse(getLastResponse());
+        return (JsonObject) jsonParser.parse(lastResponse);
     }
 
     /**
@@ -171,7 +161,9 @@ public class BinanceRequest {
      * @return response as Json Array
      */
     public JsonArray asJsonArray() {
-        return (JsonArray) jsonParser.parse(getLastResponse());
+        return (JsonArray) jsonParser.parse(lastResponse);
     }
+
+
 
 }

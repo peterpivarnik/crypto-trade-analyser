@@ -1,12 +1,5 @@
 package com.psw.cta.service.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
-
-@Getter
-@ToString
-@AllArgsConstructor
 public enum BinanceInterval {
 
     ONE_MIN("1m"),
@@ -28,5 +21,13 @@ public enum BinanceInterval {
     ONE_MONTH("1M");
 
     private String value;
+
+    BinanceInterval(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
 }
 

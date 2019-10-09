@@ -5,13 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
 import com.psw.cta.service.dto.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
 import java.util.List;
 
-@Slf4j
 @Service
 class BinanceService {
 

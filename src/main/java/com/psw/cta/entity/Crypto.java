@@ -1,74 +1,24 @@
 package com.psw.cta.entity;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import static javax.persistence.GenerationType.AUTO;
+public class Crypto {
 
-@Entity
-@Table(schema = "public", name = "crypto")
-@Cacheable
-public class Crypto implements CryptoResult {
-
-    @Id
-    @NotNull
-    @SequenceGenerator(name = "generator__seq_crypto_id", schema = "public", sequenceName = "seq_crypto_id")
-    @GeneratedValue(strategy = AUTO, generator = "generator__seq_crypto_id")
-    @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
-    @NotNull
-    @Column(name = "symbol", updatable = false, nullable = false, length = 10)
     private String symbol;
-
-    @NotNull
-    @Column(name = "current_price", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal currentPrice;
-
-    @NotNull
-    @Column(name = "volume", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal volume;
-
-    @NotNull
-    @Column(name = "sum_diff_percent", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal sumDiffsPerc;
-
-    @NotNull
-    @Column(name = "sum_diff_percent10h", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal sumDiffsPerc10h;
-
-    @NotNull
-    @Column(name = "price_to_sell", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal priceToSell;
-
-    @NotNull
-    @Column(name = "price_to_sell_percentage", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal priceToSellPercentage;
-
-    @NotNull
-    @Column(name = "weight", updatable = false, nullable = false, precision = 20, scale = 8)
     private BigDecimal weight;
-
-    @NotNull
-    @Column(name = "created_at", updatable = false, nullable = false)
     private Long createdAt;
-
-    @NotNull
-    @Column(name = "created_at_date", updatable = false, nullable = false)
     private LocalDateTime createdAtDate;
-
-    @NotNull
-    @Column(name = "next_day_max_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal nextDayMaxPrice;
-
-    @NotNull
-    @Column(name = "next_2day_max_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal next2DayMaxPrice;
-
-    @NotNull
-    @Column(name = "next_week_max_price", nullable = false, precision = 20, scale = 8)
     private BigDecimal nextWeekMaxPrice;
 
     public Long getId() {
@@ -79,7 +29,6 @@ public class Crypto implements CryptoResult {
         this.id = id;
     }
 
-    @Override
     public String getSymbol() {
         return symbol;
     }
@@ -88,7 +37,6 @@ public class Crypto implements CryptoResult {
         this.symbol = symbol;
     }
 
-    @Override
     public BigDecimal getCurrentPrice() {
         return currentPrice;
     }
@@ -121,7 +69,6 @@ public class Crypto implements CryptoResult {
         this.sumDiffsPerc10h = sumDiffsPerc10h;
     }
 
-    @Override
     public BigDecimal getPriceToSell() {
         return priceToSell;
     }
@@ -130,7 +77,6 @@ public class Crypto implements CryptoResult {
         this.priceToSell = priceToSell;
     }
 
-    @Override
     public BigDecimal getPriceToSellPercentage() {
         return priceToSellPercentage;
     }
@@ -147,7 +93,6 @@ public class Crypto implements CryptoResult {
         this.weight = weight;
     }
 
-    @Override
     public Long getCreatedAt() {
         return createdAt;
     }

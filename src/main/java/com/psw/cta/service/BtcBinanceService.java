@@ -8,9 +8,11 @@ import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.entity.Crypto;
-import com.psw.cta.entity.CryptoResult;
 import com.psw.cta.exception.CryptoTradeAnalyserException;
-import com.psw.cta.service.dto.*;
+import com.psw.cta.service.dto.BinanceCandlestick;
+import com.psw.cta.service.dto.BinanceInterval;
+import com.psw.cta.service.dto.BinanceSymbol;
+import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.factory.CryptoFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,18 +36,12 @@ class BtcBinanceService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BtcBinanceService.class);
 
-    private CryptoService cryptoService;
     private BinanceService binanceService;
-    private CacheService cacheService;
     private CryptoFactory cryptoFactory;
 
-    BtcBinanceService(CryptoService cryptoService,
-                      BinanceService binanceService,
-                      CacheService cacheService,
+    BtcBinanceService(BinanceService binanceService,
                       CryptoFactory cryptoFactory) {
-        this.cryptoService = cryptoService;
         this.binanceService = binanceService;
-        this.cacheService = cacheService;
         this.cryptoFactory = cryptoFactory;
     }
 
@@ -84,10 +80,6 @@ class BtcBinanceService {
                     .collect(Collectors.toList());
             int cryptosSize = cryptos.size();
             LOGGER.info("Actual number of cryptos: " + cryptosSize);
-            cacheService.setActualCryptos(new ActualCryptos(cryptos.stream()
-                                                                    .map(crypto -> (CryptoResult) crypto)
-                                                                    .collect(Collectors.toList())));
-            cryptoService.saveAll(cryptos);
         } catch (CryptoTradeAnalyserException e) {
             e.printStackTrace();
         }

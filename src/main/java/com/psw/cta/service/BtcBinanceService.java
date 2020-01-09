@@ -73,6 +73,7 @@ class BtcBinanceService {
                 .collect(Collectors.toList());
             int cryptosSize = cryptos.size();
             LOGGER.info("Actual number of cryptos: " + cryptosSize);
+            cryptos.forEach((crypto) -> System.out.println(crypto.getSymbol()));
         } catch (CryptoTradeAnalyserException e) {
             e.printStackTrace();
         }

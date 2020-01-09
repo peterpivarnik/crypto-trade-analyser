@@ -1,21 +1,23 @@
 package com.psw.cta.service.dto;
 
-import com.google.gson.internal.LinkedTreeMap;
-
+import com.binance.api.client.domain.general.SymbolInfo;
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.OrderBook;
+import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
 import java.util.List;
 
 public class CryptoDto {
 
-    public CryptoDto(BinanceExchangeSymbol binanceExchangeSymbol) {
-        this.binanceExchangeSymbol = binanceExchangeSymbol;
+    public CryptoDto(SymbolInfo symbolInfo) {
+        this.symbolInfo = symbolInfo;
     }
 
-    private List<BinanceCandlestick> fifteenMinutesCandleStickData;
-    private List<BinanceCandlestick> threeMonthsCandleStickData;
-    private LinkedTreeMap<String, Object> ticker24hr;
-    private LinkedTreeMap<String, Object> depth20;
-    private BinanceExchangeSymbol binanceExchangeSymbol;
+    private List<Candlestick> fifteenMinutesCandleStickData;
+    private List<Candlestick> threeMonthsCandleStickData;
+    private TickerStatistics ticker24hr;
+    private OrderBook depth20;
+    private SymbolInfo symbolInfo;
 
     private BigDecimal currentPrice;
     private BigDecimal volume;
@@ -25,40 +27,36 @@ public class CryptoDto {
     private BigDecimal priceToSellPercentage;
     private BigDecimal weight;
 
-    public List<BinanceCandlestick> getFifteenMinutesCandleStickData() {
+    public List<Candlestick> getFifteenMinutesCandleStickData() {
         return fifteenMinutesCandleStickData;
     }
 
-    public void setFifteenMinutesCandleStickData(List<BinanceCandlestick> fifteenMinutesCandleStickData) {
+    public void setFifteenMinutesCandleStickData(List<Candlestick> fifteenMinutesCandleStickData) {
         this.fifteenMinutesCandleStickData = fifteenMinutesCandleStickData;
     }
 
-    public List<BinanceCandlestick> getThreeMonthsCandleStickData() {
+    public List<Candlestick> getThreeMonthsCandleStickData() {
         return threeMonthsCandleStickData;
     }
 
-    public void setThreeMonthsCandleStickData(List<BinanceCandlestick> threeMonthsCandleStickData) {
+    public void setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
         this.threeMonthsCandleStickData = threeMonthsCandleStickData;
     }
 
-    public LinkedTreeMap<String, Object> getTicker24hr() {
+    public TickerStatistics getTicker24hr() {
         return ticker24hr;
     }
 
-    public void setTicker24hr(LinkedTreeMap<String, Object> ticker24hr) {
+    public void setTicker24hr(TickerStatistics ticker24hr) {
         this.ticker24hr = ticker24hr;
     }
 
-    public LinkedTreeMap<String, Object> getDepth20() {
+    public OrderBook getDepth20() {
         return depth20;
     }
 
-    public void setDepth20(LinkedTreeMap<String, Object> depth20) {
+    public void setDepth20(OrderBook depth20) {
         this.depth20 = depth20;
-    }
-
-    public BinanceExchangeSymbol getBinanceExchangeSymbol() {
-        return binanceExchangeSymbol;
     }
 
     public BigDecimal getCurrentPrice() {
@@ -124,7 +122,6 @@ public class CryptoDto {
                ", threeMonthsCandleStickData=" + threeMonthsCandleStickData +
                ", ticker24hr=" + ticker24hr +
                ", depth20=" + depth20 +
-               ", binanceExchangeSymbol=" + binanceExchangeSymbol +
                ", currentPrice=" + currentPrice +
                ", volume=" + volume +
                ", sumDiffsPerc=" + sumDiffsPerc +
@@ -133,5 +130,9 @@ public class CryptoDto {
                ", priceToSellPercentage=" + priceToSellPercentage +
                ", weight=" + weight +
                '}';
+    }
+
+    public SymbolInfo getSymbolInfo() {
+        return symbolInfo;
     }
 }

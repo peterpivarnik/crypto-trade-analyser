@@ -1,6 +1,14 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.MARKET;
+import static com.binance.api.client.domain.TimeInForce.GTC;
+
 import com.binance.api.client.BinanceApiRestClient;
+import com.binance.api.client.domain.account.Account;
+import com.binance.api.client.domain.account.AssetBalance;
+import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
@@ -9,17 +17,11 @@ import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
-import com.psw.cta.entity.Crypto;
-import com.psw.cta.exception.CryptoTradeAnalyserException;
 import com.psw.cta.service.dto.CryptoDto;
-import com.psw.cta.service.factory.CryptoFactory;
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -30,53 +32,40 @@ class BtcBinanceService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BtcBinanceService.class);
 
-    private CryptoFactory cryptoFactory;
     private BinanceApiRestClient binanceApiRestClient;
 
-    BtcBinanceService(CryptoFactory cryptoFactory) {
-        this.cryptoFactory = cryptoFactory;
+    BtcBinanceService() {
         this.binanceApiRestClient = new BinanceApiRestClientImpl("", "");
     }
 
     @Time
     @Scheduled(cron = "0 * * * * ?")
     public void downloadData() {
-        try {
-            Instant now = Instant.now();
-            Long nowMillis = now.toEpochMilli();
-            LocalDateTime nowDate = LocalDateTime.ofInstant(now, ZoneId.of("Europe/Vienna"));
-            List<TickerStatistics> tickers = getAll24hTickers();
-            List<Crypto> cryptos = binanceApiRestClient.getExchangeInfo()
-                .getSymbols()
-                .parallelStream()
-                .map(CryptoDto::new)
-                .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
-                .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, CandlestickInterval.DAILY, 90)))
-                .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                .peek(dto -> dto.setTicker24hr(get24hTicker(tickers, dto)))
-                .peek(dto -> dto.setVolume(calculateVolume(dto)))
-                .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                .peek(dto -> dto.setDepth20(getDepth(dto)))
-                .peek(dto -> dto.setCurrentPrice(calculateCurrentPrice(dto)))
-                .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, CandlestickInterval.FIFTEEN_MINUTES, 96)))
-                .peek(dto -> dto.setSumDiffsPerc(calculateSumDiffsPerc(dto, 4)))
-                .peek(dto -> dto.setSumDiffsPerc10h(calculateSumDiffsPerc(dto, 40)))
-                .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto)))
-                .peek(dto -> dto.setPriceToSellPercentage(calculatePriceToSellPercentage(dto)))
-                .peek(dto -> dto.setWeight(calculateWeight(dto)))
-                .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                .map(cryptoDto -> cryptoFactory.createCrypto(cryptoDto, nowMillis, nowDate))
-                .collect(Collectors.toList());
-            int cryptosSize = cryptos.size();
-            LOGGER.info("Actual number of cryptos: " + cryptosSize);
-            cryptos.forEach((crypto) -> System.out.println(crypto.getSymbol()));
-        } catch (CryptoTradeAnalyserException e) {
-            e.printStackTrace();
-        }
+        List<TickerStatistics> tickers = getAll24hTickers();
+        binanceApiRestClient.getExchangeInfo()
+            .getSymbols()
+            .parallelStream()
+            .map(CryptoDto::new)
+            .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
+            .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+            .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, CandlestickInterval.DAILY, 90)))
+            .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
+            .peek(dto -> dto.setTicker24hr(get24hTicker(tickers, dto)))
+            .peek(dto -> dto.setVolume(calculateVolume(dto)))
+            .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+            .peek(dto -> dto.setDepth20(getDepth(dto)))
+            .peek(dto -> dto.setCurrentPrice(calculateCurrentPrice(dto)))
+            .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+            .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, CandlestickInterval.FIFTEEN_MINUTES, 96)))
+            .peek(dto -> dto.setSumDiffsPerc(calculateSumDiffsPerc(dto, 4)))
+            .peek(dto -> dto.setSumDiffsPerc10h(calculateSumDiffsPerc(dto, 40)))
+            .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto)))
+            .peek(dto -> dto.setPriceToSellPercentage(calculatePriceToSellPercentage(dto)))
+            .peek(dto -> dto.setWeight(calculateWeight(dto)))
+            .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+            .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+            .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+            .forEach(this::tradeCrypto);
     }
 
     private List<TickerStatistics> getAll24hTickers() {
@@ -186,5 +175,48 @@ class BtcBinanceService {
             ratio = cryptoDto.getVolume().divide(sum, 8, BigDecimal.ROUND_UP);
         }
         return priceToSellPercentage.multiply(ratio);
+    }
+
+    private synchronized void tradeCrypto(CryptoDto crypto) {
+        // 1. get balance on account
+        LOGGER.info("Starting trading cryptos!");
+        String symbol = crypto.getSymbolInfo().getSymbol();
+        LOGGER.info("symbol: " + symbol);
+        Account account = binanceApiRestClient.getAccount();
+        LOGGER.info("Account: " + account);
+        BigDecimal myBalance = account.getBalances()
+            .stream()
+            .filter(balance -> balance.getAsset().equals("BTC"))
+            .map(AssetBalance::getFree)
+            .map(BigDecimal::new)
+            .findFirst()
+            .orElse(BigDecimal.ZERO);
+        LOGGER.info("myBalance: " + myBalance);
+
+        // 2. get max possible buy
+        OrderBook orderBook = binanceApiRestClient.getOrderBook(symbol, 20);
+        LOGGER.info("orderBook: " + orderBook);
+        OrderBookEntry orderBookEntry = orderBook.getAsks()
+            .parallelStream()
+            .min(Comparator.comparing(OrderBookEntry::getPrice))
+            .orElseThrow(RuntimeException::new);
+        LOGGER.info("orderBookEntry: " + orderBookEntry);
+
+        // 3. calculate amount to buy
+        if (new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice()) && myBalance.compareTo(new BigDecimal("0.0001")) > 0) {
+            BigDecimal possibleBuyQuantity = myBalance.divide(new BigDecimal(orderBookEntry.getQty()), 8, RoundingMode.CEILING);
+            LOGGER.info("possibleBuyQuantity: " + possibleBuyQuantity);
+            BigDecimal buyQuantity = possibleBuyQuantity.min(new BigDecimal(orderBookEntry.getQty()));
+            LOGGER.info("buyQuantity: " + buyQuantity);
+
+            // 4. buy
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, GTC, buyQuantity.toString());
+            LOGGER.info("buyOrder: " + buyOrder);
+            // NewOrderResponse buyOrderResponse = binanceApiRestClient.newOrder(buyOrder);
+            // 5. place bid
+            NewOrder sellOrder = new NewOrder(symbol, SELL, MARKET, GTC, buyQuantity.toString(), crypto.getPriceToSell().toString());
+            LOGGER.info("sellOrder: " + sellOrder);
+            // NewOrderResponse sellOrderResponse = binanceApiRestClient.newOrder(sellOrder);
+        }
     }
 }

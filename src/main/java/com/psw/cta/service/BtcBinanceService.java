@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
 
@@ -204,19 +205,19 @@ class BtcBinanceService {
 
         // 3. calculate amount to buy
         if (new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice()) && myBalance.compareTo(new BigDecimal("0.0001")) > 0) {
-            BigDecimal possibleBuyQuantity = myBalance.divide(new BigDecimal(orderBookEntry.getQty()), 8, RoundingMode.CEILING);
+            BigDecimal possibleBuyQuantity = myBalance.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             LOGGER.info("possibleBuyQuantity: " + possibleBuyQuantity);
             BigDecimal buyQuantity = possibleBuyQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             LOGGER.info("buyQuantity: " + buyQuantity);
 
             // 4. buy
-            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, GTC, buyQuantity.toString());
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, buyQuantity.toBigInteger().toString());
             LOGGER.info("buyOrder: " + buyOrder);
-            // NewOrderResponse buyOrderResponse = binanceApiRestClient.newOrder(buyOrder);
+            binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
-            NewOrder sellOrder = new NewOrder(symbol, SELL, MARKET, GTC, buyQuantity.toString(), crypto.getPriceToSell().toString());
+            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, buyQuantity.toBigInteger().toString(), crypto.getPriceToSell().toString());
             LOGGER.info("sellOrder: " + sellOrder);
-            // NewOrderResponse sellOrderResponse = binanceApiRestClient.newOrder(sellOrder);
+            binanceApiRestClient.newOrder(sellOrder);
         }
     }
 }

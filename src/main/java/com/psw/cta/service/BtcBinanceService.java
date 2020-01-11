@@ -48,6 +48,7 @@ class BtcBinanceService {
             .parallelStream()
             .map(CryptoDto::new)
             .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
+            .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
             .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
             .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, CandlestickInterval.DAILY, 90)))
             .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)

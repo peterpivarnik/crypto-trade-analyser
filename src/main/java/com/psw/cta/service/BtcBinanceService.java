@@ -237,6 +237,6 @@ class BtcBinanceService {
     }
 
     private boolean haveBalanceForTrade(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.0001")) <= 0;
+        return myBtcBalance.compareTo(new BigDecimal("0.0001")) > 0;
     }
 }

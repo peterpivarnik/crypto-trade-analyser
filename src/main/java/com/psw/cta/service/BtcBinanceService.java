@@ -5,6 +5,7 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
+import static java.util.Comparator.comparing;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.account.Account;
@@ -72,7 +73,8 @@ class BtcBinanceService {
                 .peek(dto -> dto.setWeight(calculateWeight(dto)))
                 .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                 .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                .forEach(this::tradeCrypto);
+                .sorted(comparing(CryptoDto::getPriceToSellPercentage).reversed())
+                .forEachOrdered(this::tradeCrypto);
         }
     }
 

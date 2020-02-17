@@ -65,6 +65,9 @@ class BtcBinanceService {
                 .peek(dto -> dto.setCurrentPrice(calculateCurrentPrice(dto)))
                 .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                 .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, CandlestickInterval.FIFTEEN_MINUTES, 96)))
+                .peek(dto -> dto.setLastThreeMaxAverage(calculateLastThreeMaxAverage(dto)))
+                .peek(dto -> dto.setPreviousThreeMaxAverage(calculatePreviousThreeMaxAverage(dto)))
+                .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
                 .peek(dto -> dto.setSumDiffsPerc(calculateSumDiffsPerc(dto, 4)))
                 .peek(dto -> dto.setSumDiffsPerc10h(calculateSumDiffsPerc(dto, 40)))
                 .peek(dto -> dto.setPriceToSell(calculatePriceToSell(dto)))
@@ -107,6 +110,27 @@ class BtcBinanceService {
             .map(BigDecimal::new)
             .min(Comparator.naturalOrder())
             .orElseThrow(RuntimeException::new);
+    }
+
+    private BigDecimal calculateLastThreeMaxAverage(CryptoDto dto) {
+        int skipSize = dto.getFifteenMinutesCandleStickData().size() - 3;
+        return dto.getFifteenMinutesCandleStickData().stream()
+            .skip(skipSize)
+            .map(Candlestick::getHigh)
+            .map(BigDecimal::new)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
+    }
+
+    private BigDecimal calculatePreviousThreeMaxAverage(CryptoDto dto) {
+        int skipSize = dto.getFifteenMinutesCandleStickData().size() - 6;
+        return dto.getFifteenMinutesCandleStickData().stream()
+            .skip(skipSize)
+            .limit(3)
+            .map(Candlestick::getHigh)
+            .map(BigDecimal::new)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
     }
 
     private List<Candlestick> getCandleStickData(CryptoDto cryptoDto, CandlestickInterval interval, Integer limit) {

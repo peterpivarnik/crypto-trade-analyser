@@ -26,6 +26,8 @@ public class CryptoDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal weight;
+    private BigDecimal lastThreeMaxAverage;
+    private BigDecimal previousThreeMaxAverage;
 
     public List<Candlestick> getFifteenMinutesCandleStickData() {
         return fifteenMinutesCandleStickData;
@@ -115,24 +117,44 @@ public class CryptoDto {
         this.weight = weight;
     }
 
+    public SymbolInfo getSymbolInfo() {
+        return symbolInfo;
+    }
+
+
+    public BigDecimal getLastThreeMaxAverage() {
+        return lastThreeMaxAverage;
+    }
+
+    public void setLastThreeMaxAverage(BigDecimal lastThreeMaxAverage) {
+        this.lastThreeMaxAverage = lastThreeMaxAverage;
+    }
+
+    public BigDecimal getPreviousThreeMaxAverage() {
+        return previousThreeMaxAverage;
+    }
+
+    public void setPreviousThreeMaxAverage(BigDecimal previousThreeMaxAverage) {
+        this.previousThreeMaxAverage = previousThreeMaxAverage;
+    }
+
     @Override
     public String toString() {
         return "CryptoDto{" +
-               "fifteenMinutesCandleStickData=" + fifteenMinutesCandleStickData +
-               ", threeMonthsCandleStickData=" + threeMonthsCandleStickData +
-               ", ticker24hr=" + ticker24hr +
-               ", depth20=" + depth20 +
-               ", currentPrice=" + currentPrice +
-               ", volume=" + volume +
-               ", sumDiffsPerc=" + sumDiffsPerc +
-               ", sumDiffsPerc10h=" + sumDiffsPerc10h +
-               ", priceToSell=" + priceToSell +
-               ", priceToSellPercentage=" + priceToSellPercentage +
-               ", weight=" + weight +
-               '}';
-    }
-
-    public SymbolInfo getSymbolInfo() {
-        return symbolInfo;
+            "fifteenMinutesCandleStickData=" + fifteenMinutesCandleStickData +
+            ", threeMonthsCandleStickData=" + threeMonthsCandleStickData +
+            ", ticker24hr=" + ticker24hr +
+            ", depth20=" + depth20 +
+            ", symbolInfo=" + symbolInfo +
+            ", currentPrice=" + currentPrice +
+            ", volume=" + volume +
+            ", sumDiffsPerc=" + sumDiffsPerc +
+            ", sumDiffsPerc10h=" + sumDiffsPerc10h +
+            ", priceToSell=" + priceToSell +
+            ", priceToSellPercentage=" + priceToSellPercentage +
+            ", weight=" + weight +
+            ", lastThreeMaxAverage=" + lastThreeMaxAverage +
+            ", previousThreeMaxAverage=" + previousThreeMaxAverage +
+            '}';
     }
 }

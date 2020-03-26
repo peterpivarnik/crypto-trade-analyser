@@ -57,7 +57,7 @@ public interface BinanceApiService {
 
   // Market data endpoints
 
-  @GET("/api/v1/depth")
+  @GET("/api/v3/depth")
   Call<OrderBook> getOrderBook(@Query("symbol") String symbol, @Query("limit") Integer limit);
 
   @GET("/api/v1/trades")
@@ -71,14 +71,14 @@ public interface BinanceApiService {
   Call<List<AggTrade>> getAggTrades(@Query("symbol") String symbol, @Query("fromId") String fromId, @Query("limit") Integer limit,
                                     @Query("startTime") Long startTime, @Query("endTime") Long endTime);
 
-  @GET("/api/v1/klines")
+  @GET("/api/v3/klines")
   Call<List<Candlestick>> getCandlestickBars(@Query("symbol") String symbol, @Query("interval") String interval, @Query("limit") Integer limit,
                                        @Query("startTime") Long startTime, @Query("endTime") Long endTime);
 
   @GET("/api/v1/ticker/24hr")
   Call<TickerStatistics> get24HrPriceStatistics(@Query("symbol") String symbol);
 
-  @GET("/api/v1/ticker/24hr")
+  @GET("/api/v3/ticker/24hr")
   Call<List<TickerStatistics>> getAll24HrPriceStatistics();
 
   @GET("/api/v1/ticker/allPrices")

@@ -5,12 +5,14 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static java.util.Comparator.comparing;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.NewOrder;
+import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.CandlestickInterval;
@@ -21,7 +23,6 @@ import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
@@ -173,7 +174,8 @@ class BtcBinanceService {
         if (size - 4 < 0) {
             return BigDecimal.ZERO;
         }
-        return cryptoDto.getFifteenMinutesCandleStickData().stream()
+        return cryptoDto.getFifteenMinutesCandleStickData()
+            .stream()
             .skip(size - 4)
             .map(Candlestick::getHigh)
             .map(BigDecimal::new)
@@ -230,18 +232,32 @@ class BtcBinanceService {
         if (isStillValid(crypto, orderBookEntry) && haveBalanceForTrade(myBtcBalance)) {
             BigDecimal myMaxQuantity = myBtcBalance.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             LOGGER.info("myMaxQuantity: " + myMaxQuantity);
-            BigInteger buyQuantity = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty())).toBigInteger();
-            LOGGER.info("buyQuantity: " + buyQuantity);
+            BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
+            LOGGER.info("min: " + min);
+            BigDecimal remainder = min.remainder(getMinQuantityFromLotSizeFilter(crypto));
+            BigDecimal myMaxBuyQuantity = myMaxQuantity.subtract(remainder);
+            LOGGER.info("myMaxBuyQuantity: " + myMaxBuyQuantity);
 
             // 4. buy
-            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, buyQuantity.toString());
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, myMaxBuyQuantity.toString());
             LOGGER.info("buyOrder: " + buyOrder);
             binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
-            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, buyQuantity.toString(), crypto.getPriceToSell().toString());
+            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, myMaxBuyQuantity.toString(), crypto.getPriceToSell().toString());
             LOGGER.info("sellOrder: " + sellOrder);
             binanceApiRestClient.newOrder(sellOrder);
         }
+    }
+
+    private BigDecimal getMinQuantityFromLotSizeFilter(CryptoDto crypto) {
+        return crypto.getSymbolInfo()
+            .getFilters()
+            .stream()
+            .filter(filter -> filter.getFilterType().equals(LOT_SIZE))
+            .map(SymbolFilter::getMinQty)
+            .map(BigDecimal::new)
+            .findAny()
+            .orElseGet(() -> new BigDecimal("1"));
     }
 
     private BigDecimal getMyBtcBalance() {

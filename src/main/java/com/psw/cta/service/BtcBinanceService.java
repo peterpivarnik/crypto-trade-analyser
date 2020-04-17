@@ -234,16 +234,19 @@ class BtcBinanceService {
             LOGGER.info("myMaxQuantity: " + myMaxQuantity);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             LOGGER.info("min: " + min);
-            BigDecimal remainder = min.remainder(getMinQuantityFromLotSizeFilter(crypto));
-            BigDecimal myMaxBuyQuantity = myMaxQuantity.subtract(remainder);
-            LOGGER.info("myMaxBuyQuantity: " + myMaxBuyQuantity);
+            BigDecimal minQuantityFromLotSizeFilter = getMinQuantityFromLotSizeFilter(crypto);
+            LOGGER.info("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
+            BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);
+            LOGGER.info("remainder: " + remainder);
+            BigDecimal filteredMyQuatity = myMaxQuantity.subtract(remainder);
+            LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
 
             // 4. buy
-            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, myMaxBuyQuantity.toString());
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toString());
             LOGGER.info("buyOrder: " + buyOrder);
             binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
-            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, myMaxBuyQuantity.toString(), crypto.getPriceToSell().toString());
+            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, filteredMyQuatity.toString(), crypto.getPriceToSell().toString());
             LOGGER.info("sellOrder: " + sellOrder);
             binanceApiRestClient.newOrder(sellOrder);
         }

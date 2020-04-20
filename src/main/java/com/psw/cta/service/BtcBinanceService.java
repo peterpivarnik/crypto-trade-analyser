@@ -9,9 +9,11 @@ import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static java.util.Comparator.comparing;
 
 import com.binance.api.client.BinanceApiRestClient;
+import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.NewOrder;
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.Candlestick;
@@ -238,17 +240,19 @@ class BtcBinanceService {
             LOGGER.info("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
             BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);
             LOGGER.info("remainder: " + remainder);
-            BigDecimal filteredMyQuatity = myMaxQuantity.subtract(remainder);
+            BigDecimal filteredMyQuatity = min.subtract(remainder);
             LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
 
             // 4. buy
             NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toString());
             LOGGER.info("buyOrder: " + buyOrder);
-            binanceApiRestClient.newOrder(buyOrder);
+            NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
-            NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, filteredMyQuatity.toString(), crypto.getPriceToSell().toString());
-            LOGGER.info("sellOrder: " + sellOrder);
-            binanceApiRestClient.newOrder(sellOrder);
+            if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
+                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, filteredMyQuatity.toString(), crypto.getPriceToSell().toString());
+                LOGGER.info("sellOrder: " + sellOrder);
+                binanceApiRestClient.newOrder(sellOrder);
+            }
         }
     }
 

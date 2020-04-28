@@ -249,7 +249,15 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, filteredMyQuatity.toString(), crypto.getPriceToSell().toString());
+                BigDecimal executedQuantity = new BigDecimal(newOrderResponse.getExecutedQty());
+                LOGGER.info("newOrderResponse.getExecutedQty(): " + executedQuantity);
+                LOGGER.info("newOrderResponse.getCummulativeQuoteQty(): " + newOrderResponse.getCummulativeQuoteQty());
+                LOGGER.info(" newOrderResponse.getOrigQty(): " + newOrderResponse.getOrigQty());
+                BigDecimal bidReminder = executedQuantity.remainder(minQuantityFromLotSizeFilter);
+                LOGGER.info(" bidReminder: " + bidReminder);
+                BigDecimal bidQuantity = executedQuantity.subtract(bidReminder);
+                LOGGER.info(" bidQuantity: " + bidQuantity);
+                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toString(), crypto.getPriceToSell().toString());
                 LOGGER.info("sellOrder: " + sellOrder);
                 binanceApiRestClient.newOrder(sellOrder);
             }

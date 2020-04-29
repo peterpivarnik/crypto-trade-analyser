@@ -6,6 +6,7 @@ import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static java.util.Comparator.comparing;
 
 import com.binance.api.client.BinanceApiRestClient;
@@ -14,6 +15,7 @@ import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.Candlestick;
@@ -28,6 +30,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -236,7 +239,7 @@ class BtcBinanceService {
             LOGGER.info("myMaxQuantity: " + myMaxQuantity);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             LOGGER.info("min: " + min);
-            BigDecimal minQuantityFromLotSizeFilter = getMinQuantityFromLotSizeFilter(crypto);
+            BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(crypto, LOT_SIZE, SymbolFilter::getMinQty);
             LOGGER.info("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
             BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);
             LOGGER.info("remainder: " + remainder);
@@ -257,22 +260,30 @@ class BtcBinanceService {
                 LOGGER.info(" bidReminder: " + bidReminder);
                 BigDecimal bidQuantity = executedQuantity.subtract(bidReminder);
                 LOGGER.info(" bidQuantity: " + bidQuantity);
-                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toString(), crypto.getPriceToSell().toString());
+                BigDecimal tickSizeFromPriceFilter = getDataFromFilter(crypto, PRICE_FILTER, SymbolFilter::getTickSize);
+                LOGGER.info(" tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
+                BigDecimal priceToSell = crypto.getPriceToSell();
+                LOGGER.info(" priceToSellv: " + priceToSell);
+                BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
+                LOGGER.info(" priceRemainder: " + priceRemainder);
+                BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
+                LOGGER.info(" roundedPriceToSell: " + roundedPriceToSell);
+                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
                 LOGGER.info("sellOrder: " + sellOrder);
                 binanceApiRestClient.newOrder(sellOrder);
             }
         }
     }
 
-    private BigDecimal getMinQuantityFromLotSizeFilter(CryptoDto crypto) {
+    private BigDecimal getDataFromFilter(CryptoDto crypto, FilterType lotSize, Function<SymbolFilter, String> getMinQty) {
         return crypto.getSymbolInfo()
             .getFilters()
             .stream()
-            .filter(filter -> filter.getFilterType().equals(LOT_SIZE))
-            .map(SymbolFilter::getMinQty)
+            .filter(filter -> filter.getFilterType().equals(lotSize))
+            .map(getMinQty)
             .map(BigDecimal::new)
             .findAny()
-            .orElseGet(() -> new BigDecimal("1"));
+            .orElse(BigDecimal.ONE);
     }
 
     private BigDecimal getMyBtcBalance() {

@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 class BtcBinanceService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BtcBinanceService.class);
+    private static final BigDecimal AMOUNT_TO_KEEP = new BigDecimal("0.2");
 
     private BinanceApiRestClient binanceApiRestClient;
 
@@ -304,6 +305,6 @@ class BtcBinanceService {
     }
 
     private boolean haveBalanceForTrade(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.0001")) > 0;
+        return myBtcBalance.subtract(AMOUNT_TO_KEEP).compareTo(new BigDecimal("0.0001")) > 0;
     }
 }

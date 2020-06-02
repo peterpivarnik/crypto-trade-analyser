@@ -6,6 +6,7 @@ import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static java.util.Comparator.comparing;
 
@@ -421,6 +422,11 @@ class BtcBinanceService {
             BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(crypto.getSymbolInfo(), LOT_SIZE, SymbolFilter::getMinQty);
             BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);
             BigDecimal filteredMyQuatity = min.subtract(remainder);
+            BigDecimal minNotionalFromMinNotionalFilter = getDataFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
+            if (filteredMyQuatity.multiply(new BigDecimal(orderBookEntry.getPrice())).compareTo(minNotionalFromMinNotionalFilter) < 0) {
+                LOGGER.info("Skip trading due to low trade amount: quantity: " + filteredMyQuatity + ", price: " + orderBookEntry.getPrice());
+                return;
+            }
 
             // 4. buy
             NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toString());

@@ -206,6 +206,17 @@ public class CryptoDto {
         this.weight = priceToSellPercentage.multiply(ratio);
     }
 
+    public void calculatePreviousThreeMaxAverage() {
+        int skipSize = this.fifteenMinutesCandleStickData.size() - 6;
+        this.previousThreeMaxAverage = this.fifteenMinutesCandleStickData.stream()
+            .skip(skipSize)
+            .limit(3)
+            .map(Candlestick::getHigh)
+            .map(BigDecimal::new)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
+    }
+
     @Override
     public String toString() {
         return "CryptoDto{" +

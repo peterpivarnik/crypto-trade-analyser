@@ -87,7 +87,7 @@ class BtcBinanceService {
                 .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                 .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, CandlestickInterval.FIFTEEN_MINUTES, 96)))
                 .peek(CryptoDto::calculateLastThreeMaxAverage)
-                .peek(dto -> dto.setPreviousThreeMaxAverage(calculatePreviousThreeMaxAverage(dto)))
+                .peek(CryptoDto::calculatePreviousThreeMaxAverage)
                 .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
                 .peek(CryptoDto::calculateSumDiffsPercent)
                 .peek(CryptoDto::calculateSumDiffsPercent10h)
@@ -108,17 +108,6 @@ class BtcBinanceService {
 
     private OrderBook getDepth(String symbol) {
         return binanceApiRestClient.getOrderBook(symbol, 20);
-    }
-
-    private BigDecimal calculatePreviousThreeMaxAverage(CryptoDto dto) {
-        int skipSize = dto.getFifteenMinutesCandleStickData().size() - 6;
-        return dto.getFifteenMinutesCandleStickData().stream()
-            .skip(skipSize)
-            .limit(3)
-            .map(Candlestick::getHigh)
-            .map(BigDecimal::new)
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
     }
 
     private List<Candlestick> getCandleStickData(CryptoDto cryptoDto, CandlestickInterval interval, Integer limit) {

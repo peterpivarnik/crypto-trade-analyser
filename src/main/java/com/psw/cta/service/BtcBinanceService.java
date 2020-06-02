@@ -69,17 +69,16 @@ class BtcBinanceService {
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
         openOrders.stream()
             .map(OrderDto::new)
-            .peek(orderDto -> orderDto.setSumAmounts(calculateSumAmounts(orderDto, openOrders)))
-            .peek(orderDto -> orderDto.setAverageCurrentPriceToSell(calculateAverageCurrentPrice(orderDto, openOrders)))
-            .peek(orderDto -> orderDto.setSumCurrentPriceToSell(calculateSumCurrentPrice(orderDto, openOrders)))
-            .peek(orderDto -> orderDto.setMaxOriginalPriceToSell(calculateMaxOriginalPriceToSell(orderDto, openOrders)))
-            .peek(orderDto -> orderDto.setCurrentPrice(calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()))))
-            .peek(orderDto -> orderDto.setCurrentPriceDecreasedPercentage(calculate(orderDto)))
-            .peek(orderDto -> orderDto.setPriceToSell(calculatePriceToSell(orderDto)))
-            .peek(orderDto -> orderDto.setPercentualDecrease(calculatePercentualDecreaseBetweenPricesToSell(orderDto, openOrders)))
+            .peek(orderDto -> orderDto.calculateSumAmounts(orderDto, openOrders))
+            .peek(orderDto -> orderDto.calculateAverageCurrentPrice(orderDto, openOrders))
+            .peek(orderDto -> orderDto.calculateSumCurrentPrice(orderDto, openOrders))
+            .peek(orderDto -> orderDto.calculateMaxOriginalPriceToSell(orderDto, openOrders))
+            .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+            .peek(orderDto -> orderDto.calculatePriceToSell(orderDto))
+            .peek(orderDto -> orderDto.calculatePercentualDecreaseBetweenPricesToSell(orderDto, openOrders))
             .filter(orderDto -> orderDto.getPercentualDecrease().compareTo(BigDecimal.ONE) > 0)
-            .peek(orderDto -> orderDto.setCurrentPriceToSellPercentage(calculateCurrentPriceToSellPercentage(orderDto, openOrders)))
-            .peek(orderDto -> orderDto.setIdealRatio(calculateIdealRatio(orderDto)))
+            .peek(orderDto -> orderDto.calculateCurrentPriceToSellPercentage(orderDto, openOrders))
+            .peek(orderDto -> orderDto.calculateIdealRatio(orderDto))
             .max(comparing(OrderDto::getIdealRatio))
             .ifPresent(this::rebuy);
     }
@@ -134,11 +133,9 @@ class BtcBinanceService {
         LOGGER.info("priceRemainder: " + priceRemainder);
         BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
         LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
-
         NewOrder sellOrder = new NewOrder(orderDto.getOrder().getSymbol(), SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
         LOGGER.info("sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
-
     }
 
     private void cancelOrder(Order order) {
@@ -146,92 +143,6 @@ class BtcBinanceService {
         CancelOrderRequest cancelorderRequest = new CancelOrderRequest(order.getSymbol(), order.getClientOrderId());
         LOGGER.info("cancelorderRequest" + cancelorderRequest);
         binanceApiRestClient.cancelOrder(cancelorderRequest);
-    }
-
-    private BigDecimal calculateMaxOriginalPriceToSell(OrderDto orderDto, List<Order> openOrders) {
-        String symbol = orderDto.getOrder().getSymbol();
-        return openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .map(Order::getPrice)
-            .map(BigDecimal::new)
-            .max(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO);
-    }
-
-    private BigDecimal calculateSumCurrentPrice(OrderDto orderDto, List<Order> openOrders) {
-        return getSum(orderDto, openOrders, Order::getPrice);
-    }
-
-    private BigDecimal calculateSumAmounts(OrderDto orderDto, List<Order> openOrders) {
-        return getSum(orderDto, openOrders, Order::getOrigQty);
-    }
-
-    private BigDecimal calculateAverageCurrentPrice(OrderDto orderDto, List<Order> openOrders) {
-        String symbol = orderDto.getOrder().getSymbol();
-        long count = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .count();
-        return getSum(orderDto, openOrders, Order::getPrice)
-            .divide(new BigDecimal(count), 8, BigDecimal.ROUND_UP);
-    }
-
-    private BigDecimal getSum(OrderDto orderDto, List<Order> openOrders, Function<Order, String> function) {
-        String symbol = orderDto.getOrder().getSymbol();
-        return openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .map(function)
-            .map(BigDecimal::new)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private BigDecimal calculateIdealRatio(OrderDto orderDto) {
-        BigDecimal currentPriceToSellPercentage = orderDto.getCurrentPriceToSellPercentage();
-        BigDecimal percentualDecrease = orderDto.getPercentualDecrease();
-        if (currentPriceToSellPercentage.compareTo(BigDecimal.ZERO) != 0) {
-            return percentualDecrease.divide(currentPriceToSellPercentage, 8, BigDecimal.ROUND_UP);
-        }
-        return BigDecimal.ZERO;
-    }
-
-    private BigDecimal calculateCurrentPriceToSellPercentage(OrderDto orderDto, List<Order> openOrders) {
-        BigDecimal currentPrice = orderDto.getCurrentPrice();
-        BigDecimal currentPriceToSell = calculateCurrentPriceToSellFromOrders(orderDto, openOrders);
-        BigDecimal percentage = currentPriceToSell.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
-        return percentage.subtract(new BigDecimal("100"));
-    }
-
-    private BigDecimal calculatePriceToSell(OrderDto orderDto) {
-        BigDecimal currentPriceForSell = orderDto.getCurrentPrice().multiply(new BigDecimal("1.01"));
-        BigDecimal amountBtcToInvest = new BigDecimal("0.05");
-        BigDecimal amountAlterToInvest = amountBtcToInvest.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
-        BigDecimal totalAlterAmount = amountAlterToInvest.add(orderDto.getSumAmounts());
-        BigDecimal maxAlterPrice = orderDto.getMaxOriginalPriceToSell();
-        BigDecimal btcAmountFromOrder = orderDto.getSumAmounts().multiply(maxAlterPrice);
-        BigDecimal totalBtcAmount = amountBtcToInvest.add(btcAmountFromOrder);
-        BigDecimal priceWithoutProfit = totalBtcAmount.divide(totalAlterAmount, 8, BigDecimal.ROUND_UP);
-        BigDecimal differenceBetweenMaxAndWithoutProfit = maxAlterPrice.subtract(priceWithoutProfit);
-        BigDecimal profit = differenceBetweenMaxAndWithoutProfit.divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
-        return priceWithoutProfit.add(profit);
-    }
-
-    private BigDecimal calculatePercentualDecreaseBetweenPricesToSell(OrderDto orderDto, List<Order> openOrders) {
-        BigDecimal newPriceToSell = orderDto.getPriceToSell();
-        BigDecimal originalPriceToSell = calculateCurrentPriceToSellFromOrders(orderDto, openOrders);
-        return new BigDecimal("100").subtract(newPriceToSell.multiply(new BigDecimal("100")).divide(originalPriceToSell, 8, BigDecimal.ROUND_UP));
-    }
-
-    private BigDecimal calculateCurrentPriceToSellFromOrders(OrderDto orderDto, List<Order> openOrders) {
-        BigDecimal sumCurrentPrices = orderDto.getSumCurrentPriceToSell();
-        long numberOfOrders = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
-            .count();
-        return sumCurrentPrices.divide(new BigDecimal(numberOfOrders), 8, BigDecimal.ROUND_UP);
-    }
-
-    private BigDecimal calculate(OrderDto orderDto) {
-        BigDecimal averageCurrentPrice = orderDto.getAverageCurrentPriceToSell();
-        BigDecimal currentPriceToSellPercentage = orderDto.getCurrentPrice().multiply(new BigDecimal("100")).divide(averageCurrentPrice, 8, RoundingMode.UP);
-        return new BigDecimal("100").subtract(currentPriceToSellPercentage);
     }
 
     private void buySmallAmounts(BigDecimal myBtcBalance) {

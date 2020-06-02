@@ -84,7 +84,7 @@ class BtcBinanceService {
     }
 
     private void rebuy(OrderDto orderDto) {
-        System.out.println(orderDto.print());
+        LOGGER.info(orderDto.print());
         binanceApiRestClient.getExchangeInfo()
             .getSymbols()
             .stream()
@@ -96,20 +96,20 @@ class BtcBinanceService {
     private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         // 1. buy
         BigDecimal myBalanceToRebuy = new BigDecimal("0.05");
-        System.out.println("My BTC balance: " + myBalanceToRebuy);
+        LOGGER.info("My BTC balance: " + myBalanceToRebuy);
         BigDecimal currentPrice = orderDto.getCurrentPrice();
-        System.out.println("currentPrice: " + currentPrice);
+        LOGGER.info("currentPrice: " + currentPrice);
         BigDecimal myQuantity = myBalanceToRebuy.divide(currentPrice, 8, RoundingMode.CEILING);
-        System.out.println("myQuantity: " + myQuantity);
+        LOGGER.info("myQuantity: " + myQuantity);
         BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-        System.out.println("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
+        LOGGER.info("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
         BigDecimal remainder = myQuantity.remainder(minQuantityFromLotSizeFilter);
-        System.out.println("remainder: " + remainder);
+        LOGGER.info("remainder: " + remainder);
         BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);
-        System.out.println("filteredMyQuatity: " + filteredMyQuatity);
+        LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
         NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, filteredMyQuatity.toString());
         binanceApiRestClient.newOrder(buyOrder);
-        System.out.println("BuyOrder: " + buyOrder);
+        LOGGER.info("BuyOrder: " + buyOrder);
 
         // 2. cancel existing orders
         OrderRequest orderRequest = new OrderRequest(orderDto.getOrder().getSymbol());
@@ -118,32 +118,32 @@ class BtcBinanceService {
 
         // 3. create new order
         String currencyShortcut = orderDto.getOrder().getSymbol().replace("BTC", "");
-        System.out.println("currencyShortcut: " + currencyShortcut);
+        LOGGER.info("currencyShortcut: " + currencyShortcut);
         BigDecimal myBalance = getMyBalance(currencyShortcut);
-        System.out.println("myBalance: " + myBalance);
+        LOGGER.info("myBalance: " + myBalance);
         BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
-        System.out.println("bidReminder: " + bidReminder);
+        LOGGER.info("bidReminder: " + bidReminder);
         BigDecimal bidQuantity = myBalance.subtract(bidReminder);
-        System.out.println("bidQuantity: " + bidQuantity);
+        LOGGER.info("bidQuantity: " + bidQuantity);
         BigDecimal tickSizeFromPriceFilter = getDataFromFilter(symbolInfo, PRICE_FILTER, SymbolFilter::getTickSize);
-        System.out.println("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
+        LOGGER.info("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
         BigDecimal priceToSell = orderDto.getPriceToSell();
-        System.out.println("priceToSell: " + priceToSell);
+        LOGGER.info("priceToSell: " + priceToSell);
         BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
-        System.out.println("priceRemainder: " + priceRemainder);
+        LOGGER.info("priceRemainder: " + priceRemainder);
         BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
-        System.out.println("roundedPriceToSell: " + roundedPriceToSell);
+        LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
 
         NewOrder sellOrder = new NewOrder(orderDto.getOrder().getSymbol(), SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
-        System.out.println("sellOrder: " + sellOrder);
+        LOGGER.info("sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
 
     }
 
     private void cancelOrder(Order order) {
-        System.out.println(order);
+        LOGGER.info("order: " + order);
         CancelOrderRequest cancelorderRequest = new CancelOrderRequest(order.getSymbol(), order.getClientOrderId());
-        System.out.println(cancelorderRequest);
+        LOGGER.info("cancelorderRequest" + cancelorderRequest);
         binanceApiRestClient.cancelOrder(cancelorderRequest);
     }
 
@@ -424,6 +424,7 @@ class BtcBinanceService {
 
             // 4. buy
             NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toString());
+            LOGGER.info("buyOrder: " + buyOrder);
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
@@ -435,6 +436,7 @@ class BtcBinanceService {
                 BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
                 BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
                 NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
+                LOGGER.info("sellOrder: " + sellOrder);
                 binanceApiRestClient.newOrder(sellOrder);
             }
         }
@@ -452,15 +454,15 @@ class BtcBinanceService {
 
     private BigDecimal getMyBalance(String symbol) {
         Account account = binanceApiRestClient.getAccount();
-        BigDecimal myBtcBalance = account.getBalances()
+        BigDecimal myBalance = account.getBalances()
             .stream()
             .filter(balance -> balance.getAsset().equals(symbol))
             .map(AssetBalance::getFree)
             .map(BigDecimal::new)
             .findFirst()
             .orElse(BigDecimal.ZERO);
-        LOGGER.info("myBtcBalance: " + myBtcBalance);
-        return myBtcBalance;
+        LOGGER.info("myBalance in currency: " + symbol + ", is: " + myBalance);
+        return myBalance;
     }
 
     private boolean isStillValid(CryptoDto crypto, OrderBookEntry orderBookEntry) {

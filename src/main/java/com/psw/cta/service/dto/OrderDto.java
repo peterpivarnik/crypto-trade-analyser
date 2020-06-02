@@ -45,21 +45,21 @@ public class OrderDto {
         return idealRatio;
     }
 
-    public void calculateSumAmounts(OrderDto orderDto, List<Order> openOrders) {
-        this.sumAmounts = getSum(orderDto, openOrders, Order::getOrigQty);
+    public void calculateSumAmounts(List<Order> openOrders) {
+        this.sumAmounts = getSum(openOrders, Order::getOrigQty);
     }
 
-    public void calculateAverageCurrentPrice(OrderDto orderDto, List<Order> openOrders) {
-        String symbol = orderDto.getOrder().getSymbol();
+    public void calculateAverageCurrentPrice(List<Order> openOrders) {
+        String symbol = this.order.getSymbol();
         long count = openOrders.stream()
             .filter(order -> order.getSymbol().equals(symbol))
             .count();
-        this.averageCurrentPriceToSell = getSum(orderDto, openOrders, Order::getPrice)
+        this.averageCurrentPriceToSell = getSum(openOrders, Order::getPrice)
             .divide(new BigDecimal(count), 8, BigDecimal.ROUND_UP);
     }
 
-    private BigDecimal getSum(OrderDto orderDto, List<Order> openOrders, Function<Order, String> function) {
-        String symbol = orderDto.getOrder().getSymbol();
+    private BigDecimal getSum(List<Order> openOrders, Function<Order, String> function) {
+        String symbol = this.order.getSymbol();
         return openOrders.stream()
             .filter(order -> order.getSymbol().equals(symbol))
             .map(function)
@@ -67,12 +67,12 @@ public class OrderDto {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public void calculateSumCurrentPrice(OrderDto orderDto, List<Order> openOrders) {
-        this.sumCurrentPriceToSell = getSum(orderDto, openOrders, Order::getPrice);
+    public void calculateSumCurrentPrice(List<Order> openOrders) {
+        this.sumCurrentPriceToSell = getSum(openOrders, Order::getPrice);
     }
 
-    public void calculateMaxOriginalPriceToSell(OrderDto orderDto, List<Order> openOrders) {
-        String symbol = orderDto.getOrder().getSymbol();
+    public void calculateMaxOriginalPriceToSell(List<Order> openOrders) {
+        String symbol = this.order.getSymbol();
         this.maxOriginalPriceToSell = openOrders.stream()
             .filter(order -> order.getSymbol().equals(symbol))
             .map(Order::getPrice)
@@ -90,8 +90,8 @@ public class OrderDto {
             .orElseThrow(RuntimeException::new);
     }
 
-    public void calculatePriceToSell(OrderDto orderDto) {
-        BigDecimal currentPriceForSell = orderDto.getCurrentPrice().multiply(new BigDecimal("1.01"));
+    public void calculatePriceToSell() {
+        BigDecimal currentPriceForSell = this.currentPrice.multiply(new BigDecimal("1.01"));
         BigDecimal amountBtcToInvest = new BigDecimal("0.05");
         BigDecimal amountAlterToInvest = amountBtcToInvest.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
         BigDecimal totalAlterAmount = amountAlterToInvest.add(this.sumAmounts);
@@ -104,31 +104,30 @@ public class OrderDto {
         this.priceToSell = priceWithoutProfit.add(profit);
     }
 
-    public void calculatePercentualDecreaseBetweenPricesToSell(OrderDto orderDto, List<Order> openOrders) {
-        BigDecimal newPriceToSell = orderDto.getPriceToSell();
-        BigDecimal originalPriceToSell = calculateCurrentPriceToSellFromOrders(orderDto, openOrders);
+    public void calculatePercentualDecreaseBetweenPricesToSell(List<Order> openOrders) {
+        BigDecimal newPriceToSell = this.priceToSell;
+        BigDecimal originalPriceToSell = calculateCurrentPriceToSellFromOrders(openOrders);
         this.percentualDecrease = new BigDecimal("100")
             .subtract(newPriceToSell.multiply(new BigDecimal("100")).divide(originalPriceToSell, 8, BigDecimal.ROUND_UP));
     }
 
-    public void calculateCurrentPriceToSellPercentage(OrderDto orderDto, List<Order> openOrders) {
-        BigDecimal currentPrice = orderDto.getCurrentPrice();
-        BigDecimal currentPriceToSell = calculateCurrentPriceToSellFromOrders(orderDto, openOrders);
+    public void calculateCurrentPriceToSellPercentage(List<Order> openOrders) {
+        BigDecimal currentPrice = this.currentPrice;
+        BigDecimal currentPriceToSell = calculateCurrentPriceToSellFromOrders(openOrders);
         BigDecimal percentage = currentPriceToSell.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
         this.currentPriceToSellPercentage = percentage.subtract(new BigDecimal("100"));
     }
 
-    private BigDecimal calculateCurrentPriceToSellFromOrders(OrderDto orderDto, List<Order> openOrders) {
+    private BigDecimal calculateCurrentPriceToSellFromOrders(List<Order> openOrders) {
         long numberOfOrders = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
+            .filter(order -> order.getSymbol().equals(this.order.getSymbol()))
             .count();
         return this.sumCurrentPriceToSell.divide(new BigDecimal(numberOfOrders), 8, BigDecimal.ROUND_UP);
     }
 
-    public void calculateIdealRatio(OrderDto orderDto) {
-        BigDecimal percentualDecrease = orderDto.getPercentualDecrease();
+    public void calculateIdealRatio() {
         if (this.currentPriceToSellPercentage.compareTo(BigDecimal.ZERO) != 0) {
-            this.idealRatio = percentualDecrease.divide(currentPriceToSellPercentage, 8, BigDecimal.ROUND_UP);
+            this.idealRatio = this.percentualDecrease.divide(currentPriceToSellPercentage, 8, BigDecimal.ROUND_UP);
         }
         this.idealRatio = BigDecimal.ZERO;
     }

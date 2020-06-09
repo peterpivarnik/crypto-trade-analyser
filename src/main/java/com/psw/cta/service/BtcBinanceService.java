@@ -97,8 +97,8 @@ class BtcBinanceService {
                 .peek(CryptoDto::calculateWeight)
                 .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                 .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                .sorted(comparing(CryptoDto::getPriceToSellPercentage).reversed())
-                .forEachOrdered(this::tradeCrypto);
+                .max(comparing(CryptoDto::getWeight))
+                .ifPresent(this::tradeCrypto);
         }
     }
 

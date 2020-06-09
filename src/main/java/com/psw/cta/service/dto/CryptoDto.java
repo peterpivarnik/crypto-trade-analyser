@@ -32,10 +32,6 @@ public class CryptoDto {
     private BigDecimal lastThreeMaxAverage;
     private BigDecimal previousThreeMaxAverage;
 
-    public List<Candlestick> getFifteenMinutesCandleStickData() {
-        return fifteenMinutesCandleStickData;
-    }
-
     public void setFifteenMinutesCandleStickData(List<Candlestick> fifteenMinutesCandleStickData) {
         this.fifteenMinutesCandleStickData = fifteenMinutesCandleStickData;
     }
@@ -88,8 +84,8 @@ public class CryptoDto {
         return previousThreeMaxAverage;
     }
 
-    public void setPreviousThreeMaxAverage(BigDecimal previousThreeMaxAverage) {
-        this.previousThreeMaxAverage = previousThreeMaxAverage;
+    public BigDecimal getWeight() {
+        return this.weight;
     }
 
     public void calculateTicker24hr(List<TickerStatistics> tickers) {
@@ -188,11 +184,8 @@ public class CryptoDto {
     }
 
     public void calculateWeight() {
-        BigDecimal priceToSell = this.priceToSell;
-        BigDecimal priceToSellPercentage = this.priceToSellPercentage;
         BigDecimal ratio;
-        List<OrderBookEntry> asks = this.depth20.getAsks();
-        final BigDecimal sum = asks.parallelStream()
+        final BigDecimal sum = depth20.getAsks().parallelStream()
             .filter(data -> (new BigDecimal(data.getPrice()).compareTo(priceToSell) < 0))
             .map(data -> (new BigDecimal(data.getPrice()).multiply(new BigDecimal(data.getQty()))))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -220,10 +213,6 @@ public class CryptoDto {
     @Override
     public String toString() {
         return "CryptoDto{" +
-            "fifteenMinutesCandleStickData=" + fifteenMinutesCandleStickData +
-            ", threeMonthsCandleStickData=" + threeMonthsCandleStickData +
-            ", ticker24hr=" + ticker24hr +
-            ", depth20=" + depth20 +
             ", symbolInfo=" + symbolInfo +
             ", currentPrice=" + currentPrice +
             ", volume=" + volume +

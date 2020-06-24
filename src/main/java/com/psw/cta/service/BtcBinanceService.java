@@ -144,7 +144,7 @@ class BtcBinanceService {
             }
 
             // 4. buy
-            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toString());
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toPlainString());
             LOGGER.info("buyOrder: " + buyOrder);
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
@@ -156,7 +156,7 @@ class BtcBinanceService {
                 BigDecimal priceToSell = crypto.getPriceToSell();
                 BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
                 BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
-                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
+                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
                 LOGGER.info("sellOrder: " + sellOrder);
                 binanceApiRestClient.newOrder(sellOrder);
             }
@@ -238,7 +238,7 @@ class BtcBinanceService {
         LOGGER.info("remainder: " + remainder);
         BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);
         LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
-        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, filteredMyQuatity.toString());
+        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, filteredMyQuatity.toPlainString());
         binanceApiRestClient.newOrder(buyOrder);
         LOGGER.info("BuyOrder: " + buyOrder);
 
@@ -264,7 +264,7 @@ class BtcBinanceService {
         LOGGER.info("priceRemainder: " + priceRemainder);
         BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
         LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
-        NewOrder sellOrder = new NewOrder(orderDto.getOrder().getSymbol(), SELL, LIMIT, GTC, bidQuantity.toString(), roundedPriceToSell.toString());
+        NewOrder sellOrder = new NewOrder(orderDto.getOrder().getSymbol(), SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
     }

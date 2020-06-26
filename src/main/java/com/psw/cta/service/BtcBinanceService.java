@@ -149,7 +149,10 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                BigDecimal myBalance = getMyBalance(crypto.getSymbolInfo().getSymbol().replace("BTC", ""));
+                String currencyShortcut = crypto.getSymbolInfo().getSymbol().replace("BTC", "");
+                LOGGER.info("currencyShortcut: " + currencyShortcut);
+                BigDecimal myBalance = getMyBalance(currencyShortcut);
+                LOGGER.info("myBalance: " + myBalance);
                 BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
                 BigDecimal bidQuantity = myBalance.subtract(bidReminder);
                 BigDecimal tickSizeFromPriceFilter = getDataFromFilter(crypto.getSymbolInfo(), PRICE_FILTER, SymbolFilter::getTickSize);

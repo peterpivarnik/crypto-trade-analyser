@@ -154,11 +154,17 @@ class BtcBinanceService {
                 BigDecimal myBalance = getMyBalance(currencyShortcut);
                 LOGGER.info("myBalance: " + myBalance);
                 BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
+                LOGGER.info("bidReminder: " + bidReminder);
                 BigDecimal bidQuantity = myBalance.subtract(bidReminder);
+                LOGGER.info("bidQuantity: " + bidQuantity);
                 BigDecimal tickSizeFromPriceFilter = getDataFromFilter(crypto.getSymbolInfo(), PRICE_FILTER, SymbolFilter::getTickSize);
+                LOGGER.info("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
                 BigDecimal priceToSell = crypto.getPriceToSell();
+                LOGGER.info("priceToSell: " + priceToSell);
                 BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
+                LOGGER.info("priceRemainder: " + priceRemainder);
                 BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
+                LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
                 NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
                 LOGGER.info("sellOrder: " + sellOrder);
                 binanceApiRestClient.newOrder(sellOrder);
@@ -178,9 +184,11 @@ class BtcBinanceService {
 
     private BigDecimal getMyBalance(String symbol) {
         Account account = binanceApiRestClient.getAccount();
+        LOGGER.info("account: " + account);
         BigDecimal myBalance = account.getBalances()
             .stream()
             .filter(balance -> balance.getAsset().equals(symbol))
+            .peek(assetBalance -> LOGGER.info("Current assetBalance: " + assetBalance.toString()))
             .map(AssetBalance::getFree)
             .map(BigDecimal::new)
             .findFirst()

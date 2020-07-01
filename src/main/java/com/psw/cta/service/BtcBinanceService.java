@@ -149,26 +149,17 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                String currencyShortcut = crypto.getSymbolInfo().getSymbol().replace("BTC", "");
-                LOGGER.info("currencyShortcut: " + currencyShortcut);
-                BigDecimal myBalance = getMyBalance(currencyShortcut);
-                LOGGER.info("myBalance: " + myBalance);
-                BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
-                LOGGER.info("bidReminder: " + bidReminder);
-                BigDecimal bidQuantity = myBalance.subtract(bidReminder);
-                LOGGER.info("bidQuantity: " + bidQuantity);
-                BigDecimal tickSizeFromPriceFilter = getDataFromFilter(crypto.getSymbolInfo(), PRICE_FILTER, SymbolFilter::getTickSize);
-                LOGGER.info("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
-                BigDecimal priceToSell = crypto.getPriceToSell();
-                LOGGER.info("priceToSell: " + priceToSell);
-                BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
-                LOGGER.info("priceRemainder: " + priceRemainder);
-                BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
-                LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
-                NewOrder sellOrder = new NewOrder(symbol, SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
-                LOGGER.info("sellOrder: " + sellOrder);
-                binanceApiRestClient.newOrder(sellOrder);
+                sleep();
+                placeSellOrder(crypto.getSymbolInfo(), minQuantityFromLotSizeFilter, crypto.getPriceToSell());
             }
+        }
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            LOGGER.error("Error during sleeping");
         }
     }
 
@@ -249,17 +240,29 @@ class BtcBinanceService {
         LOGGER.info("remainder: " + remainder);
         BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);
         LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
-        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, filteredMyQuatity.toPlainString());
+        String symbol = orderDto.getOrder().getSymbol();
+        NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toPlainString());
         binanceApiRestClient.newOrder(buyOrder);
         LOGGER.info("BuyOrder: " + buyOrder);
 
         // 2. cancel existing orders
-        OrderRequest orderRequest = new OrderRequest(orderDto.getOrder().getSymbol());
+        OrderRequest orderRequest = new OrderRequest(symbol);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
         openOrders.forEach(this::cancelOrder);
 
         // 3. create new order
-        String currencyShortcut = orderDto.getOrder().getSymbol().replace("BTC", "");
+        placeSellOrder(symbolInfo, minQuantityFromLotSizeFilter, orderDto.getPriceToSell());
+    }
+
+    private void cancelOrder(Order order) {
+        LOGGER.info("order: " + order);
+        CancelOrderRequest cancelorderRequest = new CancelOrderRequest(order.getSymbol(), order.getClientOrderId());
+        LOGGER.info("cancelorderRequest" + cancelorderRequest);
+        binanceApiRestClient.cancelOrder(cancelorderRequest);
+    }
+
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal minQuantityFromLotSizeFilter, BigDecimal priceToSell) {
+        String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
         LOGGER.info("currencyShortcut: " + currencyShortcut);
         BigDecimal myBalance = getMyBalance(currencyShortcut);
         LOGGER.info("myBalance: " + myBalance);
@@ -269,21 +272,13 @@ class BtcBinanceService {
         LOGGER.info("bidQuantity: " + bidQuantity);
         BigDecimal tickSizeFromPriceFilter = getDataFromFilter(symbolInfo, PRICE_FILTER, SymbolFilter::getTickSize);
         LOGGER.info("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
-        BigDecimal priceToSell = orderDto.getPriceToSell();
         LOGGER.info("priceToSell: " + priceToSell);
         BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
         LOGGER.info("priceRemainder: " + priceRemainder);
         BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
         LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
-        NewOrder sellOrder = new NewOrder(orderDto.getOrder().getSymbol(), SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
+        NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
-    }
-
-    private void cancelOrder(Order order) {
-        LOGGER.info("order: " + order);
-        CancelOrderRequest cancelorderRequest = new CancelOrderRequest(order.getSymbol(), order.getClientOrderId());
-        LOGGER.info("cancelorderRequest" + cancelorderRequest);
-        binanceApiRestClient.cancelOrder(cancelorderRequest);
     }
 }

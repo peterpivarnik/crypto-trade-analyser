@@ -3,3 +3,4 @@
 /target
 .gitignore
 *.log
+/crypto-trade-analyser.iml

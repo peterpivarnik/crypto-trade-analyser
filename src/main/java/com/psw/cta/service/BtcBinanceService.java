@@ -175,7 +175,6 @@ class BtcBinanceService {
 
     private BigDecimal getMyBalance(String symbol) {
         Account account = binanceApiRestClient.getAccount();
-        LOGGER.info("account: " + account);
         BigDecimal myBalance = account.getBalances()
             .stream()
             .filter(balance -> balance.getAsset().equals(symbol))

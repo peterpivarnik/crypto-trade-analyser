@@ -47,7 +47,7 @@ class BtcBinanceService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BtcBinanceService.class);
 
-    private BinanceApiRestClient binanceApiRestClient;
+    private final BinanceApiRestClient binanceApiRestClient;
 
     BtcBinanceService() {
         this.binanceApiRestClient = new BinanceApiRestClientImpl("", "");

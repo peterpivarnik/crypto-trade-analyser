@@ -1,15 +1,5 @@
 package com.psw.cta.service;
 
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.binance.api.client.domain.OrderType.LIMIT;
-import static com.binance.api.client.domain.OrderType.MARKET;
-import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static java.util.Comparator.comparing;
-
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
@@ -32,6 +22,10 @@ import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,10 +33,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.LIMIT;
+import static com.binance.api.client.domain.OrderType.MARKET;
+import static com.binance.api.client.domain.TimeInForce.GTC;
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static java.util.Comparator.comparing;
 
 @Service
 class BtcBinanceService {
@@ -64,7 +63,7 @@ class BtcBinanceService {
         if (myBtcBalance.compareTo(new BigDecimal("0.05")) > 0) {
             buyBigAmounts(openOrders);
         }
-        if (haveBalanceForTrade(myBtcBalance) && ((myBtcBalance.compareTo(new BigDecimal("0.05")) <= 0) || openOrders.size() < 10)) {
+        if (haveBalanceForTrade(myBtcBalance) && openOrders.size() < 10) {
             buySmallAmounts();
         }
     }
@@ -133,7 +132,8 @@ class BtcBinanceService {
 
         // 3. calculate amount to buy
         if (isStillValid(crypto, orderBookEntry) && haveBalanceForTrade(myBtcBalance)) {
-            BigDecimal myMaxQuantity = myBtcBalance.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
+            BigDecimal maxBtcBalanceToBuy = myBtcBalance.max(new BigDecimal("0.0002"));
+            BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(crypto.getSymbolInfo(), LOT_SIZE, SymbolFilter::getMinQty);
             BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);

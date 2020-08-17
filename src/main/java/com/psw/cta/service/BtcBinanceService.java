@@ -132,7 +132,7 @@ class BtcBinanceService {
 
         // 3. calculate amount to buy
         if (isStillValid(crypto, orderBookEntry) && haveBalanceForTrade(myBtcBalance)) {
-            BigDecimal maxBtcBalanceToBuy = myBtcBalance.max(new BigDecimal("0.0002"));
+            BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
             BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(crypto.getSymbolInfo(), LOT_SIZE, SymbolFilter::getMinQty);

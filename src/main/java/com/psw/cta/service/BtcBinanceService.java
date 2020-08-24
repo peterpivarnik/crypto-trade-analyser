@@ -246,6 +246,7 @@ class BtcBinanceService {
         openOrders.forEach(this::cancelOrder);
 
         // 3. create new order
+        sleep();
         placeSellOrder(symbolInfo, minQuantityFromLotSizeFilter, orderDto.getPriceToSell());
     }
 

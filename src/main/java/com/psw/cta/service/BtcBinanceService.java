@@ -208,6 +208,7 @@ class BtcBinanceService {
                 .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
                 .peek(OrderDto::calculatePriceToSell)
                 .peek(orderDto -> orderDto.calculatePercentualDecreaseBetweenPricesToSell(openOrders))
+                .peek(orderDto -> System.out.println(orderDto.getPercentualDecrease()))
                 .filter(orderDto -> orderDto.getPercentualDecrease().compareTo(BigDecimal.ONE) > 0)
                 .peek(orderDto -> orderDto.calculateCurrentPriceToSellPercentage(openOrders))
                 .peek(OrderDto::calculateIdealRatio)

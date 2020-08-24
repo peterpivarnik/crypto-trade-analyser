@@ -227,22 +227,17 @@ class BtcBinanceService {
 
     private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         // 1. buy
+        LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol() + orderDto.toString());
         BigDecimal myBalanceToRebuy = new BigDecimal("0.05");
-        LOGGER.info("My BTC balance: " + myBalanceToRebuy);
         BigDecimal currentPrice = orderDto.getCurrentPrice();
-        LOGGER.info("currentPrice: " + currentPrice);
         BigDecimal myQuantity = myBalanceToRebuy.divide(currentPrice, 8, RoundingMode.CEILING);
-        LOGGER.info("myQuantity: " + myQuantity);
         BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-        LOGGER.info("minQuantityFromLotSizeFilter: " + minQuantityFromLotSizeFilter);
         BigDecimal remainder = myQuantity.remainder(minQuantityFromLotSizeFilter);
-        LOGGER.info("remainder: " + remainder);
         BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);
-        LOGGER.info("filteredMyQuatity: " + filteredMyQuatity);
         String symbol = orderDto.getOrder().getSymbol();
         NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toPlainString());
-        binanceApiRestClient.newOrder(buyOrder);
         LOGGER.info("BuyOrder: " + buyOrder);
+        binanceApiRestClient.newOrder(buyOrder);
 
         // 2. cancel existing orders
         OrderRequest orderRequest = new OrderRequest(symbol);
@@ -254,28 +249,20 @@ class BtcBinanceService {
     }
 
     private void cancelOrder(Order order) {
-        LOGGER.info("order: " + order);
         CancelOrderRequest cancelorderRequest = new CancelOrderRequest(order.getSymbol(), order.getClientOrderId());
         LOGGER.info("cancelorderRequest" + cancelorderRequest);
         binanceApiRestClient.cancelOrder(cancelorderRequest);
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal minQuantityFromLotSizeFilter, BigDecimal priceToSell) {
+        LOGGER.info("place new order: " + symbolInfo.getSymbol() + "priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
-        LOGGER.info("currencyShortcut: " + currencyShortcut);
         BigDecimal myBalance = getMyBalance(currencyShortcut);
-        LOGGER.info("myBalance: " + myBalance);
         BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
-        LOGGER.info("bidReminder: " + bidReminder);
         BigDecimal bidQuantity = myBalance.subtract(bidReminder);
-        LOGGER.info("bidQuantity: " + bidQuantity);
         BigDecimal tickSizeFromPriceFilter = getDataFromFilter(symbolInfo, PRICE_FILTER, SymbolFilter::getTickSize);
-        LOGGER.info("tickSizeFromPriceFilter: " + tickSizeFromPriceFilter);
-        LOGGER.info("priceToSell: " + priceToSell);
         BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
-        LOGGER.info("priceRemainder: " + priceRemainder);
         BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
-        LOGGER.info("roundedPriceToSell: " + roundedPriceToSell);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);

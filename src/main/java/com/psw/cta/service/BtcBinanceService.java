@@ -60,6 +60,7 @@ class BtcBinanceService {
         BigDecimal myBtcBalance = getMyBalance("BTC");
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
+        LOGGER.info("Number of open orders: " + openOrders.size());
         if (myBtcBalance.compareTo(new BigDecimal("0.05")) > 0) {
             buyBigAmounts(openOrders);
         }
@@ -70,7 +71,7 @@ class BtcBinanceService {
     }
 
     private void buySmallAmounts() {
-        LOGGER.info("Entered buying small amounts.");
+        LOGGER.info("ENTERED BUYING SMALL AMOUNTS.");
         List<TickerStatistics> tickers = getAll24hTickers();
         binanceApiRestClient.getExchangeInfo()
                 .getSymbols()
@@ -118,9 +119,8 @@ class BtcBinanceService {
 
     private synchronized void tradeCrypto(CryptoDto crypto) {
         // 1. get balance on account
-        LOGGER.info("Start trading cryptos!");
+        LOGGER.info("Trading crypto " + crypto.getSymbolInfo().getSymbol());
         String symbol = crypto.getSymbolInfo().getSymbol();
-        LOGGER.info("symbol: " + symbol);
         BigDecimal myBtcBalance = getMyBalance("BTC");
 
         // 2. get max possible buy
@@ -180,7 +180,6 @@ class BtcBinanceService {
         BigDecimal myBalance = account.getBalances()
                 .stream()
                 .filter(balance -> balance.getAsset().equals(symbol))
-                .peek(assetBalance -> LOGGER.info("Current assetBalance: " + assetBalance.toString()))
                 .map(AssetBalance::getFree)
                 .map(BigDecimal::new)
                 .findFirst()
@@ -198,7 +197,7 @@ class BtcBinanceService {
     }
 
     private void buyBigAmounts(List<Order> openOrders) {
-        LOGGER.info("Entered buying big amounts.");
+        LOGGER.info("ENTERED BUYING BIG AMOUNTS.");
         openOrders.stream()
                 .map(OrderDto::new)
                 .peek(orderDto -> orderDto.calculateSumAmounts(openOrders))
@@ -208,10 +207,11 @@ class BtcBinanceService {
                 .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
                 .peek(OrderDto::calculatePriceToSell)
                 .peek(orderDto -> orderDto.calculatePercentualDecreaseBetweenPricesToSell(openOrders))
-                .peek(orderDto -> LOGGER.info("Symbol: " + orderDto.getOrder().getSymbol() + ", decrease:" + orderDto.getPercentualDecrease()))
                 .filter(orderDto -> orderDto.getPercentualDecrease().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(orderDto -> orderDto.calculateCurrentPriceToSellPercentage(openOrders))
                 .peek(OrderDto::calculateIdealRatio)
+                .peek(orderDto -> LOGGER.info("Symbol: " + orderDto.getOrder().getSymbol() + ", decrease: " + orderDto.getPercentualDecrease() + ", ratio: " +
+                        orderDto.getIdealRatio()))
                 .max(comparing(OrderDto::getIdealRatio))
                 .ifPresent(this::rebuy);
     }

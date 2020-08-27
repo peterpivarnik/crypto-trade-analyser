@@ -65,7 +65,7 @@ class BtcBinanceService {
             buyBigAmounts(openOrders);
         }
         myBtcBalance = getMyBalance("BTC");
-        if (haveBalanceForTrade(myBtcBalance) && openOrders.size() < 20) {
+        if (haveBalanceForTrade(myBtcBalance) && openOrders.size() < 15) {
             buySmallAmounts();
         }
     }

@@ -3,6 +3,7 @@ package com.psw.cta.service.dto;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
+
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.function.Function;
 
 public class OrderDto {
 
-    private Order order;
+    private final Order order;
     private BigDecimal sumCurrentPriceToSell;
     private BigDecimal averageCurrentPriceToSell;
     private BigDecimal sumAmounts;
@@ -52,19 +53,19 @@ public class OrderDto {
     public void calculateAverageCurrentPrice(List<Order> openOrders) {
         String symbol = this.order.getSymbol();
         long count = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .count();
+                .filter(order -> order.getSymbol().equals(symbol))
+                .count();
         this.averageCurrentPriceToSell = getSum(openOrders, Order::getPrice)
-            .divide(new BigDecimal(count), 8, BigDecimal.ROUND_UP);
+                .divide(new BigDecimal(count), 8, BigDecimal.ROUND_UP);
     }
 
     private BigDecimal getSum(List<Order> openOrders, Function<Order, String> function) {
         String symbol = this.order.getSymbol();
         return openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .map(function)
-            .map(BigDecimal::new)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .filter(order -> order.getSymbol().equals(symbol))
+                .map(function)
+                .map(BigDecimal::new)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public void calculateSumCurrentPrice(List<Order> openOrders) {
@@ -74,20 +75,20 @@ public class OrderDto {
     public void calculateMaxOriginalPriceToSell(List<Order> openOrders) {
         String symbol = this.order.getSymbol();
         this.maxOriginalPriceToSell = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(symbol))
-            .map(Order::getPrice)
-            .map(BigDecimal::new)
-            .max(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO);
+                .filter(order -> order.getSymbol().equals(symbol))
+                .map(Order::getPrice)
+                .map(BigDecimal::new)
+                .max(Comparator.naturalOrder())
+                .orElse(BigDecimal.ZERO);
     }
 
     public void calculateCurrentPrice(OrderBook depth20) {
         this.currentPrice = depth20.getAsks()
-            .parallelStream()
-            .map(OrderBookEntry::getPrice)
-            .map(BigDecimal::new)
-            .min(Comparator.naturalOrder())
-            .orElseThrow(RuntimeException::new);
+                .parallelStream()
+                .map(OrderBookEntry::getPrice)
+                .map(BigDecimal::new)
+                .min(Comparator.naturalOrder())
+                .orElseThrow(RuntimeException::new);
     }
 
     public void calculatePriceToSell() {
@@ -108,7 +109,7 @@ public class OrderDto {
         BigDecimal newPriceToSell = this.priceToSell;
         BigDecimal originalPriceToSell = calculateCurrentPriceToSellFromOrders(openOrders);
         this.percentualDecrease = new BigDecimal("100")
-            .subtract(newPriceToSell.multiply(new BigDecimal("100")).divide(originalPriceToSell, 8, BigDecimal.ROUND_UP));
+                .subtract(newPriceToSell.multiply(new BigDecimal("100")).divide(originalPriceToSell, 8, BigDecimal.ROUND_UP));
     }
 
     public void calculateCurrentPriceToSellPercentage(List<Order> openOrders) {
@@ -120,30 +121,31 @@ public class OrderDto {
 
     private BigDecimal calculateCurrentPriceToSellFromOrders(List<Order> openOrders) {
         long numberOfOrders = openOrders.stream()
-            .filter(order -> order.getSymbol().equals(this.order.getSymbol()))
-            .count();
+                .filter(order -> order.getSymbol().equals(this.order.getSymbol()))
+                .count();
         return this.sumCurrentPriceToSell.divide(new BigDecimal(numberOfOrders), 8, BigDecimal.ROUND_UP);
     }
 
     public void calculateIdealRatio() {
         if (this.currentPriceToSellPercentage.compareTo(BigDecimal.ZERO) != 0) {
             this.idealRatio = this.percentualDecrease.divide(currentPriceToSellPercentage, 8, BigDecimal.ROUND_UP);
+        } else {
+            this.idealRatio = BigDecimal.ZERO;
         }
-        this.idealRatio = BigDecimal.ZERO;
     }
 
     public String print() {
         return "OrderDto{" +
-            "order=" + order +
-            ", sumCurrentPriceToSell=" + sumCurrentPriceToSell +
-            ", maxOriginalPriceToSell=" + maxOriginalPriceToSell +
-            ", sumAmounts=" + sumAmounts +
-            ", percentualDecrease=" + percentualDecrease +
-            ", currentPriceToSellPercentage=" + currentPriceToSellPercentage +
-            ", averageCurrentPriceToSell=" + averageCurrentPriceToSell +
-            ", currentPrice=" + currentPrice +
-            ", priceToSell=" + priceToSell +
-            ", idealRatio=" + idealRatio +
-            '}';
+                "order=" + order +
+                ", sumCurrentPriceToSell=" + sumCurrentPriceToSell +
+                ", maxOriginalPriceToSell=" + maxOriginalPriceToSell +
+                ", sumAmounts=" + sumAmounts +
+                ", percentualDecrease=" + percentualDecrease +
+                ", currentPriceToSellPercentage=" + currentPriceToSellPercentage +
+                ", averageCurrentPriceToSell=" + averageCurrentPriceToSell +
+                ", currentPrice=" + currentPrice +
+                ", priceToSell=" + priceToSell +
+                ", idealRatio=" + idealRatio +
+                '}';
     }
 }

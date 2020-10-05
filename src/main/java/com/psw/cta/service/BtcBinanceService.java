@@ -64,8 +64,11 @@ class BtcBinanceService {
         if (myBtcBalance.compareTo(new BigDecimal("0.05")) > 0) {
             buyBigAmounts(openOrders);
         }
+        long openSmallTrades = openOrders.stream()
+                .filter(order -> new BigDecimal("0.01").compareTo(new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty()))) > 0)
+                .count();
         myBtcBalance = getMyBalance("BTC");
-        if (haveBalanceForTrade(myBtcBalance) && openOrders.size() < 15) {
+        if (haveBalanceForTrade(myBtcBalance) && openSmallTrades < 5) {
             buySmallAmounts();
         }
     }

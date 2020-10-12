@@ -46,6 +46,14 @@ public class OrderDto {
         return idealRatio;
     }
 
+    public BigDecimal getSumAmounts() {
+        return sumAmounts;
+    }
+
+    public BigDecimal getMaxOriginalPriceToSell() {
+        return maxOriginalPriceToSell;
+    }
+
     public void calculateSumAmounts(List<Order> openOrders) {
         this.sumAmounts = getSum(openOrders, Order::getOrigQty);
     }
@@ -93,7 +101,7 @@ public class OrderDto {
 
     public void calculatePriceToSell() {
         BigDecimal currentPriceForSell = this.currentPrice.multiply(new BigDecimal("1.01"));
-        BigDecimal amountBtcToInvest = new BigDecimal("0.05");
+        BigDecimal amountBtcToInvest = this.sumAmounts.multiply(this.maxOriginalPriceToSell).min(new BigDecimal("0.05"));
         BigDecimal amountAlterToInvest = amountBtcToInvest.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
         BigDecimal totalAlterAmount = amountAlterToInvest.add(this.sumAmounts);
         BigDecimal maxAlterPrice = this.maxOriginalPriceToSell;

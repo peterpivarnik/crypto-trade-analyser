@@ -65,8 +65,9 @@ class BtcBinanceService {
             buyBigAmounts(openOrders);
         }
         long openSmallTrades = openOrders.stream()
-                .filter(order -> new BigDecimal("0.01").compareTo(new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty()))) > 0)
+                .filter(order -> new BigDecimal("0.0003").compareTo(new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty()))) > 0)
                 .count();
+        LOGGER.info("Number of openSmallTrades: " + openSmallTrades);
         myBtcBalance = getMyBalance("BTC");
         if (haveBalanceForTrade(myBtcBalance) && openSmallTrades < 5) {
             buySmallAmounts();
@@ -232,7 +233,7 @@ class BtcBinanceService {
     private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         // 1. buy
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol() + orderDto.toString());
-        BigDecimal myBalanceToRebuy = new BigDecimal("0.05");
+        BigDecimal myBalanceToRebuy = orderDto.getSumAmounts().multiply(orderDto.getMaxOriginalPriceToSell()).min(new BigDecimal("0.05"));
         BigDecimal currentPrice = orderDto.getCurrentPrice();
         BigDecimal myQuantity = myBalanceToRebuy.divide(currentPrice, 8, RoundingMode.CEILING);
         BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);

@@ -21,6 +21,7 @@ public class OrderDto {
     private BigDecimal percentualDecrease;
     private BigDecimal currentPriceToSellPercentage;
     private BigDecimal idealRatio;
+    private BigDecimal priceToSellWithoutProfit;
 
     public OrderDto(Order order) {
         this.order = order;
@@ -44,6 +45,10 @@ public class OrderDto {
 
     public BigDecimal getIdealRatio() {
         return idealRatio;
+    }
+
+    public BigDecimal getPriceToSellWithoutProfit() {
+        return priceToSellWithoutProfit;
     }
 
     public BigDecimal getSumAmounts() {
@@ -105,33 +110,22 @@ public class OrderDto {
         BigDecimal amountAlterToInvest = amountBtcToInvest.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
         BigDecimal totalAlterAmount = amountAlterToInvest.add(this.sumAmounts);
         BigDecimal maxAlterPrice = this.maxOriginalPriceToSell;
-        BigDecimal btcAmountFromOrder = this.sumAmounts.multiply(maxAlterPrice);
-        BigDecimal totalBtcAmount = amountBtcToInvest.add(btcAmountFromOrder);
-        BigDecimal priceWithoutProfit = totalBtcAmount.divide(totalAlterAmount, 8, BigDecimal.ROUND_UP);
-        BigDecimal differenceBetweenMaxAndWithoutProfit = maxAlterPrice.subtract(priceWithoutProfit);
+        BigDecimal btcAmountFromOrders = this.sumAmounts.multiply(maxAlterPrice);
+        BigDecimal totalBtcAmount = amountBtcToInvest.add(btcAmountFromOrders);
+        this.priceToSellWithoutProfit = totalBtcAmount.divide(totalAlterAmount, 8, BigDecimal.ROUND_UP);
+        BigDecimal differenceBetweenMaxAndWithoutProfit = maxAlterPrice.subtract(priceToSellWithoutProfit);
         BigDecimal profit = differenceBetweenMaxAndWithoutProfit.divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
-        this.priceToSell = priceWithoutProfit.add(profit);
+        this.priceToSell = priceToSellWithoutProfit.add(profit);
     }
 
-    public void calculatePercentualDecreaseBetweenPricesToSell(List<Order> openOrders) {
-        BigDecimal newPriceToSell = this.priceToSell;
-        BigDecimal originalPriceToSell = calculateCurrentPriceToSellFromOrders(openOrders);
-        this.percentualDecrease = new BigDecimal("100")
-                .subtract(newPriceToSell.multiply(new BigDecimal("100")).divide(originalPriceToSell, 8, BigDecimal.ROUND_UP));
+    public void calculatePercentualDecreaseBetweenPricesToSell() {
+        this.percentualDecrease = this.priceToSell.multiply(new BigDecimal("100")).divide(this.priceToSellWithoutProfit, 8, BigDecimal.ROUND_UP)
+                .subtract(new BigDecimal("100"));
     }
 
-    public void calculateCurrentPriceToSellPercentage(List<Order> openOrders) {
-        BigDecimal currentPrice = this.currentPrice;
-        BigDecimal currentPriceToSell = calculateCurrentPriceToSellFromOrders(openOrders);
-        BigDecimal percentage = currentPriceToSell.multiply(new BigDecimal("100")).divide(currentPrice, 8, BigDecimal.ROUND_UP);
+    public void calculateCurrentPriceToSellPercentage() {
+        BigDecimal percentage = this.priceToSellWithoutProfit.multiply(new BigDecimal("100")).divide(this.currentPrice, 8, BigDecimal.ROUND_UP);
         this.currentPriceToSellPercentage = percentage.subtract(new BigDecimal("100"));
-    }
-
-    private BigDecimal calculateCurrentPriceToSellFromOrders(List<Order> openOrders) {
-        long numberOfOrders = openOrders.stream()
-                .filter(order -> order.getSymbol().equals(this.order.getSymbol()))
-                .count();
-        return this.sumCurrentPriceToSell.divide(new BigDecimal(numberOfOrders), 8, BigDecimal.ROUND_UP);
     }
 
     public void calculateIdealRatio() {

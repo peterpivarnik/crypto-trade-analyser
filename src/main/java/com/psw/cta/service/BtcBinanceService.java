@@ -210,12 +210,16 @@ class BtcBinanceService {
                 .peek(orderDto -> orderDto.calculateMaxOriginalPriceToSell(openOrders))
                 .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
                 .peek(OrderDto::calculatePriceToSell)
-                .peek(orderDto -> orderDto.calculatePercentualDecreaseBetweenPricesToSell(openOrders))
+                .peek(OrderDto::calculatePercentualDecreaseBetweenPricesToSell)
                 .filter(orderDto -> orderDto.getPercentualDecrease().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(orderDto -> orderDto.calculateCurrentPriceToSellPercentage(openOrders))
+                .peek(OrderDto::calculateCurrentPriceToSellPercentage)
                 .peek(OrderDto::calculateIdealRatio)
-                .peek(orderDto -> LOGGER.info("Symbol: " + orderDto.getOrder().getSymbol() + ", decrease: " + orderDto.getPercentualDecrease() + ", ratio: " +
-                        orderDto.getIdealRatio()))
+                .peek(orderDto -> LOGGER.info("Symbol: " + orderDto.getOrder().getSymbol() + ","
+                        + " decrease: " + orderDto.getPercentualDecrease() + ", "
+                        + "ratio: " + orderDto.getIdealRatio() + ", "
+                        + "priceToSell: " + orderDto.getPriceToSell() + ", "
+                        + "originalPriceToSell: " + orderDto.getMaxOriginalPriceToSell() + ", "
+                        + "priceToSellWithoutProfit: " + orderDto.getPriceToSellWithoutProfit()))
                 .max(comparing(OrderDto::getIdealRatio))
                 .ifPresent(this::rebuy);
     }

@@ -22,6 +22,7 @@ public class OrderDto {
     private BigDecimal currentPriceToSellPercentage;
     private BigDecimal idealRatio;
     private BigDecimal priceToSellWithoutProfit;
+    private BigDecimal totalBtcAmountToRebuy;
 
     public OrderDto(Order order) {
         this.order = order;
@@ -57,6 +58,10 @@ public class OrderDto {
 
     public BigDecimal getMaxOriginalPriceToSell() {
         return maxOriginalPriceToSell;
+    }
+
+    public BigDecimal getTotalBtcAmountToRebuy() {
+        return totalBtcAmountToRebuy;
     }
 
     public void calculateSumAmounts(List<Order> openOrders) {
@@ -106,14 +111,12 @@ public class OrderDto {
 
     public void calculatePriceToSell() {
         BigDecimal currentPriceForSell = this.currentPrice.multiply(new BigDecimal("1.01"));
-        BigDecimal amountBtcToInvest = this.sumAmounts.multiply(this.maxOriginalPriceToSell).min(new BigDecimal("0.05"));
-        BigDecimal amountAlterToInvest = amountBtcToInvest.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
+        BigDecimal btcAmountFromOrders = this.sumAmounts.multiply(this.maxOriginalPriceToSell).min(new BigDecimal("0.05"));
+        BigDecimal amountAlterToInvest = btcAmountFromOrders.divide(currentPriceForSell, 8, BigDecimal.ROUND_UP);
         BigDecimal totalAlterAmount = amountAlterToInvest.add(this.sumAmounts);
-        BigDecimal maxAlterPrice = this.maxOriginalPriceToSell;
-        BigDecimal btcAmountFromOrders = this.sumAmounts.multiply(maxAlterPrice);
-        BigDecimal totalBtcAmount = amountBtcToInvest.add(btcAmountFromOrders);
-        this.priceToSellWithoutProfit = totalBtcAmount.divide(totalAlterAmount, 8, BigDecimal.ROUND_UP);
-        BigDecimal differenceBetweenMaxAndWithoutProfit = maxAlterPrice.subtract(priceToSellWithoutProfit);
+        this.totalBtcAmountToRebuy = btcAmountFromOrders.multiply(new BigDecimal("2"));
+        this.priceToSellWithoutProfit = totalBtcAmountToRebuy.divide(totalAlterAmount, 8, BigDecimal.ROUND_UP);
+        BigDecimal differenceBetweenMaxAndWithoutProfit = this.maxOriginalPriceToSell.subtract(priceToSellWithoutProfit);
         BigDecimal profit = differenceBetweenMaxAndWithoutProfit.divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
         this.priceToSell = priceToSellWithoutProfit.add(profit);
     }

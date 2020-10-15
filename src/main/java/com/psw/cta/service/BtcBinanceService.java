@@ -1,5 +1,15 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.LIMIT;
+import static com.binance.api.client.domain.OrderType.MARKET;
+import static com.binance.api.client.domain.TimeInForce.GTC;
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static java.util.Comparator.comparing;
+
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
@@ -22,26 +32,15 @@ import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.binance.api.client.domain.OrderType.LIMIT;
-import static com.binance.api.client.domain.OrderType.MARKET;
-import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static java.util.Comparator.comparing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 @Service
 class BtcBinanceService {
@@ -57,19 +56,16 @@ class BtcBinanceService {
     @Time
     @Scheduled(cron = "0 */15 * * * ?")
     public void invest() {
-        BigDecimal myBtcBalance = getMyBalance("BTC");
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
         LOGGER.info("Number of open orders: " + openOrders.size());
-        if (myBtcBalance.compareTo(new BigDecimal("0.05")) > 0) {
-            buyBigAmounts(openOrders);
-        }
+        buyBigAmounts(openOrders, getMyBalance("BTC"));
         long openSmallTrades = openOrders.stream()
                 .filter(order -> new BigDecimal("0.0003").compareTo(new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty()))) > 0)
                 .count();
         LOGGER.info("Number of openSmallTrades: " + openSmallTrades);
-        myBtcBalance = getMyBalance("BTC");
-        if (haveBalanceForTrade(myBtcBalance) && openSmallTrades < 5) {
+        BigDecimal myBtcBalance = getMyBalance("BTC");
+        if (haveBalanceForBuySmallAmounts(myBtcBalance) && openSmallTrades < 5) {
             buySmallAmounts();
         }
     }
@@ -136,7 +132,7 @@ class BtcBinanceService {
         LOGGER.info("orderBookEntry: " + orderBookEntry);
 
         // 3. calculate amount to buy
-        if (isStillValid(crypto, orderBookEntry) && haveBalanceForTrade(myBtcBalance)) {
+        if (isStillValid(crypto, orderBookEntry) && haveBalanceForBuySmallAmounts(myBtcBalance)) {
             BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
             BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
@@ -196,11 +192,11 @@ class BtcBinanceService {
         return new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice());
     }
 
-    private boolean haveBalanceForTrade(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.0001")) > 0;
+    private boolean haveBalanceForBuySmallAmounts(BigDecimal myBtcBalance) {
+        return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 
-    private void buyBigAmounts(List<Order> openOrders) {
+    private void buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance) {
         LOGGER.info("ENTERED BUYING BIG AMOUNTS.");
         openOrders.stream()
                 .map(OrderDto::new)
@@ -210,6 +206,8 @@ class BtcBinanceService {
                 .peek(orderDto -> orderDto.calculateMaxOriginalPriceToSell(openOrders))
                 .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
                 .peek(OrderDto::calculatePriceToSell)
+                .filter(orderDto -> orderDto.getTotalBtcAmountToRebuy().compareTo(myBtcBalance) < 0)
+                .filter(orderDto -> orderDto.getPriceToSell().compareTo(orderDto.getMaxOriginalPriceToSell()) < 0)
                 .peek(OrderDto::calculatePercentualDecreaseBetweenPricesToSell)
                 .filter(orderDto -> orderDto.getPercentualDecrease().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(OrderDto::calculateCurrentPriceToSellPercentage)
@@ -237,9 +235,9 @@ class BtcBinanceService {
     private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         // 1. buy
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol() + orderDto.toString());
-        BigDecimal myBalanceToRebuy = orderDto.getSumAmounts().multiply(orderDto.getMaxOriginalPriceToSell()).min(new BigDecimal("0.05"));
+        BigDecimal totalBtcAmountToRebuy = orderDto.getTotalBtcAmountToRebuy();
         BigDecimal currentPrice = orderDto.getCurrentPrice();
-        BigDecimal myQuantity = myBalanceToRebuy.divide(currentPrice, 8, RoundingMode.CEILING);
+        BigDecimal myQuantity = totalBtcAmountToRebuy.divide(currentPrice, 8, RoundingMode.CEILING);
         BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal remainder = myQuantity.remainder(minQuantityFromLotSizeFilter);
         BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);

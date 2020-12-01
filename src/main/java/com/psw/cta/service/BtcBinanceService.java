@@ -151,17 +151,22 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                sleep();
+                String currencyShortcut = symbol.replace("BTC", "");
+                waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
                 placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell());
             }
         }
     }
 
-    private void sleep() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            LOGGER.error("Error during sleeping");
+    private void waitUntilHaveBalance(String symbol, BigDecimal minNotionalFromMinNotionalFilter) {
+        BigDecimal myBalance = getMyBalance(symbol);
+        if (myBalance.compareTo(minNotionalFromMinNotionalFilter) < 0) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                LOGGER.error("Error during sleping");
+            }
+            waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
         }
     }
 
@@ -261,7 +266,8 @@ class BtcBinanceService {
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
-        sleep();
+        String currencyShortcut = orderDto.getOrder().getSymbol().replace("BTC", "");
+        waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
         placeSellOrder(symbolInfo, orderDto.getPriceToSell());
     }
 

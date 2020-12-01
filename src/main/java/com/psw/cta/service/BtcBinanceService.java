@@ -61,11 +61,17 @@ class BtcBinanceService {
     public void invest() {
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
+        BigDecimal sumFromOrders = openOrders.stream()
+            .map(order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         LOGGER.info("Number of open orders: " + openOrders.size());
-        buyBigAmounts(openOrders, getMyBalance("BTC"));
+        BigDecimal myBtcBalance = getMyBalance("BTC");
+        buyBigAmounts(openOrders, myBtcBalance);
+        BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance);
+        LOGGER.info("My total possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = getMyTotalBalance();
         LOGGER.info("My total balance: " + myTotalBalance);
-        int maxOpenOrders = myTotalBalance.multiply(new BigDecimal("10")).intValue();
+        int maxOpenOrders = myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
         LOGGER.info("maxOpenOrders: " + maxOpenOrders);
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() < maxOpenOrders) {
             buySmallAmounts();

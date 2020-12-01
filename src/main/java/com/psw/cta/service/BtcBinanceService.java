@@ -248,7 +248,9 @@ class BtcBinanceService {
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol());
         BigDecimal totalBtcAmountToRebuy = orderDto.getOrderBtcAmount();
         BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, RoundingMode.CEILING);
-        BigDecimal roundedQuantity = round(symbolInfo, myQuantity, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
+        BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
+        BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
         NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
         LOGGER.info("My new buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);

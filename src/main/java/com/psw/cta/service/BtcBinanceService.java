@@ -138,23 +138,21 @@ class BtcBinanceService {
             BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
             BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
-            BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(crypto.getSymbolInfo(), LOT_SIZE, SymbolFilter::getMinQty);
-            BigDecimal remainder = min.remainder(minQuantityFromLotSizeFilter);
-            BigDecimal filteredMyQuatity = min.subtract(remainder);
-            BigDecimal minNotionalFromMinNotionalFilter = getDataFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
-            if (filteredMyQuatity.multiply(new BigDecimal(orderBookEntry.getPrice())).compareTo(minNotionalFromMinNotionalFilter) < 0) {
-                LOGGER.info("Skip trading due to low trade amount: quantity: " + filteredMyQuatity + ", price: " + orderBookEntry.getPrice());
+            BigDecimal roundedMyQuatity = round(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
+            BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
+            if (roundedMyQuatity.multiply(new BigDecimal(orderBookEntry.getPrice())).compareTo(minNotionalFromMinNotionalFilter) < 0) {
+                LOGGER.info("Skip trading due to low trade amount: quantity: " + roundedMyQuatity + ", price: " + orderBookEntry.getPrice());
                 return;
             }
 
             // 4. buy
-            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, filteredMyQuatity.toPlainString());
+            NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, roundedMyQuatity.toPlainString());
             LOGGER.info("buyOrder: " + buyOrder);
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
                 sleep();
-                placeSellOrder(crypto.getSymbolInfo(), minQuantityFromLotSizeFilter, crypto.getPriceToSell());
+                placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell());
             }
         }
     }
@@ -165,16 +163,6 @@ class BtcBinanceService {
         } catch (InterruptedException e) {
             LOGGER.error("Error during sleeping");
         }
-    }
-
-    private BigDecimal getDataFromFilter(SymbolInfo symbolInfo, FilterType lotSize, Function<SymbolFilter, String> getMinQty) {
-        return symbolInfo.getFilters()
-            .stream()
-            .filter(filter -> filter.getFilterType().equals(lotSize))
-            .map(getMinQty)
-            .map(BigDecimal::new)
-            .findAny()
-            .orElse(BigDecimal.ONE);
     }
 
     private BigDecimal getMyBalance(String symbol) {
@@ -260,10 +248,8 @@ class BtcBinanceService {
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol());
         BigDecimal totalBtcAmountToRebuy = orderDto.getOrderBtcAmount();
         BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, RoundingMode.CEILING);
-        BigDecimal minQuantityFromLotSizeFilter = getDataFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-        BigDecimal remainder = myQuantity.remainder(minQuantityFromLotSizeFilter);
-        BigDecimal filteredMyQuatity = myQuantity.subtract(remainder);
-        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, filteredMyQuatity.toPlainString());
+        BigDecimal roundedQuantity = round(symbolInfo, myQuantity, LOT_SIZE, SymbolFilter::getMinQty);
+        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
         LOGGER.info("My new buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
 
@@ -274,20 +260,33 @@ class BtcBinanceService {
 
         // 3. create new order
         sleep();
-        placeSellOrder(symbolInfo, minQuantityFromLotSizeFilter, orderDto.getPriceToSell());
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell());
     }
 
-    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal minQuantityFromLotSizeFilter, BigDecimal priceToSell) {
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell) {
         LOGGER.info("place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
         BigDecimal myBalance = getMyBalance(currencyShortcut);
-        BigDecimal bidReminder = myBalance.remainder(minQuantityFromLotSizeFilter);
-        BigDecimal bidQuantity = myBalance.subtract(bidReminder);
-        BigDecimal tickSizeFromPriceFilter = getDataFromFilter(symbolInfo, PRICE_FILTER, SymbolFilter::getTickSize);
-        BigDecimal priceRemainder = priceToSell.remainder(tickSizeFromPriceFilter);
-        BigDecimal roundedPriceToSell = priceToSell.subtract(priceRemainder);
-        NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, bidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
+        BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
+    }
+
+    private BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+        BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
+        BigDecimal remainder = amountToRound.remainder(valueFromFilter);
+        return amountToRound.subtract(remainder);
+    }
+
+    private BigDecimal getValueFromFilter(SymbolInfo symbolInfo, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+        return symbolInfo.getFilters()
+            .stream()
+            .filter(filter -> filter.getFilterType().equals(filterType))
+            .map(symbolFilterFunction)
+            .map(BigDecimal::new)
+            .findAny()
+            .orElse(BigDecimal.ONE);
     }
 }

@@ -279,7 +279,7 @@ class BtcBinanceService {
             } catch (InterruptedException e) {
                 LOGGER.error("Error during sleeping");
             }
-            waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
+            return waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
         }
         return myBalance;
     }

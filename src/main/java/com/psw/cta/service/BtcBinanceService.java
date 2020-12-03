@@ -156,22 +156,8 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                String currencyShortcut = symbol.replace("BTC", "");
-                waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
-                placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell());
+                placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
             }
-        }
-    }
-
-    private void waitUntilHaveBalance(String symbol, BigDecimal minNotionalFromMinNotionalFilter) {
-        BigDecimal myBalance = getMyBalance(symbol);
-        if (myBalance.compareTo(minNotionalFromMinNotionalFilter) < 0) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                LOGGER.error("Error during sleping");
-            }
-            waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
         }
     }
 
@@ -271,20 +257,31 @@ class BtcBinanceService {
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
-        String currencyShortcut = orderDto.getOrder().getSymbol().replace("BTC", "");
-        waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell());
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), minNotionalFromMinNotionalFilter);
     }
 
-    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell) {
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal minNotionalFromMinNotionalFilter) {
         LOGGER.info("place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
-        BigDecimal myBalance = getMyBalance(currencyShortcut);
+        BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
+    }
+
+    private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal minNotionalFromMinNotionalFilter) {
+        BigDecimal myBalance = getMyBalance(symbol);
+        if (myBalance.compareTo(minNotionalFromMinNotionalFilter) < 0) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                LOGGER.error("Error during sleeping");
+            }
+            waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
+        }
+        return myBalance;
     }
 
     private BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {

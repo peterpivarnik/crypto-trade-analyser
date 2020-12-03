@@ -59,6 +59,8 @@ class BtcBinanceService {
     @Time
     @Scheduled(cron = "0 */15 * * * ?")
     public void invest() {
+        LOGGER.info("******************************");
+        LOGGER.info("Start of investing.");
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
         BigDecimal sumFromOrders = openOrders.stream()
@@ -66,20 +68,23 @@ class BtcBinanceService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         LOGGER.info("Number of open orders: " + openOrders.size());
         BigDecimal myBtcBalance = getMyBalance("BTC");
-        buyBigAmounts(openOrders, myBtcBalance);
         BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance);
         LOGGER.info("My total possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = getMyTotalBalance();
         LOGGER.info("My total balance: " + myTotalBalance);
         int maxOpenOrders = myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
         LOGGER.info("maxOpenOrders: " + maxOpenOrders);
+        buyBigAmounts(openOrders, myBtcBalance);
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() < maxOpenOrders) {
             buySmallAmounts();
         }
+        LOGGER.info("End of investing.");
+        LOGGER.info("******************************");
     }
 
     private void buySmallAmounts() {
-        LOGGER.info("ENTERED BUYING SMALL AMOUNTS.");
+        LOGGER.info("------------------------------");
+        LOGGER.info("Start of buying small amounts");
         List<TickerStatistics> tickers = getAll24hTickers();
         binanceApiRestClient.getExchangeInfo()
             .getSymbols()
@@ -109,6 +114,8 @@ class BtcBinanceService {
             .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
             .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
             .forEach(this::tradeCrypto);
+        LOGGER.info("End of buying small amounts");
+        LOGGER.info("------------------------------");
     }
 
     private List<TickerStatistics> getAll24hTickers() {
@@ -216,6 +223,8 @@ class BtcBinanceService {
     }
 
     private void buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance) {
+        LOGGER.info("++++++++++++++++++++++++++++++");
+        LOGGER.info("Start of buying big amounts");
         openOrders.stream()
             .map(OrderDto::new)
             .peek(OrderDto::calculateOrderBtcAmount)
@@ -228,6 +237,8 @@ class BtcBinanceService {
             .peek(orderDto -> LOGGER.info(orderDto.print()))
             .max(comparing(OrderDto::getPriceToSellPercentage))
             .ifPresent(this::rebuy);
+        LOGGER.info("End of buying big amounts");
+        LOGGER.info("++++++++++++++++++++++++++++++");
     }
 
     private void rebuy(OrderDto orderDto) {

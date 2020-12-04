@@ -268,13 +268,13 @@ class BtcBinanceService {
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), new BigDecimal(orderDto.getOrder().getOrigQty()));
     }
 
-    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal minNotionalFromMinNotionalFilter) {
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal basicAmount) {
         LOGGER.info("place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
-        BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, minNotionalFromMinNotionalFilter);
+        BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, basicAmount);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
@@ -282,15 +282,15 @@ class BtcBinanceService {
         binanceApiRestClient.newOrder(sellOrder);
     }
 
-    private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal minNotionalFromMinNotionalFilter) {
+    private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal basicAmount) {
         BigDecimal myBalance = getMyBalance(symbol);
-        if (myBalance.compareTo(minNotionalFromMinNotionalFilter) < 0) {
+        if (myBalance.compareTo(basicAmount) <= 0) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 LOGGER.error("Error during sleeping");
             }
-            return waitUntilHaveBalance(symbol, minNotionalFromMinNotionalFilter);
+            return waitUntilHaveBalance(symbol, basicAmount);
         }
         return myBalance;
     }

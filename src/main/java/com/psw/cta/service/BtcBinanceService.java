@@ -219,6 +219,8 @@ class BtcBinanceService {
     }
 
     private void buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance) {
+        LOGGER.info("************************************************************");
+        LOGGER.info("Buying big amounts");
         openOrders.stream()
             .map(OrderDto::new)
             .peek(OrderDto::calculateOrderBtcAmount)
@@ -228,8 +230,6 @@ class BtcBinanceService {
             .peek(OrderDto::calculatePriceToSell)
             .peek(OrderDto::calculatePriceToSellPercentage)
             .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-            .peek(orderDto -> LOGGER.info("************************************************************"))
-            .peek(orderDto -> LOGGER.info("Buying big amounts"))
             .peek(orderDto -> LOGGER.info(orderDto.print()))
             .max(comparing(OrderDto::getPriceToSellPercentage))
             .ifPresent(this::rebuy);

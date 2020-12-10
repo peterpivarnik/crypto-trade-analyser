@@ -284,7 +284,7 @@ class BtcBinanceService {
 
     private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal basicAmount) {
         BigDecimal myBalance = getMyBalance(symbol);
-        if (myBalance.compareTo(basicAmount) <= 0) {
+        if (myBalance.compareTo(basicAmount) < 0) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {

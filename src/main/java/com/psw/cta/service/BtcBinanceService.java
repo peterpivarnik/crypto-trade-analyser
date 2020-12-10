@@ -59,7 +59,7 @@ class BtcBinanceService {
     @Time
     @Scheduled(cron = "0 */15 * * * ?")
     public void invest() {
-        LOGGER.info("******************************");
+        LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
@@ -69,22 +69,18 @@ class BtcBinanceService {
         LOGGER.info("Number of open orders: " + openOrders.size());
         BigDecimal myBtcBalance = getMyBalance("BTC");
         BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance);
-        LOGGER.info("My total possible balance: " + myTotalPossibleBalance);
+        LOGGER.info("My possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = getMyTotalBalance();
-        LOGGER.info("My total balance: " + myTotalBalance);
+        LOGGER.info("My actual balance: " + myTotalBalance);
         int minOpenOrders = myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
-        LOGGER.info("minOpenOrders: " + minOpenOrders);
+        LOGGER.info("Min open orders: " + minOpenOrders);
         buyBigAmounts(openOrders, myBtcBalance);
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() < minOpenOrders) {
             buySmallAmounts();
         }
-        LOGGER.info("End of investing.");
-        LOGGER.info("******************************");
     }
 
     private void buySmallAmounts() {
-        LOGGER.info("------------------------------");
-        LOGGER.info("Start of buying small amounts");
         List<TickerStatistics> tickers = getAll24hTickers();
         binanceApiRestClient.getExchangeInfo()
             .getSymbols()
@@ -114,8 +110,6 @@ class BtcBinanceService {
             .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
             .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
             .forEach(this::tradeCrypto);
-        LOGGER.info("End of buying small amounts");
-        LOGGER.info("------------------------------");
     }
 
     private List<TickerStatistics> getAll24hTickers() {
@@ -133,6 +127,8 @@ class BtcBinanceService {
 
     private synchronized void tradeCrypto(CryptoDto crypto) {
         // 1. get balance on account
+        LOGGER.info("******************************");
+        LOGGER.info("Buying small amounts");
         LOGGER.info("Trading crypto " + crypto.getSymbolInfo().getSymbol());
         String symbol = crypto.getSymbolInfo().getSymbol();
         BigDecimal myBtcBalance = getMyBalance("BTC");
@@ -143,7 +139,7 @@ class BtcBinanceService {
             .parallelStream()
             .min(Comparator.comparing(OrderBookEntry::getPrice))
             .orElseThrow(RuntimeException::new);
-        LOGGER.info("orderBookEntry: " + orderBookEntry);
+        LOGGER.info("OrderBookEntry: " + orderBookEntry);
 
         // 3. calculate amount to buy
         if (isStillValid(crypto, orderBookEntry) && haveBalanceForBuySmallAmounts(myBtcBalance)) {
@@ -159,7 +155,7 @@ class BtcBinanceService {
 
             // 4. buy
             NewOrder buyOrder = new NewOrder(symbol, BUY, MARKET, null, roundedMyQuatity.toPlainString());
-            LOGGER.info("buyOrder: " + buyOrder);
+            LOGGER.info("BuyOrder: " + buyOrder);
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
@@ -177,7 +173,7 @@ class BtcBinanceService {
             .map(BigDecimal::new)
             .findFirst()
             .orElse(BigDecimal.ZERO);
-        LOGGER.info("myBalance in currency: " + symbol + ", is: " + myBalance);
+        LOGGER.info("My balance in currency: " + symbol + ", is: " + myBalance);
         return myBalance;
     }
 
@@ -223,8 +219,6 @@ class BtcBinanceService {
     }
 
     private void buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance) {
-        LOGGER.info("++++++++++++++++++++++++++++++");
-        LOGGER.info("Start of buying big amounts");
         openOrders.stream()
             .map(OrderDto::new)
             .peek(OrderDto::calculateOrderBtcAmount)
@@ -234,11 +228,11 @@ class BtcBinanceService {
             .peek(OrderDto::calculatePriceToSell)
             .peek(OrderDto::calculatePriceToSellPercentage)
             .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+            .peek(orderDto -> LOGGER.info("************************************************************"))
+            .peek(orderDto -> LOGGER.info("Buying big amounts"))
             .peek(orderDto -> LOGGER.info(orderDto.print()))
             .max(comparing(OrderDto::getPriceToSellPercentage))
             .ifPresent(this::rebuy);
-        LOGGER.info("End of buying big amounts");
-        LOGGER.info("++++++++++++++++++++++++++++++");
     }
 
     private void rebuy(OrderDto orderDto) {
@@ -259,12 +253,12 @@ class BtcBinanceService {
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
         BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
         NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
-        LOGGER.info("My new buyOrder: " + buyOrder);
+        LOGGER.info("New buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
 
         // 2. cancel existing order
         CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderDto.getOrder().getSymbol(), orderDto.getOrder().getClientOrderId());
-        LOGGER.info("My new cancelOrderRequest" + cancelOrderRequest);
+        LOGGER.info("New cancelOrderRequest" + cancelOrderRequest);
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
@@ -272,7 +266,7 @@ class BtcBinanceService {
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal basicAmount) {
-        LOGGER.info("place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
+        LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
         BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, basicAmount);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);

@@ -262,7 +262,7 @@ class BtcBinanceService {
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), new BigDecimal(orderDto.getOrder().getOrigQty()));
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), new BigDecimal(orderDto.getOrder().getOrigQty()).multiply(new BigDecimal("2")));
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal basicAmount) {
@@ -278,7 +278,9 @@ class BtcBinanceService {
 
     private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal basicAmount) {
         BigDecimal myBalance = getMyBalance(symbol);
-        if (myBalance.compareTo(basicAmount) < 0) {
+        if (myBalance.compareTo(basicAmount) >= 0) {
+            return myBalance;
+        } else {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -286,7 +288,6 @@ class BtcBinanceService {
             }
             return waitUntilHaveBalance(symbol, basicAmount);
         }
-        return myBalance;
     }
 
     private BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {

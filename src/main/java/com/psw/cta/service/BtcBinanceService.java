@@ -72,12 +72,19 @@ class BtcBinanceService {
         LOGGER.info("My possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = getMyTotalBalance();
         LOGGER.info("My actual balance: " + myTotalBalance);
-        int minOpenOrders = myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
+        int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
         buyBigAmounts(openOrders, myBtcBalance);
-        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() < minOpenOrders) {
+        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() <= minOpenOrders) {
             buySmallAmounts();
         }
+    }
+
+    private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
+        if (myBtcBalance.compareTo(new BigDecimal("0.1")) < 0) {
+            return myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
+        }
+        return myTotalPossibleBalance.multiply(myBtcBalance).multiply(new BigDecimal("100")).intValue();
     }
 
     private void buySmallAmounts() {

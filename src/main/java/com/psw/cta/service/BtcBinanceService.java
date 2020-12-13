@@ -88,6 +88,8 @@ class BtcBinanceService {
     }
 
     private void buySmallAmounts() {
+        LOGGER.info("******************************");
+        LOGGER.info("Buying small amounts");
         List<TickerStatistics> tickers = getAll24hTickers();
         binanceApiRestClient.getExchangeInfo()
             .getSymbols()
@@ -134,8 +136,6 @@ class BtcBinanceService {
 
     private synchronized void tradeCrypto(CryptoDto crypto) {
         // 1. get balance on account
-        LOGGER.info("******************************");
-        LOGGER.info("Buying small amounts");
         LOGGER.info("Trading crypto " + crypto.getSymbolInfo().getSymbol());
         String symbol = crypto.getSymbolInfo().getSymbol();
         BigDecimal myBtcBalance = getMyBalance("BTC");

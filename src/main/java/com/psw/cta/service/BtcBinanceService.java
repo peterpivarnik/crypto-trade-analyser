@@ -269,13 +269,16 @@ class BtcBinanceService {
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), new BigDecimal(orderDto.getOrder().getOrigQty()).multiply(new BigDecimal("2")));
+        BigDecimal originalQuantity = new BigDecimal(orderDto.getOrder().getOrigQty());
+        BigDecimal executedQuantity = new BigDecimal(orderDto.getOrder().getExecutedQty());
+        BigDecimal quantityToRebuy = originalQuantity.subtract(executedQuantity);
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), quantityToRebuy.multiply(new BigDecimal("2")));
     }
 
-    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal basicAmount) {
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
-        BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, basicAmount);
+        BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, quantity);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
@@ -283,9 +286,9 @@ class BtcBinanceService {
         binanceApiRestClient.newOrder(sellOrder);
     }
 
-    private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal basicAmount) {
+    private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal quantity) {
         BigDecimal myBalance = getMyBalance(symbol);
-        if (myBalance.compareTo(basicAmount) >= 0) {
+        if (myBalance.compareTo(quantity) >= 0) {
             return myBalance;
         } else {
             try {
@@ -293,7 +296,7 @@ class BtcBinanceService {
             } catch (InterruptedException e) {
                 LOGGER.error("Error during sleeping");
             }
-            return waitUntilHaveBalance(symbol, basicAmount);
+            return waitUntilHaveBalance(symbol, quantity);
         }
     }
 

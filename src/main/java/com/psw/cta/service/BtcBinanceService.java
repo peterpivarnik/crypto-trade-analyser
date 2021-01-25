@@ -64,7 +64,9 @@ class BtcBinanceService {
         OrderRequest orderRequest = new OrderRequest(null);
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
         BigDecimal sumFromOrders = openOrders.stream()
-            .map(order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())))
+            .map(order -> new BigDecimal(order.getPrice())
+                .multiply(new BigDecimal(order.getOrigQty())
+                              .subtract(new BigDecimal(order.getExecutedQty()))))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         LOGGER.info("Number of open orders: " + openOrders.size());
         BigDecimal myBtcBalance = getMyBalance("BTC");

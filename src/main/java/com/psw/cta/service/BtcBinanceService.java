@@ -57,7 +57,7 @@ class BtcBinanceService {
     }
 
     @Time
-    @Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "0 */3 * * * ?")
     public void invest() {
         LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");

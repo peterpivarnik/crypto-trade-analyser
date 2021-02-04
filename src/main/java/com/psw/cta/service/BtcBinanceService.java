@@ -80,6 +80,34 @@ class BtcBinanceService {
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() <= minOpenOrders) {
             buySmallAmounts();
         }
+        buyBnB();
+    }
+
+    private void buyBnB() {
+        LOGGER.info("***************");
+        LOGGER.info("Buying BNB");
+        BigDecimal myBnbBalance = getMyBalance("BNB");
+        LOGGER.info("myBnbBalance: " + myBnbBalance);
+        if (myBnbBalance.compareTo(new BigDecimal("2")) < 0) {
+            BigDecimal currentBnbBtcPrice = getDepth("BNBBTC")
+                .getAsks()
+                .stream()
+                .max(comparing(OrderBookEntry::getPrice))
+                .map(OrderBookEntry::getPrice)
+                .map(BigDecimal::new)
+                .orElseThrow(RuntimeException::new);
+            LOGGER.info("currentBnbBtcPrice: " + currentBnbBtcPrice);
+            BigDecimal myBtcBalance = getMyBalance("BTC");
+            BigDecimal maxBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, BigDecimal.ROUND_CEILING);
+            LOGGER.info("maxBnbQuantity: " + maxBnbQuantity);
+            String quantityToBuy = "1";
+            if (maxBnbQuantity.compareTo(BigDecimal.ONE) < 0) {
+                quantityToBuy = maxBnbQuantity.toPlainString();
+            }
+            NewOrder buyOrder = new NewOrder("BNBBTC", BUY, MARKET, null, quantityToBuy);
+            LOGGER.info("New buyOrder: " + buyOrder);
+            binanceApiRestClient.newOrder(buyOrder);
+        }
     }
 
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {

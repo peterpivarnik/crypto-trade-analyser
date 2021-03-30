@@ -111,10 +111,9 @@ class BtcBinanceService {
     }
 
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
-        if (myBtcBalance.compareTo(new BigDecimal("0.1")) < 0) {
-            return myTotalPossibleBalance.multiply(new BigDecimal("10")).intValue();
-        }
-        return myTotalPossibleBalance.multiply(myBtcBalance).multiply(new BigDecimal("100")).intValue();
+        BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("10"));
+        BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("100"));
+        return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
     }
 
     private void buySmallAmounts() {

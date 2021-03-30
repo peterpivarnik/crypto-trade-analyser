@@ -288,7 +288,8 @@ class BtcBinanceService {
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
         BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
-        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
+        BigDecimal quantity = doubleIfNecessary(roundedQuantity, orderDto, symbolInfo);
+        NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, quantity.toPlainString());
         LOGGER.info("New buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
 
@@ -302,6 +303,20 @@ class BtcBinanceService {
         BigDecimal executedQuantity = new BigDecimal(orderDto.getOrder().getExecutedQty());
         BigDecimal quantityToRebuy = originalQuantity.subtract(executedQuantity);
         placeSellOrder(symbolInfo, orderDto.getPriceToSell(), quantityToRebuy.multiply(new BigDecimal("2")));
+    }
+
+    private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {
+        BigDecimal minNotional = symbolInfo.getFilters()
+            .stream()
+            .filter(filter -> filter.getFilterType().equals(MIN_NOTIONAL))
+            .findAny()
+            .map(SymbolFilter::getMinNotional)
+            .map(BigDecimal::new)
+            .orElseThrow(RuntimeException::new);
+        if (roundedQuantity.multiply(orderDto.getOrderPrice()).compareTo(minNotional) < 0) {
+            return roundedQuantity.multiply(new BigDecimal("2"));
+        }
+        return roundedQuantity;
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {

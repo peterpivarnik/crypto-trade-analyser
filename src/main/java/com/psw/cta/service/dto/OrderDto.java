@@ -4,6 +4,12 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 
 public class OrderDto {
@@ -15,6 +21,8 @@ public class OrderDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal priceToSellWithoutProfit;
+    private BigDecimal minWaitingTime;
+    private BigDecimal actualWaitingTime;
 
     public OrderDto(Order order) {
         this.order = order;
@@ -38,6 +46,14 @@ public class OrderDto {
 
     public BigDecimal getOrderPrice() {
         return orderPrice;
+    }
+
+    public BigDecimal getMinWaitingTime() {
+        return minWaitingTime;
+    }
+
+    public BigDecimal getActualWaitingTime() {
+        return actualWaitingTime;
     }
 
     public void calculateOrderBtcAmount() {
@@ -72,6 +88,19 @@ public class OrderDto {
         this.priceToSellPercentage = new BigDecimal("100").subtract(percentage);
     }
 
+    public void calculateMinWaitingTime() {
+        double pow = Math.pow(orderBtcAmount.doubleValue(), 0.4);
+        double multiplied = pow * 53;
+        this.minWaitingTime = new BigDecimal(multiplied - 0.7, new MathContext(3));
+    }
+
+    public void calculateActualWaitingTime() {
+        LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(order.getTime()), ZoneId.systemDefault());
+        LocalDateTime now = LocalDateTime.now();
+        Duration duration = Duration.between(date, now);
+        actualWaitingTime = new BigDecimal(duration.get(ChronoUnit.SECONDS) / 3600);
+    }
+
     public String print() {
         return "OrderDto{" +
                "order=" + order +
@@ -81,6 +110,8 @@ public class OrderDto {
                ", priceToSell=" + priceToSell +
                ", priceToSellPercentage=" + priceToSellPercentage +
                ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
+               ", minWaitingTime=" + minWaitingTime +
+               ", actualWaitingTime=" + actualWaitingTime +
                '}';
     }
 }

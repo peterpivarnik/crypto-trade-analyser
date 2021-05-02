@@ -324,7 +324,7 @@ class BtcBinanceService {
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
-        String currencyShortcut = symbolInfo.getSymbol().replace("BTC", "");
+        String currencyShortcut = symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
         BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, quantity);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);

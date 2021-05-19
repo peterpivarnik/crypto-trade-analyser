@@ -284,8 +284,14 @@ class BtcBinanceService {
     }
 
     private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
-        // 1. buy
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol());
+
+        // 1. cancel existing order
+        CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderDto.getOrder().getSymbol(), orderDto.getOrder().getClientOrderId());
+        LOGGER.info("New cancelOrderRequest" + cancelOrderRequest);
+        binanceApiRestClient.cancelOrder(cancelOrderRequest);
+
+        // 1. buy
         BigDecimal totalBtcAmountToRebuy = orderDto.getOrderBtcAmount();
         BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, RoundingMode.CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
@@ -295,11 +301,6 @@ class BtcBinanceService {
         NewOrder buyOrder = new NewOrder(orderDto.getOrder().getSymbol(), BUY, MARKET, null, quantity.toPlainString());
         LOGGER.info("New buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
-
-        // 2. cancel existing order
-        CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderDto.getOrder().getSymbol(), orderDto.getOrder().getClientOrderId());
-        LOGGER.info("New cancelOrderRequest" + cancelOrderRequest);
-        binanceApiRestClient.cancelOrder(cancelOrderRequest);
 
         // 3. create new order
         BigDecimal originalQuantity = new BigDecimal(orderDto.getOrder().getOrigQty());

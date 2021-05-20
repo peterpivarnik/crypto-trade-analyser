@@ -1,50 +1,41 @@
 package com.psw.cta.service;
 
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.binance.api.client.domain.OrderType.LIMIT;
-import static com.binance.api.client.domain.OrderType.MARKET;
-import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static java.util.Comparator.comparing;
-
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.account.Account;
-import com.binance.api.client.domain.account.AssetBalance;
-import com.binance.api.client.domain.account.NewOrder;
-import com.binance.api.client.domain.account.NewOrderResponse;
-import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.account.*;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.CandlestickInterval;
-import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
-import com.binance.api.client.domain.market.TickerStatistics;
+import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Function;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
+import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.LIMIT;
+import static com.binance.api.client.domain.OrderType.MARKET;
+import static com.binance.api.client.domain.TimeInForce.GTC;
+import static com.binance.api.client.domain.general.FilterType.*;
+import static java.util.Comparator.comparing;
 
 @Service
 class BtcBinanceService {
@@ -63,8 +54,7 @@ class BtcBinanceService {
     public void invest() {
         LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");
-        OrderRequest orderRequest = new OrderRequest(null);
-        List<Order> openOrders = binanceApiRestClient.getOpenOrders(orderRequest);
+        List<Order> openOrders = binanceApiRestClient.getOpenOrders(new OrderRequest(null));
         BigDecimal sumFromOrders = openOrders.stream()
                 .map(order -> new BigDecimal(order.getPrice())
                         .multiply(new BigDecimal(order.getOrigQty())
@@ -78,11 +68,27 @@ class BtcBinanceService {
         LOGGER.info("My actual balance: " + myTotalBalance);
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
-        buyBigAmounts(openOrders, myBtcBalance);
+        tradeBigAmount(openOrders, myBtcBalance);
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() <= minOpenOrders) {
             buySmallAmounts();
         }
         buyBnB();
+    }
+
+    private void tradeBigAmount(List<Order> openOrders, BigDecimal myBtcBalance) {
+        LOGGER.info("************************************************************");
+        LOGGER.info("Buying big amounts");
+        ArrayList<String> failedClientOrderIds = new ArrayList<>();
+        boolean tradeDone = false;
+        while (openOrders.size() > failedClientOrderIds.size() && !tradeDone) {
+            Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, failedClientOrderIds);
+            if (failedId.isPresent()) {
+                failedClientOrderIds.add(failedId.get());
+                tradeDone = false;
+            } else {
+                tradeDone = true;
+            }
+        }
     }
 
     private void buyBnB() {
@@ -257,10 +263,9 @@ class BtcBinanceService {
         return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 
-    private void buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance) {
-        LOGGER.info("************************************************************");
-        LOGGER.info("Buying big amounts");
-        openOrders.stream()
+    private Optional<String> buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, List<String> failedClientOrderIds) {
+        return openOrders.stream()
+                .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                 .map(OrderDto::new)
                 .peek(OrderDto::calculateOrderBtcAmount)
                 .filter((orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0))
@@ -274,26 +279,29 @@ class BtcBinanceService {
                 .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                 .peek(orderDto -> LOGGER.info(orderDto.print()))
                 .max(comparing(OrderDto::getPriceToSellPercentage))
-                .ifPresent(this::rebuy);
+                .flatMap(this::rebuy);
     }
 
-    private void rebuy(OrderDto orderDto) {
-        binanceApiRestClient.getExchangeInfo()
+    private Optional<String> rebuy(OrderDto orderDto) {
+        return binanceApiRestClient.getExchangeInfo()
                 .getSymbols()
                 .stream()
                 .filter(symbolInfo -> symbolInfo.getSymbol().equals(orderDto.getOrder().getSymbol()))
                 .findFirst()
-                .ifPresent(symbolInfo -> rebuyOrder(symbolInfo, orderDto));
+                .flatMap(symbolInfo -> rebuyOrder(symbolInfo, orderDto));
     }
 
-    private void rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
+    private Optional<String> rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol());
-
-        // 1. cancel existing order
-        CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderDto.getOrder().getSymbol(), orderDto.getOrder().getClientOrderId());
-        LOGGER.info("New cancelOrderRequest" + cancelOrderRequest);
-        binanceApiRestClient.cancelOrder(cancelOrderRequest);
-
+        try {
+            // 1. cancel existing order
+            CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderDto.getOrder().getSymbol(), orderDto.getOrder().getClientOrderId());
+            LOGGER.info("New cancelOrderRequest" + cancelOrderRequest);
+            binanceApiRestClient.cancelOrder(cancelOrderRequest);
+        } catch (BinanceApiException e) {
+            LOGGER.info("Catching exception for orderId: " + orderDto.getOrder().getClientOrderId());
+            return Optional.of(orderDto.getOrder().getClientOrderId());
+        }
         // 1. buy
         BigDecimal totalBtcAmountToRebuy = orderDto.getOrderBtcAmount();
         BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, RoundingMode.CEILING);
@@ -310,6 +318,7 @@ class BtcBinanceService {
         BigDecimal executedQuantity = new BigDecimal(orderDto.getOrder().getExecutedQty());
         BigDecimal quantityToRebuy = originalQuantity.subtract(executedQuantity);
         placeSellOrder(symbolInfo, orderDto.getPriceToSell(), quantityToRebuy.multiply(new BigDecimal("2")));
+        return Optional.empty();
     }
 
     private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {

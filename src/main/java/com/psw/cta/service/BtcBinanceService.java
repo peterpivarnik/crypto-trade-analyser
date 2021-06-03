@@ -22,7 +22,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -35,6 +34,8 @@ import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.*;
+import static java.math.BigDecimal.TEN;
+import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 @Service
@@ -189,7 +190,7 @@ class BtcBinanceService {
         // 3. calculate amount to buy
         if (isStillValid(crypto, orderBookEntry) && haveBalanceForBuySmallAmounts(myBtcBalance)) {
             BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-            BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, RoundingMode.CEILING);
+            BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
             BigDecimal roundedMyQuatity = round(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
             BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
@@ -302,9 +303,9 @@ class BtcBinanceService {
             LOGGER.info("Catching exception for orderId: " + orderDto.getOrder().getClientOrderId());
             return Optional.of(orderDto.getOrder().getClientOrderId());
         }
-        // 1. buy
+        // 2. buy
         BigDecimal totalBtcAmountToRebuy = orderDto.getOrderBtcAmount();
-        BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, RoundingMode.CEILING);
+        BigDecimal myQuantity = totalBtcAmountToRebuy.divide(orderDto.getOrderPrice(), 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
         BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
@@ -316,8 +317,17 @@ class BtcBinanceService {
         // 3. create new order
         BigDecimal originalQuantity = new BigDecimal(orderDto.getOrder().getOrigQty());
         BigDecimal executedQuantity = new BigDecimal(orderDto.getOrder().getExecutedQty());
-        BigDecimal quantityToRebuy = originalQuantity.subtract(executedQuantity);
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), quantityToRebuy.multiply(new BigDecimal("2")));
+        BigDecimal quantityToSell = originalQuantity.subtract(executedQuantity);
+        BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
+        if (orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) {
+            BigDecimal tenthOfCompleteQuantity = completeQuantityToSell.divide(TEN, 8, CEILING);
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity);
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("2")));
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("3")));
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("4")));
+        } else {
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
+        }
         return Optional.empty();
     }
 

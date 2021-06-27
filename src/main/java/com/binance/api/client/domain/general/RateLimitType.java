@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public enum RateLimitType {
+  RAW_REQUESTS,
   REQUEST_WEIGHT,
   ORDERS
 }

@@ -5,10 +5,7 @@ import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.*;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
-import com.binance.api.client.domain.general.FilterType;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.general.SymbolStatus;
+import com.binance.api.client.domain.general.*;
 import com.binance.api.client.domain.market.*;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
@@ -55,6 +52,7 @@ class BtcBinanceService {
     public void invest() {
         LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");
+        BigDecimal bnbBalance = buyBnB();
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(new OrderRequest(null));
         BigDecimal sumFromOrders = openOrders.stream()
                 .map(order -> new BigDecimal(order.getPrice())
@@ -63,7 +61,8 @@ class BtcBinanceService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         LOGGER.info("Number of open orders: " + openOrders.size());
         BigDecimal myBtcBalance = getMyBalance("BTC");
-        BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance);
+        BigDecimal bnbAmount = bnbBalance.multiply(getCurrentBnbBtcPrice());
+        BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance).add(bnbAmount);
         LOGGER.info("My possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = getMyTotalBalance();
         LOGGER.info("My actual balance: " + myTotalBalance);
@@ -73,7 +72,6 @@ class BtcBinanceService {
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() <= minOpenOrders) {
             buySmallAmounts();
         }
-        buyBnB();
     }
 
     private void tradeBigAmount(List<Order> openOrders, BigDecimal myBtcBalance) {
@@ -92,19 +90,13 @@ class BtcBinanceService {
         }
     }
 
-    private void buyBnB() {
+    private BigDecimal buyBnB() {
         LOGGER.info("***************");
         LOGGER.info("Buying BNB");
         BigDecimal myBnbBalance = getMyBalance("BNB");
         LOGGER.info("myBnbBalance: " + myBnbBalance);
         if (myBnbBalance.compareTo(new BigDecimal("2")) < 0) {
-            BigDecimal currentBnbBtcPrice = getDepth("BNBBTC")
-                    .getAsks()
-                    .stream()
-                    .max(comparing(OrderBookEntry::getPrice))
-                    .map(OrderBookEntry::getPrice)
-                    .map(BigDecimal::new)
-                    .orElseThrow(RuntimeException::new);
+            BigDecimal currentBnbBtcPrice = getCurrentBnbBtcPrice();
             LOGGER.info("currentBnbBtcPrice: " + currentBnbBtcPrice);
             BigDecimal myBtcBalance = getMyBalance("BTC");
             BigDecimal maxBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, BigDecimal.ROUND_CEILING);
@@ -116,7 +108,19 @@ class BtcBinanceService {
             NewOrder buyOrder = new NewOrder("BNBBTC", BUY, MARKET, null, quantityToBuy);
             LOGGER.info("New buyOrder: " + buyOrder);
             binanceApiRestClient.newOrder(buyOrder);
+            return getMyBalance("BNB");
         }
+        return myBnbBalance;
+    }
+
+    private BigDecimal getCurrentBnbBtcPrice() {
+        return getDepth("BNBBTC")
+                .getAsks()
+                .stream()
+                .max(comparing(OrderBookEntry::getPrice))
+                .map(OrderBookEntry::getPrice)
+                .map(BigDecimal::new)
+                .orElseThrow(RuntimeException::new);
     }
 
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {

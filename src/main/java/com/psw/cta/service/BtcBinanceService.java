@@ -319,16 +319,32 @@ class BtcBinanceService {
         BigDecimal executedQuantity = new BigDecimal(orderDto.getOrder().getExecutedQty());
         BigDecimal quantityToSell = originalQuantity.subtract(executedQuantity);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-        if (orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) {
-            BigDecimal tenthOfCompleteQuantity = completeQuantityToSell.divide(TEN, 8, CEILING);
+        if (orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) {
+            BigDecimal tenthOfCompleteQuantity = calculateTenthPartOfQuantity(completeQuantityToSell, symbolInfo);
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity);
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("2")));
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("3")));
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("4")));
+            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), getRestOfCancelledAmount(symbolInfo));
         } else {
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
         }
         return Optional.empty();
+    }
+
+    private BigDecimal calculateTenthPartOfQuantity(BigDecimal completeQuantityToSell, SymbolInfo symbolInfo) {
+        BigDecimal dividedTenthPart = completeQuantityToSell.divide(TEN, 8, CEILING);
+        LOGGER.info("dividedTenthPart: " + dividedTenthPart);
+        BigDecimal roundedTenthPart = round(symbolInfo, dividedTenthPart, LOT_SIZE, SymbolFilter::getMinQty);
+        LOGGER.info("roundedTenthPart: " + roundedTenthPart);
+        return roundedTenthPart;
+    }
+
+    private BigDecimal getRestOfCancelledAmount(SymbolInfo symbolInfo) {
+        String symbolFromSymbolInfo = getSymbolFromSymbolInfo(symbolInfo);
+        LOGGER.info("symbolFromSymbolInfo: " + symbolFromSymbolInfo);
+        BigDecimal myBalance = getMyBalance(symbolFromSymbolInfo);
+        LOGGER.info("myBalance: " + myBalance);
+        return myBalance;
     }
 
     private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {
@@ -347,13 +363,17 @@ class BtcBinanceService {
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
-        String currencyShortcut = symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
+        String currencyShortcut = getSymbolFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(currencyShortcut, quantity);
         BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
+    }
+
+    private String getSymbolFromSymbolInfo(SymbolInfo symbolInfo) {
+        return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
     }
 
     private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal quantity) {

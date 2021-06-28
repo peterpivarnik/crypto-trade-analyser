@@ -320,6 +320,7 @@ class BtcBinanceService {
         BigDecimal quantityToSell = originalQuantity.subtract(executedQuantity);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
         if (orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) {
+            LOGGER.info("Splitting amount: " + orderDto.getOrderBtcAmount());
             BigDecimal tenthOfCompleteQuantity = calculateTenthPartOfQuantity(completeQuantityToSell, symbolInfo);
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity);
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("2")));

@@ -2,11 +2,22 @@ package com.psw.cta.service;
 
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.account.*;
+import com.binance.api.client.domain.account.Account;
+import com.binance.api.client.domain.account.AssetBalance;
+import com.binance.api.client.domain.account.NewOrder;
+import com.binance.api.client.domain.account.NewOrderResponse;
+import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
-import com.binance.api.client.domain.general.*;
-import com.binance.api.client.domain.market.*;
+import com.binance.api.client.domain.general.FilterType;
+import com.binance.api.client.domain.general.SymbolFilter;
+import com.binance.api.client.domain.general.SymbolInfo;
+import com.binance.api.client.domain.general.SymbolStatus;
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.CandlestickInterval;
+import com.binance.api.client.domain.market.OrderBook;
+import com.binance.api.client.domain.market.OrderBookEntry;
+import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
@@ -30,7 +41,9 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.*;
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static java.math.BigDecimal.TEN;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
@@ -209,7 +222,13 @@ class BtcBinanceService {
             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(buyOrder);
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+                try {
+                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+                } catch (Exception e) {
+                    LOGGER.info("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
+                    sleep(1000);
+                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+                }
             }
         }
     }
@@ -386,12 +405,16 @@ class BtcBinanceService {
         if (myBalance.compareTo(quantity) >= 0) {
             return myBalance;
         } else {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                LOGGER.error("Error during sleeping");
-            }
+            sleep(500);
             return waitUntilHaveBalance(symbol, quantity);
+        }
+    }
+
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            LOGGER.error("Error during sleeping");
         }
     }
 

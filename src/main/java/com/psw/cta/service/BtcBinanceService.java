@@ -223,11 +223,11 @@ class BtcBinanceService {
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
                 try {
-                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 } catch (Exception e) {
                     LOGGER.info("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
                     sleep(1000);
-                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), minNotionalFromMinNotionalFilter);
+                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 }
             }
         }
@@ -403,7 +403,7 @@ class BtcBinanceService {
     private BigDecimal waitUntilHaveBalance(String symbol, BigDecimal quantity) {
         BigDecimal myBalance = getMyBalance(symbol);
         if (myBalance.compareTo(quantity) >= 0) {
-            return myBalance;
+            return quantity;
         } else {
             sleep(500);
             return waitUntilHaveBalance(symbol, quantity);

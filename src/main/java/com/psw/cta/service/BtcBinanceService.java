@@ -1,5 +1,18 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.binance.api.client.domain.OrderSide.SELL;
+import static com.binance.api.client.domain.OrderType.LIMIT;
+import static com.binance.api.client.domain.OrderType.MARKET;
+import static com.binance.api.client.domain.TimeInForce.GTC;
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static java.math.BigDecimal.TEN;
+import static java.math.RoundingMode.CEILING;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toMap;
+
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.account.Account;
@@ -23,30 +36,18 @@ import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.binance.api.client.domain.OrderType.LIMIT;
-import static com.binance.api.client.domain.OrderType.MARKET;
-import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static java.math.BigDecimal.TEN;
-import static java.math.RoundingMode.CEILING;
-import static java.util.Comparator.comparing;
 
 @Service
 class BtcBinanceService {
@@ -82,7 +83,11 @@ class BtcBinanceService {
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
         tradeBigAmount(openOrders, myBtcBalance);
-        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && openOrders.size() <= minOpenOrders) {
+        Collection<Order> uniqueOpenOrders = openOrders.stream()
+            .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
+            .values();
+        LOGGER.info("Unique open orders: " + uniqueOpenOrders);
+        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrders.size() <= minOpenOrders) {
             buySmallAmounts();
         }
     }
@@ -226,7 +231,7 @@ class BtcBinanceService {
                     placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 } catch (Exception e) {
                     LOGGER.info("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
-                    sleep(1000);
+                    sleep(61000);
                     placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 }
             }

@@ -83,11 +83,12 @@ class BtcBinanceService {
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
         tradeBigAmount(openOrders, myBtcBalance);
-        Collection<Order> uniqueOpenOrders = openOrders.stream()
+       int uniqueOpenOrdersSize = openOrders.stream()
             .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
-            .values();
-        LOGGER.info("Unique open orders: " + uniqueOpenOrders);
-        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrders.size() <= minOpenOrders) {
+            .values()
+            .size();
+        LOGGER.info("Unique open orders: " + uniqueOpenOrdersSize);
+        if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
             buySmallAmounts();
         }
     }

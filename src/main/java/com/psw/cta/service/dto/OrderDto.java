@@ -1,9 +1,11 @@
 package com.psw.cta.service.dto;
 
+import static java.lang.Math.sqrt;
+import static java.math.RoundingMode.UP;
+
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
-
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
@@ -12,8 +14,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-
-import static java.lang.Math.sqrt;
 
 public class OrderDto {
 
@@ -76,24 +76,25 @@ public class OrderDto {
 
     public void calculatePriceToSellWithoutProfit() {
         BigDecimal subtract = this.orderPrice.subtract(currentPrice);
-        BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
+        BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
         this.priceToSellWithoutProfit = currentPrice.add(divide);
     }
 
     public void calculatePriceToSell() {
         BigDecimal subtract = this.orderPrice.subtract(priceToSellWithoutProfit);
-        BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP);
+        BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
         this.priceToSell = priceToSellWithoutProfit.add(divide);
     }
 
     public void calculatePriceToSellPercentage() {
-        BigDecimal percentage = this.priceToSell.multiply(new BigDecimal("100")).divide(this.orderPrice, 8, BigDecimal.ROUND_UP);
+        BigDecimal percentage = this.priceToSell.multiply(new BigDecimal("100")).divide(this.orderPrice, 8, UP);
         this.priceToSellPercentage = new BigDecimal("100").subtract(percentage);
     }
 
     public void calculateMinWaitingTime() {
         double time = 100 * sqrt(orderBtcAmount.doubleValue());
-        this.minWaitingTime = new BigDecimal(time, new MathContext(3));
+        BigDecimal waitingTime = new BigDecimal(time, new MathContext(3));
+        this.minWaitingTime = waitingTime.multiply(new BigDecimal("2"));
     }
 
     public void calculateActualWaitingTime() {

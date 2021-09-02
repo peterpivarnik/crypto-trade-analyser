@@ -8,6 +8,8 @@ import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
+import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
 import static java.math.BigDecimal.TEN;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
@@ -38,7 +40,6 @@ import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -102,7 +103,6 @@ class BtcBinanceService {
             Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, failedClientOrderIds);
             if (failedId.isPresent()) {
                 failedClientOrderIds.add(failedId.get());
-                tradeDone = false;
             } else {
                 tradeDone = true;
             }
@@ -118,7 +118,7 @@ class BtcBinanceService {
             BigDecimal currentBnbBtcPrice = getCurrentBnbBtcPrice();
             LOGGER.info("currentBnbBtcPrice: " + currentBnbBtcPrice);
             BigDecimal myBtcBalance = getMyBalance("BTC");
-            BigDecimal maxBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, BigDecimal.ROUND_CEILING);
+            BigDecimal maxBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
             LOGGER.info("maxBnbQuantity: " + maxBnbQuantity);
             String quantityToBuy = "1";
             if (maxBnbQuantity.compareTo(BigDecimal.ONE) < 0) {
@@ -159,7 +159,7 @@ class BtcBinanceService {
                 .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
                 .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
                 .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, CandlestickInterval.DAILY, 90)))
+                .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
                 .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
                 .peek(dto -> dto.calculateTicker24hr(tickers))
                 .peek(CryptoDto::calculateVolume)
@@ -167,7 +167,7 @@ class BtcBinanceService {
                 .peek(dto -> dto.setDepth20(getDepth(dto.getSymbolInfo().getSymbol())))
                 .peek(CryptoDto::calculateCurrentPrice)
                 .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, CandlestickInterval.FIFTEEN_MINUTES, 96)))
+                .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MINUTES, 96)))
                 .peek(CryptoDto::calculateLastThreeMaxAverage)
                 .peek(CryptoDto::calculatePreviousThreeMaxAverage)
                 .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)

@@ -1,12 +1,13 @@
 package com.psw.cta.service.dto;
 
+import static java.math.RoundingMode.UP;
+
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class CryptoDto {
     private List<Candlestick> threeMonthsCandleStickData;
     private TickerStatistics ticker24hr;
     private OrderBook depth20;
-    private SymbolInfo symbolInfo;
+    private final SymbolInfo symbolInfo;
 
     private BigDecimal currentPrice;
     private BigDecimal volume;
@@ -116,7 +117,7 @@ public class CryptoDto {
             .map(Candlestick::getHigh)
             .map(BigDecimal::new)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
+            .divide(new BigDecimal("3"), 8, UP);
     }
 
     public void calculateSumDiffsPercent() {
@@ -145,7 +146,7 @@ public class CryptoDto {
     private BigDecimal getPercentualDifference(Candlestick data, BigDecimal currentPrice) {
         BigDecimal absoluteValue = getAverageValue(data);
         BigDecimal relativeValue = absoluteValue.multiply(new BigDecimal("100"))
-            .divide(currentPrice, 8, BigDecimal.ROUND_UP);
+            .divide(currentPrice, 8, UP);
         return relativeValue.subtract(new BigDecimal("100")).abs();
     }
 
@@ -154,7 +155,7 @@ public class CryptoDto {
             .add(new BigDecimal(data.getClose()))
             .add(new BigDecimal(data.getHigh()))
             .add(new BigDecimal(data.getLow()))
-            .divide(new BigDecimal("4"), 8, BigDecimal.ROUND_UP);
+            .divide(new BigDecimal("4"), 8, UP);
     }
 
 
@@ -171,7 +172,7 @@ public class CryptoDto {
             .max(Comparator.naturalOrder())
             .orElse(BigDecimal.ZERO)
             .subtract(this.currentPrice)
-            .divide(new BigDecimal("2"), 8, BigDecimal.ROUND_UP)
+            .divide(new BigDecimal("2"), 8, UP)
             .add(this.currentPrice);
     }
 
@@ -179,7 +180,7 @@ public class CryptoDto {
         BigDecimal priceToSell = this.priceToSell;
         BigDecimal currentPrice = this.currentPrice;
         this.priceToSellPercentage = priceToSell.multiply(new BigDecimal("100"))
-            .divide(currentPrice, 8, BigDecimal.ROUND_UP)
+            .divide(currentPrice, 8, UP)
             .subtract(new BigDecimal("100"));
     }
 
@@ -194,7 +195,7 @@ public class CryptoDto {
         } else if (sum.compareTo(BigDecimal.ZERO) == 0) {
             ratio = BigDecimal.ZERO;
         } else {
-            ratio = this.volume.divide(sum, 8, BigDecimal.ROUND_UP);
+            ratio = this.volume.divide(sum, 8, UP);
         }
         this.weight = priceToSellPercentage.multiply(ratio);
     }
@@ -207,7 +208,7 @@ public class CryptoDto {
             .map(Candlestick::getHigh)
             .map(BigDecimal::new)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .divide(new BigDecimal("3"), 8, RoundingMode.UP);
+            .divide(new BigDecimal("3"), 8, UP);
     }
 
     @Override

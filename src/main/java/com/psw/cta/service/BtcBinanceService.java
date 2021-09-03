@@ -309,7 +309,7 @@ class BtcBinanceService {
             .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
             .peek(OrderDto::calculateActualProfit)
             .peek(orderDto -> LOGGER.info(orderDto.print()))
-            .max(comparing(OrderDto::getPriceToSellPercentage))
+            .max(comparing(OrderDto::getActualProfit))
             .flatMap(this::rebuy);
     }
 

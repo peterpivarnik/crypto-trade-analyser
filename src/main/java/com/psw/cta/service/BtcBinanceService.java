@@ -70,10 +70,10 @@ class BtcBinanceService {
         BigDecimal bnbBalance = buyBnB();
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(new OrderRequest(null));
         BigDecimal sumFromOrders = openOrders.stream()
-                .map(order -> new BigDecimal(order.getPrice())
-                        .multiply(new BigDecimal(order.getOrigQty())
-                                .subtract(new BigDecimal(order.getExecutedQty()))))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .map(order -> new BigDecimal(order.getPrice())
+                .multiply(new BigDecimal(order.getOrigQty())
+                              .subtract(new BigDecimal(order.getExecutedQty()))))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         LOGGER.info("Number of open orders: " + openOrders.size());
         BigDecimal myBtcBalance = getMyBalance("BTC");
         BigDecimal bnbAmount = bnbBalance.multiply(getCurrentBnbBtcPrice());
@@ -84,7 +84,7 @@ class BtcBinanceService {
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
         tradeBigAmount(openOrders, myBtcBalance);
-       int uniqueOpenOrdersSize = openOrders.stream()
+        int uniqueOpenOrdersSize = openOrders.stream()
             .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
             .values()
             .size();
@@ -134,12 +134,12 @@ class BtcBinanceService {
 
     private BigDecimal getCurrentBnbBtcPrice() {
         return getDepth("BNBBTC")
-                .getAsks()
-                .stream()
-                .max(comparing(OrderBookEntry::getPrice))
-                .map(OrderBookEntry::getPrice)
-                .map(BigDecimal::new)
-                .orElseThrow(RuntimeException::new);
+            .getAsks()
+            .stream()
+            .max(comparing(OrderBookEntry::getPrice))
+            .map(OrderBookEntry::getPrice)
+            .map(BigDecimal::new)
+            .orElseThrow(RuntimeException::new);
     }
 
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
@@ -153,34 +153,34 @@ class BtcBinanceService {
         LOGGER.info("Buying small amounts");
         List<TickerStatistics> tickers = getAll24hTickers();
         binanceApiRestClient.getExchangeInfo()
-                .getSymbols()
-                .parallelStream()
-                .map(CryptoDto::new)
-                .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
-                .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
-                .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
-                .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                .peek(dto -> dto.calculateTicker24hr(tickers))
-                .peek(CryptoDto::calculateVolume)
-                .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                .peek(dto -> dto.setDepth20(getDepth(dto.getSymbolInfo().getSymbol())))
-                .peek(CryptoDto::calculateCurrentPrice)
-                .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MINUTES, 96)))
-                .peek(CryptoDto::calculateLastThreeMaxAverage)
-                .peek(CryptoDto::calculatePreviousThreeMaxAverage)
-                .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
-                .peek(CryptoDto::calculateSumDiffsPercent)
-                .peek(CryptoDto::calculateSumDiffsPercent10h)
-                .peek(CryptoDto::calculatePriceToSell)
-                .peek(CryptoDto::calculatePriceToSellPercentage)
-                .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(CryptoDto::calculateWeight)
-                .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                .limit(20)
-                .forEach(this::tradeCrypto);
+            .getSymbols()
+            .parallelStream()
+            .map(CryptoDto::new)
+            .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
+            .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
+            .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+            .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
+            .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
+            .peek(dto -> dto.calculateTicker24hr(tickers))
+            .peek(CryptoDto::calculateVolume)
+            .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+            .peek(dto -> dto.setDepth20(getDepth(dto.getSymbolInfo().getSymbol())))
+            .peek(CryptoDto::calculateCurrentPrice)
+            .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+            .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MINUTES, 96)))
+            .peek(CryptoDto::calculateLastThreeMaxAverage)
+            .peek(CryptoDto::calculatePreviousThreeMaxAverage)
+            .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
+            .peek(CryptoDto::calculateSumDiffsPercent)
+            .peek(CryptoDto::calculateSumDiffsPercent10h)
+            .peek(CryptoDto::calculatePriceToSell)
+            .peek(CryptoDto::calculatePriceToSellPercentage)
+            .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+            .peek(CryptoDto::calculateWeight)
+            .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+            .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+            .limit(20)
+            .forEach(this::tradeCrypto);
     }
 
     private List<TickerStatistics> getAll24hTickers() {
@@ -205,9 +205,9 @@ class BtcBinanceService {
         // 2. get max possible buy
         OrderBook orderBook = binanceApiRestClient.getOrderBook(symbol, 20);
         OrderBookEntry orderBookEntry = orderBook.getAsks()
-                .parallelStream()
-                .min(Comparator.comparing(OrderBookEntry::getPrice))
-                .orElseThrow(RuntimeException::new);
+            .parallelStream()
+            .min(Comparator.comparing(OrderBookEntry::getPrice))
+            .orElseThrow(RuntimeException::new);
         LOGGER.info("OrderBookEntry: " + orderBookEntry);
 
         // 3. calculate amount to buy
@@ -242,24 +242,24 @@ class BtcBinanceService {
     private BigDecimal getMyBalance(String symbol) {
         Account account = binanceApiRestClient.getAccount();
         BigDecimal myBalance = account.getBalances()
-                .stream()
-                .filter(balance -> balance.getAsset().equals(symbol))
-                .map(AssetBalance::getFree)
-                .map(BigDecimal::new)
-                .findFirst()
-                .orElse(BigDecimal.ZERO);
+            .stream()
+            .filter(balance -> balance.getAsset().equals(symbol))
+            .map(AssetBalance::getFree)
+            .map(BigDecimal::new)
+            .findFirst()
+            .orElse(BigDecimal.ZERO);
         LOGGER.info("My balance in currency: " + symbol + ", is: " + myBalance);
         return myBalance;
     }
 
     private BigDecimal getMyTotalBalance() {
         return binanceApiRestClient.getAccount()
-                .getBalances()
-                .stream()
-                .map(this::mapToAssetAndBalance)
-                .filter(pair -> pair.getLeft().compareTo(BigDecimal.ZERO) > 0)
-                .map(this::mapToBtcBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            .getBalances()
+            .stream()
+            .map(this::mapToAssetAndBalance)
+            .filter(pair -> pair.getLeft().compareTo(BigDecimal.ZERO) > 0)
+            .map(this::mapToBtcBalance)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
@@ -272,12 +272,12 @@ class BtcBinanceService {
         } else {
             try {
                 BigDecimal price = getDepth(pair.getRight() + "BTC")
-                        .getBids()
-                        .stream()
-                        .map(OrderBookEntry::getPrice)
-                        .map(BigDecimal::new)
-                        .max(BigDecimal::compareTo)
-                        .orElse(BigDecimal.ZERO);
+                    .getBids()
+                    .stream()
+                    .map(OrderBookEntry::getPrice)
+                    .map(BigDecimal::new)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
                 return price.multiply(pair.getLeft());
             } catch (BinanceApiException e) {
                 return BigDecimal.ZERO;
@@ -295,30 +295,31 @@ class BtcBinanceService {
 
     private Optional<String> buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, List<String> failedClientOrderIds) {
         return openOrders.stream()
-                .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
-                .map(OrderDto::new)
-                .peek(OrderDto::calculateOrderBtcAmount)
-                .filter((orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0))
-                .peek(OrderDto::calculateMinWaitingTime)
-                .peek(OrderDto::calculateActualWaitingTime)
-                .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
-                .peek(OrderDto::calculatePriceToSellWithoutProfit)
-                .peek(OrderDto::calculatePriceToSell)
-                .peek(OrderDto::calculatePriceToSellPercentage)
-                .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                .peek(orderDto -> LOGGER.info(orderDto.print()))
-                .max(comparing(OrderDto::getPriceToSellPercentage))
-                .flatMap(this::rebuy);
+            .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
+            .map(OrderDto::new)
+            .peek(OrderDto::calculateOrderBtcAmount)
+            .filter((orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0))
+            .peek(OrderDto::calculateMinWaitingTime)
+            .peek(OrderDto::calculateActualWaitingTime)
+            .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
+            .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+            .peek(OrderDto::calculatePriceToSellWithoutProfit)
+            .peek(OrderDto::calculatePriceToSell)
+            .peek(OrderDto::calculatePriceToSellPercentage)
+            .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+            .peek(OrderDto::calculateActualProfit)
+            .peek(orderDto -> LOGGER.info(orderDto.print()))
+            .max(comparing(OrderDto::getPriceToSellPercentage))
+            .flatMap(this::rebuy);
     }
 
     private Optional<String> rebuy(OrderDto orderDto) {
         return binanceApiRestClient.getExchangeInfo()
-                .getSymbols()
-                .stream()
-                .filter(symbolInfo -> symbolInfo.getSymbol().equals(orderDto.getOrder().getSymbol()))
-                .findFirst()
-                .flatMap(symbolInfo -> rebuyOrder(symbolInfo, orderDto));
+            .getSymbols()
+            .stream()
+            .filter(symbolInfo -> symbolInfo.getSymbol().equals(orderDto.getOrder().getSymbol()))
+            .findFirst()
+            .flatMap(symbolInfo -> rebuyOrder(symbolInfo, orderDto));
     }
 
     private Optional<String> rebuyOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
@@ -379,12 +380,12 @@ class BtcBinanceService {
 
     private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {
         BigDecimal minNotional = symbolInfo.getFilters()
-                .stream()
-                .filter(filter -> filter.getFilterType().equals(MIN_NOTIONAL))
-                .findAny()
-                .map(SymbolFilter::getMinNotional)
-                .map(BigDecimal::new)
-                .orElseThrow(RuntimeException::new);
+            .stream()
+            .filter(filter -> filter.getFilterType().equals(MIN_NOTIONAL))
+            .findAny()
+            .map(SymbolFilter::getMinNotional)
+            .map(BigDecimal::new)
+            .orElseThrow(RuntimeException::new);
         if (roundedQuantity.multiply(orderDto.getOrderPrice()).compareTo(minNotional) < 0) {
             return roundedQuantity.multiply(new BigDecimal("2"));
         }
@@ -432,11 +433,11 @@ class BtcBinanceService {
 
     private BigDecimal getValueFromFilter(SymbolInfo symbolInfo, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         return symbolInfo.getFilters()
-                .stream()
-                .filter(filter -> filter.getFilterType().equals(filterType))
-                .map(symbolFilterFunction)
-                .map(BigDecimal::new)
-                .findAny()
-                .orElse(BigDecimal.ONE);
+            .stream()
+            .filter(filter -> filter.getFilterType().equals(filterType))
+            .map(symbolFilterFunction)
+            .map(BigDecimal::new)
+            .findAny()
+            .orElse(BigDecimal.ONE);
     }
 }

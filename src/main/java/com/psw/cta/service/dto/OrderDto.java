@@ -24,6 +24,7 @@ public class OrderDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal priceToSellWithoutProfit;
+    private BigDecimal actualProfit;
     private BigDecimal minWaitingTime;
     private BigDecimal actualWaitingTime;
 
@@ -51,6 +52,10 @@ public class OrderDto {
         return orderPrice;
     }
 
+    public BigDecimal getActualProfit() {
+        return actualProfit;
+    }
+
     public BigDecimal getMinWaitingTime() {
         return minWaitingTime;
     }
@@ -67,11 +72,11 @@ public class OrderDto {
 
     public void calculateCurrentPrice(OrderBook depth20) {
         this.currentPrice = depth20.getAsks()
-                .parallelStream()
-                .map(OrderBookEntry::getPrice)
-                .map(BigDecimal::new)
-                .min(Comparator.naturalOrder())
-                .orElseThrow(RuntimeException::new);
+            .parallelStream()
+            .map(OrderBookEntry::getPrice)
+            .map(BigDecimal::new)
+            .min(Comparator.naturalOrder())
+            .orElseThrow(RuntimeException::new);
     }
 
     public void calculatePriceToSellWithoutProfit() {
@@ -104,17 +109,23 @@ public class OrderDto {
         actualWaitingTime = new BigDecimal(duration.get(ChronoUnit.SECONDS) / 3600);
     }
 
+    public void calculateActualProfit() {
+        BigDecimal profit = priceToSell.subtract(priceToSellWithoutProfit);
+        actualProfit = profit.multiply(new BigDecimal(order.getOrigQty()));
+    }
+
     public String print() {
         return "OrderDto{" +
-                "order=" + order +
-                ", orderBtcAmount=" + orderBtcAmount +
-                ", orderPrice=" + orderPrice +
-                ", currentPrice=" + currentPrice +
-                ", priceToSell=" + priceToSell +
-                ", priceToSellPercentage=" + priceToSellPercentage +
-                ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
-                ", minWaitingTime=" + minWaitingTime +
-                ", actualWaitingTime=" + actualWaitingTime +
-                '}';
+               "order=" + order +
+               ", orderBtcAmount=" + orderBtcAmount +
+               ", orderPrice=" + orderPrice +
+               ", currentPrice=" + currentPrice +
+               ", priceToSell=" + priceToSell +
+               ", priceToSellPercentage=" + priceToSellPercentage +
+               ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
+               ", actualProfit=" + actualProfit +
+               ", minWaitingTime=" + minWaitingTime +
+               ", actualWaitingTime=" + actualWaitingTime +
+               '}';
     }
 }

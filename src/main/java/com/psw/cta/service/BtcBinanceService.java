@@ -299,12 +299,16 @@ class BtcBinanceService {
         Function<OrderDto, Long> orderDtoOptionalFunction = orderDto -> openOrders.stream()
                                                                                   .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                                   .count();
+        Function<OrderDto, BigDecimal> totalAmountFunction = orderDto -> openOrders.stream()
+                                                                        .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
+                                                                        .map(order -> orderDto.getOrderBtcAmount())
+                                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
         return openOrders.stream()
                          .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                          .map(OrderDto::new)
                          .peek(OrderDto::calculateOrderBtcAmount)
-                         .filter((orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0))
-                         .peek(OrderDto::calculateMinWaitingTime)
+                         .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
+                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction))
                          .peek(OrderDto::calculateActualWaitingTime)
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
                          .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
@@ -314,7 +318,7 @@ class BtcBinanceService {
                          .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                          .peek(OrderDto::calculateActualProfit)
                          .peek(orderDto -> LOGGER.info(orderDto.print()))
-                         .max(comparing(OrderDto::getActualProfit))
+                         .max(comparing(OrderDto::getPriceToSellPercentage))
                          .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(orderDtoOptionalFunction.apply(orderDto))));
     }
 

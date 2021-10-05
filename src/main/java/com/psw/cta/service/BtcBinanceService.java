@@ -42,7 +42,6 @@ import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -208,7 +207,7 @@ class BtcBinanceService {
         OrderBook orderBook = binanceApiRestClient.getOrderBook(symbol, 20);
         OrderBookEntry orderBookEntry = orderBook.getAsks()
                                                  .parallelStream()
-                                                 .min(Comparator.comparing(OrderBookEntry::getPrice))
+                                                 .min(comparing(OrderBookEntry::getPrice))
                                                  .orElseThrow(RuntimeException::new);
         LOGGER.info("OrderBookEntry: " + orderBookEntry);
 
@@ -299,10 +298,11 @@ class BtcBinanceService {
         Function<OrderDto, Long> orderDtoOptionalFunction = orderDto -> openOrders.stream()
                                                                                   .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                                   .count();
-        Function<OrderDto, BigDecimal> totalAmountFunction = orderDto -> openOrders.stream()
-                                                                        .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
-                                                                        .map(order -> orderDto.getOrderBtcAmount())
-                                                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Function<String, BigDecimal> totalAmountFunction = symbol -> openOrders.stream()
+                                                                               .filter(order -> order.getSymbol().equals(symbol))
+                                                                               .map(order -> new BigDecimal(order.getPrice())
+                                                                                   .multiply(new BigDecimal(order.getOrigQty())))
+                                                                               .reduce(BigDecimal.ZERO, BigDecimal::add);
         return openOrders.stream()
                          .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                          .map(OrderDto::new)

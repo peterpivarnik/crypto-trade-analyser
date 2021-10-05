@@ -73,11 +73,11 @@ public class OrderDto {
 
     public void calculateCurrentPrice(OrderBook depth20) {
         this.currentPrice = depth20.getAsks()
-            .parallelStream()
-            .map(OrderBookEntry::getPrice)
-            .map(BigDecimal::new)
-            .min(Comparator.naturalOrder())
-            .orElseThrow(RuntimeException::new);
+                                   .parallelStream()
+                                   .map(OrderBookEntry::getPrice)
+                                   .map(BigDecimal::new)
+                                   .min(Comparator.naturalOrder())
+                                   .orElseThrow(RuntimeException::new);
     }
 
     public void calculatePriceToSellWithoutProfit() {
@@ -97,8 +97,10 @@ public class OrderDto {
         this.priceToSellPercentage = new BigDecimal("100").subtract(percentage);
     }
 
-    public void calculateMinWaitingTime(Function<OrderDto, BigDecimal> totalAmountFunction) {
-        BigDecimal amount = totalAmountFunction.apply(this).add(this.orderBtcAmount);
+    public void calculateMinWaitingTime(Function<String, BigDecimal> totalAmountFunction) {
+        BigDecimal totalAmount = totalAmountFunction.apply(this.getOrder().getSymbol());
+        System.out.println("Total amount for " + this.getOrder().getSymbol() + " is: " + totalAmount);
+        BigDecimal amount = totalAmount.add(this.orderBtcAmount);
         double time = 100 * sqrt(amount.doubleValue());
         this.minWaitingTime = new BigDecimal(time, new MathContext(3));
     }

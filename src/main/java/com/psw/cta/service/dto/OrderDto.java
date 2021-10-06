@@ -98,11 +98,15 @@ public class OrderDto {
     }
 
     public void calculateMinWaitingTime(Function<String, BigDecimal> totalAmountFunction) {
-        BigDecimal totalAmount = totalAmountFunction.apply(this.getOrder().getSymbol());
-        System.out.println("Total amount for " + this.getOrder().getSymbol() + " is: " + totalAmount);
-        BigDecimal amount = totalAmount.add(this.orderBtcAmount);
-        double time = 100 * sqrt(amount.doubleValue());
-        this.minWaitingTime = new BigDecimal(time, new MathContext(3));
+        BigDecimal totalBtcAmount = totalAmountFunction.apply(this.getOrder().getSymbol());
+        BigDecimal totalWaitingTime = getTimeFromAmount(totalBtcAmount);
+        BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
+        this.minWaitingTime = totalWaitingTime.add(orderWaitingTime);
+    }
+
+    private BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
+        double totalTime = 100 * sqrt(totalAmount.doubleValue());
+        return new BigDecimal(totalTime, new MathContext(3));
     }
 
     public void calculateActualWaitingTime() {

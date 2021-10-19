@@ -72,7 +72,7 @@ class BtcBinanceService {
         LOGGER.info("Start of investing.");
         BigDecimal bnbBalance = buyBnB();
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(new OrderRequest(null));
-        BigDecimal sumFromOrders = openOrders.stream()
+        BigDecimal sumFromOrders = openOrders.parallelStream()
                                              .map(order -> new BigDecimal(order.getPrice())
                                                  .multiply(new BigDecimal(order.getOrigQty())
                                                                .subtract(new BigDecimal(order.getExecutedQty()))))
@@ -87,7 +87,7 @@ class BtcBinanceService {
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
         tradeBigAmount(openOrders, myBtcBalance);
-        int uniqueOpenOrdersSize = openOrders.stream()
+        int uniqueOpenOrdersSize = openOrders.parallelStream()
                                              .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
                                              .values()
                                              .size();
@@ -138,7 +138,7 @@ class BtcBinanceService {
     private BigDecimal getCurrentBnbBtcPrice() {
         return getDepth("BNBBTC")
             .getAsks()
-            .stream()
+            .parallelStream()
             .max(comparing(OrderBookEntry::getPrice))
             .map(OrderBookEntry::getPrice)
             .map(BigDecimal::new)
@@ -245,7 +245,7 @@ class BtcBinanceService {
     private BigDecimal getMyBalance(String symbol) {
         Account account = binanceApiRestClient.getAccount();
         BigDecimal myBalance = account.getBalances()
-                                      .stream()
+                                      .parallelStream()
                                       .filter(balance -> balance.getAsset().equals(symbol))
                                       .map(AssetBalance::getFree)
                                       .map(BigDecimal::new)
@@ -258,7 +258,7 @@ class BtcBinanceService {
     private BigDecimal getMyTotalBalance() {
         return binanceApiRestClient.getAccount()
                                    .getBalances()
-                                   .stream()
+                                   .parallelStream()
                                    .map(this::mapToAssetAndBalance)
                                    .filter(pair -> pair.getLeft().compareTo(BigDecimal.ZERO) > 0)
                                    .map(this::mapToBtcBalance)
@@ -276,7 +276,7 @@ class BtcBinanceService {
             try {
                 BigDecimal price = getDepth(pair.getRight() + "BTC")
                     .getBids()
-                    .stream()
+                    .parallelStream()
                     .map(OrderBookEntry::getPrice)
                     .map(BigDecimal::new)
                     .max(BigDecimal::compareTo)
@@ -298,10 +298,10 @@ class BtcBinanceService {
 
     private Optional<String> buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, List<String> failedClientOrderIds) {
         Map<String, BigDecimal> totalAmounts = new ConcurrentHashMap<>();
-        Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.stream()
+        Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
-        Function<String, BigDecimal> totalAmountFunction = symbol -> openOrders.stream()
+        Function<String, BigDecimal> totalAmountFunction = symbol -> openOrders.parallelStream()
                                                                                .filter(order -> order.getSymbol().equals(symbol))
                                                                                .map(order -> new BigDecimal(order.getPrice())
                                                                                    .multiply(new BigDecimal(order.getOrigQty())))
@@ -328,9 +328,9 @@ class BtcBinanceService {
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {
         return binanceApiRestClient.getExchangeInfo()
                                    .getSymbols()
-                                   .stream()
+                                   .parallelStream()
                                    .filter(symbolInfo -> symbolInfo.getSymbol().equals(orderDto.getOrder().getSymbol()))
-                                   .findFirst()
+                                   .findAny()
                                    .flatMap(symbolInfo -> rebuyOrder(symbolInfo, orderDto, symbolOpenOrders));
     }
 
@@ -441,7 +441,7 @@ class BtcBinanceService {
 
     private BigDecimal getValueFromFilter(SymbolInfo symbolInfo, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         return symbolInfo.getFilters()
-                         .stream()
+                         .parallelStream()
                          .filter(filter -> filter.getFilterType().equals(filterType))
                          .map(symbolFilterFunction)
                          .map(BigDecimal::new)

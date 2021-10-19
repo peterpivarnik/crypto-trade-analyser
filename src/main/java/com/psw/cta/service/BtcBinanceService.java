@@ -43,7 +43,9 @@ import com.psw.cta.service.dto.OrderDto;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -295,20 +297,21 @@ class BtcBinanceService {
     }
 
     private Optional<String> buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, List<String> failedClientOrderIds) {
-        Function<OrderDto, Long> orderDtoOptionalFunction = orderDto -> openOrders.stream()
-                                                                                  .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
-                                                                                  .count();
+        Map<String, BigDecimal> totalAmounts = new ConcurrentHashMap<>();
+        Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.stream()
+                                                                             .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
+                                                                             .count();
         Function<String, BigDecimal> totalAmountFunction = symbol -> openOrders.stream()
                                                                                .filter(order -> order.getSymbol().equals(symbol))
                                                                                .map(order -> new BigDecimal(order.getPrice())
                                                                                    .multiply(new BigDecimal(order.getOrigQty())))
                                                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return openOrders.stream()
+        return openOrders.parallelStream()
                          .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                          .map(OrderDto::new)
                          .peek(OrderDto::calculateOrderBtcAmount)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction))
+                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction, totalAmounts))
                          .peek(OrderDto::calculateActualWaitingTime)
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
                          .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
@@ -319,7 +322,7 @@ class BtcBinanceService {
                          .peek(OrderDto::calculateActualProfit)
                          .peek(orderDto -> LOGGER.info(orderDto.print()))
                          .max(comparing(OrderDto::getPriceToSellPercentage))
-                         .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(orderDtoOptionalFunction.apply(orderDto))));
+                         .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
     }
 
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {

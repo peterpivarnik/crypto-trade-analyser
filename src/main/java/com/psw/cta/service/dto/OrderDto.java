@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.function.Function;
 
 public class OrderDto {
@@ -97,8 +98,11 @@ public class OrderDto {
         this.priceToSellPercentage = new BigDecimal("100").subtract(percentage);
     }
 
-    public void calculateMinWaitingTime(Function<String, BigDecimal> totalAmountFunction) {
-        BigDecimal totalBtcAmount = totalAmountFunction.apply(this.getOrder().getSymbol());
+    public void calculateMinWaitingTime(Function<String, BigDecimal> totalAmountFunction, Map<String, BigDecimal> totalAmounts) {
+        String symbol = this.order.getSymbol();
+        BigDecimal totalBtcAmount = totalAmounts.merge(symbol,
+                                                       totalAmountFunction.apply(symbol),
+                                                       (v1, v2) -> v2);
         BigDecimal totalWaitingTime = getTimeFromAmount(totalBtcAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
         this.minWaitingTime = totalWaitingTime.add(orderWaitingTime);

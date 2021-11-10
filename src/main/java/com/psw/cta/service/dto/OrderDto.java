@@ -118,7 +118,7 @@ public class OrderDto {
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(date, now);
         double actualWaitingTimeDouble = (double) duration.get(ChronoUnit.SECONDS) / (double) 3600;
-        actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(2));
+        actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(3));
     }
 
     public void calculateActualProfit() {
@@ -137,7 +137,7 @@ public class OrderDto {
                ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
                ", actualProfit=" + actualProfit +
                ", minWaitingTime=" + minWaitingTime +
-               ", actualWaitingTime=" + actualWaitingTime +
+               ", actualWaitingTime=" + actualWaitingTime.toPlainString() +
                '}';
     }
 }

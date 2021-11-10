@@ -62,7 +62,7 @@ class BtcBinanceService {
 
     BtcBinanceService() {
         this.binanceApiRestClient = new BinanceApiRestClientImpl("",
-                "");
+                                                                 "");
     }
 
     @Time
@@ -307,22 +307,22 @@ class BtcBinanceService {
                                                                                    .multiply(new BigDecimal(order.getOrigQty())))
                                                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
         return openOrders.parallelStream()
-                  .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
-                  .map(OrderDto::new)
-                  .peek(OrderDto::calculateOrderBtcAmount)
-                  .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                  .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction, totalAmounts))
-                  .peek(OrderDto::calculateActualWaitingTime)
-                  .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                  .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
-                  .peek(OrderDto::calculatePriceToSellWithoutProfit)
-                  .peek(OrderDto::calculatePriceToSell)
-                  .peek(OrderDto::calculatePriceToSellPercentage)
-                  .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                  .peek(OrderDto::calculateActualProfit)
+                         .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
+                         .map(OrderDto::new)
+                         .peek(OrderDto::calculateOrderBtcAmount)
+                         .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
+                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction, totalAmounts))
+                         .peek(OrderDto::calculateActualWaitingTime)
+                         .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
+                         .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+                         .peek(OrderDto::calculatePriceToSellWithoutProfit)
+                         .peek(OrderDto::calculatePriceToSell)
+                         .peek(OrderDto::calculatePriceToSellPercentage)
+                         .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                         .peek(OrderDto::calculateActualProfit)
                          .peek(orderDto -> LOGGER.info(orderDto.print()))
-                  .max(comparing(OrderDto::getPriceToSellPercentage))
-                  .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
+                         .max(comparing(OrderDto::getPriceToSellPercentage))
+                         .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
     }
 
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {

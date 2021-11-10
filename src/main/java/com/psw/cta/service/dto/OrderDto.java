@@ -117,7 +117,8 @@ public class OrderDto {
         LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(order.getTime()), ZoneId.systemDefault());
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(date, now);
-        actualWaitingTime = new BigDecimal(duration.get(ChronoUnit.SECONDS) / 3600);
+        double actualWaitingTimeDouble = (double) duration.get(ChronoUnit.SECONDS) / (double) 3600;
+        actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(2));
     }
 
     public void calculateActualProfit() {

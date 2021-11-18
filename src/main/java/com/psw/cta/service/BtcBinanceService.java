@@ -42,10 +42,10 @@ import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -67,6 +67,7 @@ class BtcBinanceService {
 
     @Time
     @Scheduled(cron = "0 */3 * * * ?")
+//    @Scheduled(fixedDelay = 100000, initialDelay = 0)
     public void invest() {
         LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");
@@ -86,7 +87,12 @@ class BtcBinanceService {
         LOGGER.info("My actual balance: " + myTotalBalance);
         int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
         LOGGER.info("Min open orders: " + minOpenOrders);
-        tradeBigAmount(openOrders, myBtcBalance);
+        Map<String, BigDecimal> totalAmounts = openOrders.stream()
+                                                         .collect(toMap(Order::getSymbol,
+                                                                        order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())),
+                                                                        BigDecimal::add));
+        rebuyBigAmounts(openOrders, myBtcBalance, totalAmounts);
+        rebuySmallAmounts(openOrders, totalAmounts);
         int uniqueOpenOrdersSize = openOrders.parallelStream()
                                              .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
                                              .values()
@@ -97,13 +103,13 @@ class BtcBinanceService {
         }
     }
 
-    private void tradeBigAmount(List<Order> openOrders, BigDecimal myBtcBalance) {
+    private void rebuyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, Map<String, BigDecimal> totalAmounts) {
         LOGGER.info("************************************************************");
         LOGGER.info("Buying big amounts");
         ArrayList<String> failedClientOrderIds = new ArrayList<>();
         boolean tradeDone = false;
         while (openOrders.size() > failedClientOrderIds.size() && !tradeDone) {
-            Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, failedClientOrderIds);
+            Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, failedClientOrderIds, totalAmounts);
             if (failedId.isPresent()) {
                 failedClientOrderIds.add(failedId.get());
             } else {
@@ -296,22 +302,20 @@ class BtcBinanceService {
         return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 
-    private Optional<String> buyBigAmounts(List<Order> openOrders, BigDecimal myBtcBalance, List<String> failedClientOrderIds) {
-        Map<String, BigDecimal> totalAmounts = new ConcurrentHashMap<>();
+    private Optional<String> buyBigAmounts(List<Order> openOrders,
+                                           BigDecimal myBtcBalance,
+                                           List<String> failedClientOrderIds,
+                                           Map<String, BigDecimal> totalAmounts) {
         Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
-        Function<String, BigDecimal> totalAmountFunction = symbol -> openOrders.parallelStream()
-                                                                               .filter(order -> order.getSymbol().equals(symbol))
-                                                                               .map(order -> new BigDecimal(order.getPrice())
-                                                                                   .multiply(new BigDecimal(order.getOrigQty())))
-                                                                               .reduce(BigDecimal.ZERO, BigDecimal::add);
         return openOrders.parallelStream()
                          .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                          .map(OrderDto::new)
                          .peek(OrderDto::calculateOrderBtcAmount)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmountFunction, totalAmounts))
+                         .filter(orderDto -> totalAmounts.get(orderDto.getOrder().getSymbol()).compareTo(new BigDecimal("0.1")) < 0)
+                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol())))
                          .peek(OrderDto::calculateActualWaitingTime)
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
                          .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
@@ -323,6 +327,38 @@ class BtcBinanceService {
                          .peek(orderDto -> LOGGER.info(orderDto.print()))
                          .max(comparing(OrderDto::getPriceToSellPercentage))
                          .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
+    }
+
+    private void rebuySmallAmounts(List<Order> openOrders, Map<String, BigDecimal> totalAmounts) {
+        LOGGER.info("************************************************************");
+        LOGGER.info("Buying small amounts");
+        Comparator<Order> comparator = comparing((Order order) -> new BigDecimal(order.getPrice()))
+            .thenComparing(order -> new BigDecimal(order.getOrigQty()))
+            .thenComparing(order -> new BigDecimal(order.getTime()));
+        Function<OrderDto, Long> countOrdersBySymbol = order -> openOrders.parallelStream()
+                                                                          .filter(order1 -> order1.getSymbol().equals(order.getOrder().getSymbol()))
+                                                                          .count();
+        openOrders.stream()
+                  .map(Order::getSymbol)
+                  .filter(symbol -> totalAmounts.get(symbol).compareTo(new BigDecimal("0.1")) > 0)
+                  .distinct()
+                  .map(symbol -> openOrders.stream()
+                                           .filter(order -> order.getSymbol().equals(symbol))
+                                           .min(comparator))
+                  .map(Optional::orElseThrow)
+                  .map(OrderDto::new)
+                  .peek(OrderDto::calculateOrderBtcAmount)
+                  .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(getMyBalance("BTC")) < 0)
+                  .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+                  .peek(OrderDto::calculatePriceToSellWithoutProfit)
+                  .peek(OrderDto::calculatePriceToSell)
+                  .peek(OrderDto::calculatePriceToSellPercentage)
+                  .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                  .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol())))
+                  .peek(OrderDto::calculateActualWaitingTime)
+                  .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
+                  .peek(orderDto -> LOGGER.info(orderDto.print()))
+                  .forEach(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
     }
 
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {

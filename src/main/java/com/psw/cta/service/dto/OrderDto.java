@@ -54,10 +54,6 @@ public class OrderDto {
         return orderPrice;
     }
 
-    public BigDecimal getActualProfit() {
-        return actualProfit;
-    }
-
     public BigDecimal getMinWaitingTime() {
         return minWaitingTime;
     }
@@ -98,12 +94,8 @@ public class OrderDto {
         this.priceToSellPercentage = new BigDecimal("100").subtract(percentage);
     }
 
-    public void calculateMinWaitingTime(Function<String, BigDecimal> totalAmountFunction, Map<String, BigDecimal> totalAmounts) {
-        String symbol = this.order.getSymbol();
-        BigDecimal totalBtcAmount = totalAmounts.merge(symbol,
-                                                       totalAmountFunction.apply(symbol),
-                                                       (v1, v2) -> v2);
-        BigDecimal totalWaitingTime = getTimeFromAmount(totalBtcAmount);
+    public void calculateMinWaitingTime(BigDecimal totalSymbolAmount) {
+        BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
         this.minWaitingTime = totalWaitingTime.add(orderWaitingTime);
     }
@@ -138,6 +130,7 @@ public class OrderDto {
                ", actualProfit=" + actualProfit +
                ", minWaitingTime=" + minWaitingTime +
                ", actualWaitingTime=" + actualWaitingTime.toPlainString() +
+               ", timeDifference=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
                '}';
     }
 }

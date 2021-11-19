@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import java.util.Map;
-import java.util.function.Function;
 
 public class OrderDto {
 
@@ -26,7 +24,6 @@ public class OrderDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal priceToSellWithoutProfit;
-    private BigDecimal actualProfit;
     private BigDecimal minWaitingTime;
     private BigDecimal actualWaitingTime;
 
@@ -113,11 +110,6 @@ public class OrderDto {
         actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(3));
     }
 
-    public void calculateActualProfit() {
-        BigDecimal profit = priceToSell.subtract(priceToSellWithoutProfit);
-        actualProfit = profit.multiply(new BigDecimal(order.getOrigQty()));
-    }
-
     public String print() {
         return "OrderDto{" +
                "order=" + order +
@@ -127,7 +119,6 @@ public class OrderDto {
                ", priceToSell=" + priceToSell +
                ", priceToSellPercentage=" + priceToSellPercentage +
                ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
-               ", actualProfit=" + actualProfit +
                ", minWaitingTime=" + minWaitingTime +
                ", actualWaitingTime=" + actualWaitingTime.toPlainString() +
                ", timeDifference=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +

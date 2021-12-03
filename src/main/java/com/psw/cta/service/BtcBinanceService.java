@@ -43,6 +43,7 @@ import com.psw.cta.service.dto.OrderDto;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -103,6 +104,7 @@ class BtcBinanceService {
     private void rebuyBigOrders(List<Order> openOrders, BigDecimal myBtcBalance) {
         LOGGER.info("************************************************************");
         Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
+        LOGGER.info("totalAmounts: " + totalAmounts);
         LOGGER.info("Rebuy orders with low amount");
         rebuyBigAmounts(openOrders, myBtcBalance, totalAmounts, createLowAmountOrderInitialFunction());
         LOGGER.info("Rebuy orders with high amount");
@@ -113,13 +115,18 @@ class BtcBinanceService {
         return openOrders.stream()
                          .collect(toMap(Order::getSymbol,
                                         order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())),
-                                        BigDecimal::add));
+                                        BigDecimal::add))
+                         .entrySet()
+                         .stream()
+                         .sorted(Map.Entry.comparingByValue())
+                         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
     private BiFunction<Stream<Order>, Map<String, BigDecimal>, Stream<OrderDto>> createLowAmountOrderInitialFunction() {
         return (orderStream, totalAmounts) -> orderStream.map(OrderDto::new)
                                                          .filter(orderDto -> totalAmounts.get(orderDto.getOrder().getSymbol())
-                                                                                         .compareTo(new BigDecimal("0.1")) < 0);
+                                                                                         .compareTo(new BigDecimal("0.1")) < 0)
+            ;
     }
 
     private BiFunction<Stream<Order>, Map<String, BigDecimal>, Stream<OrderDto>> createHighAmountOrderInitialFunction(List<Order> openOrders) {

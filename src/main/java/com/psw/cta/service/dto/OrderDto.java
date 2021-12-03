@@ -107,7 +107,7 @@ public class OrderDto {
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(date, now);
         double actualWaitingTimeDouble = (double) duration.get(ChronoUnit.SECONDS) / (double) 3600;
-        actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(3));
+        actualWaitingTime = new BigDecimal(actualWaitingTimeDouble, new MathContext(5));
     }
 
     public String print() {

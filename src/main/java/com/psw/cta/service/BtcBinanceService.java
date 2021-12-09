@@ -11,8 +11,9 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
+import static com.psw.cta.service.Fibonacci.FIBONACCI_SEQUENCE;
+import static com.psw.cta.service.Fibonacci.HUNDREDTH_OF_GOLDEN_RATIO;
 import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
@@ -410,33 +411,15 @@ class BtcBinanceService {
         BigDecimal quantityToSell = originalQuantity.subtract(executedQuantity);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
-        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
+
+        if ((orderDto.getOrderBtcAmount().compareTo(HUNDREDTH_OF_GOLDEN_RATIO) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
             LOGGER.info("Splitting amount: " + orderDto.getOrderBtcAmount());
-            BigDecimal tenthOfCompleteQuantity = calculateTenthPartOfQuantity(completeQuantityToSell, symbolInfo);
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity);
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("2")));
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), tenthOfCompleteQuantity.multiply(new BigDecimal("3")));
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), getRestOfCancelledAmount(symbolInfo));
+            BigDecimal minValueFromFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+            placeSellOrderWithFibonacci(completeQuantityToSell, minValueFromFilter, 2, symbolInfo, orderDto.getPriceToSell());
         } else {
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
         }
         return Optional.empty();
-    }
-
-    private BigDecimal calculateTenthPartOfQuantity(BigDecimal completeQuantityToSell, SymbolInfo symbolInfo) {
-        BigDecimal dividedTenthPart = completeQuantityToSell.divide(TEN, 8, CEILING);
-        LOGGER.info("dividedTenthPart: " + dividedTenthPart);
-        BigDecimal roundedTenthPart = round(symbolInfo, dividedTenthPart, LOT_SIZE, SymbolFilter::getMinQty);
-        LOGGER.info("roundedTenthPart: " + roundedTenthPart);
-        return roundedTenthPart;
-    }
-
-    private BigDecimal getRestOfCancelledAmount(SymbolInfo symbolInfo) {
-        String symbolFromSymbolInfo = getSymbolFromSymbolInfo(symbolInfo);
-        LOGGER.info("symbolFromSymbolInfo: " + symbolFromSymbolInfo);
-        BigDecimal myBalance = getMyBalance(symbolFromSymbolInfo);
-        LOGGER.info("myBalance: " + myBalance);
-        return myBalance;
     }
 
     private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {
@@ -445,6 +428,23 @@ class BtcBinanceService {
             return roundedQuantity.multiply(new BigDecimal("2"));
         }
         return roundedQuantity;
+    }
+
+    private void placeSellOrderWithFibonacci(BigDecimal completeQuantityToSell,
+                                             BigDecimal minValueFromFilter,
+                                             int fibonacciIndex,
+                                             SymbolInfo symbolInfo,
+                                             BigDecimal priceToSell) {
+        LOGGER.info("Complete quantity in fibonacci: " + completeQuantityToSell);
+        LOGGER.info("Fibonacci number: " + FIBONACCI_SEQUENCE[fibonacciIndex]);
+        BigDecimal quantityToSell = minValueFromFilter.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
+        LOGGER.info("quantityToSell: " + quantityToSell);
+        if (quantityToSell.compareTo(completeQuantityToSell) < 0) {
+            placeSellOrder(symbolInfo, priceToSell, quantityToSell);
+            placeSellOrderWithFibonacci(completeQuantityToSell.subtract(quantityToSell), minValueFromFilter, fibonacciIndex + 1, symbolInfo, priceToSell);
+        } else {
+            placeSellOrder(symbolInfo, priceToSell, completeQuantityToSell);
+        }
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {

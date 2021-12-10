@@ -358,20 +358,22 @@ class BtcBinanceService {
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
         return failedOrderIdsFunction.apply(openOrders, totalAmounts)
-                                     .peek(OrderDto::calculateOrderBtcAmount)
+                                                      .peek(OrderDto::calculateOrderBtcAmount)
                                      .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                                     .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol())))
-                                     .peek(OrderDto::calculateActualWaitingTime)
+                                                      .peek(orderDto -> orderDto.calculateMinWaitingTime(
+                                                          totalAmounts.get(orderDto.getOrder().getSymbol())))
+                                                      .peek(OrderDto::calculateActualWaitingTime)
                                      .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                                     .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
-                                     .peek(OrderDto::calculatePriceToSellWithoutProfit)
-                                     .peek(OrderDto::calculatePriceToSell)
-                                     .peek(OrderDto::calculatePriceToSellPercentage)
+                                                      .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+                                                      .peek(OrderDto::calculatePriceToSellWithoutProfit)
+                                                      .peek(OrderDto::calculatePriceToSell)
+                                                      .peek(OrderDto::calculatePriceToSellPercentage)
                                      .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                                      .peek(orderDto -> LOGGER.info(orderDto.print()))
                                      .max(comparing(OrderDto::getPriceToSellPercentage))
                                      .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
     }
+
 
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {
         return binanceApiRestClient.getExchangeInfo()
@@ -414,13 +416,30 @@ class BtcBinanceService {
 
         if ((orderDto.getOrderBtcAmount().compareTo(HUNDREDTH_OF_GOLDEN_RATIO) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
             LOGGER.info("Splitting amount: " + orderDto.getOrderBtcAmount());
-            BigDecimal minValueFromFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-            placeSellOrderWithFibonacci(completeQuantityToSell, minValueFromFilter, 2, symbolInfo, orderDto.getPriceToSell());
+            BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+            LOGGER.info("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+            BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
+            LOGGER.info("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+            BigDecimal roundedPriceToSell = round(symbolInfo, orderDto.getPriceToSell(), PRICE_FILTER, SymbolFilter::getTickSize);
+            BigDecimal minQuantity = getMinQuantity(minValueFromLotSizeFilter, minValueFromLotSizeFilter, minValueFromMinNotionalFilter, roundedPriceToSell);
+            placeSellOrderWithFibonacci(completeQuantityToSell, minQuantity, 2, symbolInfo, roundedPriceToSell);
         } else {
             placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
         }
         return Optional.empty();
     }
+
+    private BigDecimal getMinQuantity(BigDecimal accumulatedMinValue,
+                                      BigDecimal minValueFromLotSizeFilter,
+                                      BigDecimal minValueFromMinNotionalFilter,
+                                      BigDecimal priceToSellFinal) {
+        if (accumulatedMinValue.compareTo(minValueFromLotSizeFilter) > 0
+            && accumulatedMinValue.multiply(priceToSellFinal).compareTo(minValueFromMinNotionalFilter) > 0) {
+            return accumulatedMinValue;
+        }
+        return getMinQuantity(accumulatedMinValue.add(minValueFromLotSizeFilter), minValueFromLotSizeFilter, minValueFromMinNotionalFilter, priceToSellFinal);
+    }
+
 
     private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, OrderDto orderDto, SymbolInfo symbolInfo) {
         BigDecimal minNotional = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);

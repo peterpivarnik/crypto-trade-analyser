@@ -48,9 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,16 +100,6 @@ class BtcBinanceService {
         }
     }
 
-    private void rebuyBigOrders(List<Order> openOrders, BigDecimal myBtcBalance) {
-        LOGGER.info("************************************************************");
-        Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
-        LOGGER.info("totalAmounts: " + totalAmounts);
-        LOGGER.info("Rebuy orders with low amount");
-        rebuyBigAmounts(openOrders, myBtcBalance, totalAmounts, createLowAmountOrderInitialFunction());
-        LOGGER.info("Rebuy orders with high amount");
-        rebuyBigAmounts(openOrders, myBtcBalance, totalAmounts, createHighAmountOrderInitialFunction(openOrders));
-    }
-
     private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
         return openOrders.stream()
                          .collect(toMap(Order::getSymbol,
@@ -123,41 +111,19 @@ class BtcBinanceService {
                          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    private BiFunction<Stream<Order>, Map<String, BigDecimal>, Stream<OrderDto>> createLowAmountOrderInitialFunction() {
-        return (orderStream, totalAmounts) -> orderStream.map(OrderDto::new)
-                                                         .filter(orderDto -> totalAmounts.get(orderDto.getOrder().getSymbol())
-                                                                                         .compareTo(new BigDecimal("0.1")) < 0)
-            ;
-    }
-
-    private BiFunction<Stream<Order>, Map<String, BigDecimal>, Stream<OrderDto>> createHighAmountOrderInitialFunction(List<Order> openOrders) {
-        return (orderStream, totalAmounts) -> orderStream.map(Order::getSymbol)
-                                                         .filter(symbol -> totalAmounts.get(symbol).compareTo(new BigDecimal("0.1")) > 0)
-                                                         .distinct()
-                                                         .map(symbol -> openOrders.stream()
-                                                                                  .filter(order -> order.getSymbol().equals(symbol))
-                                                                                  .min(getOrderComparator()))
-                                                         .map(Optional::orElseThrow)
-                                                         .map(OrderDto::new);
-    }
-
     private Comparator<Order> getOrderComparator() {
         return comparing((Order order) -> new BigDecimal(order.getPrice()))
             .thenComparing(order -> new BigDecimal(order.getOrigQty()))
             .thenComparing(order -> new BigDecimal(order.getTime()));
     }
 
-    private void rebuyBigAmounts(List<Order> openOrders,
-                                 BigDecimal myBtcBalance,
-                                 Map<String, BigDecimal> totalAmounts,
-                                 BiFunction<Stream<Order>, Map<String, BigDecimal>, Stream<OrderDto>> unary) {
-        ArrayList<String> failedClientOrderIds = new ArrayList<>();
+    private void rebuyBigOrders(List<Order> openOrders, BigDecimal myBtcBalance) {
+        LOGGER.info("************************************************************");
+        LOGGER.info("Rebuy big orders");
+        List<String> failedClientOrderIds = new ArrayList<>();
         boolean tradeDone = false;
         while (openOrders.size() > failedClientOrderIds.size() && !tradeDone) {
-            BiFunction<List<Order>, Map<String, BigDecimal>, Stream<OrderDto>> failedOrderIdsFunction =
-                (orders, totalAmounts2) -> unary.apply(openOrders.parallelStream()
-                                                                 .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId())), totalAmounts);
-            Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, totalAmounts, failedOrderIdsFunction);
+            Optional<String> failedId = buyBigAmounts(openOrders, myBtcBalance, failedClientOrderIds);
             if (failedId.isPresent()) {
                 failedClientOrderIds.add(failedId.get());
             } else {
@@ -352,26 +318,34 @@ class BtcBinanceService {
 
     private Optional<String> buyBigAmounts(List<Order> openOrders,
                                            BigDecimal myBtcBalance,
-                                           Map<String, BigDecimal> totalAmounts,
-                                           BiFunction<List<Order>, Map<String, BigDecimal>, Stream<OrderDto>> failedOrderIdsFunction) {
+                                           List<String> failedClientOrderIds) {
         Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
-        return failedOrderIdsFunction.apply(openOrders, totalAmounts)
-                                                      .peek(OrderDto::calculateOrderBtcAmount)
-                                     .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                                                      .peek(orderDto -> orderDto.calculateMinWaitingTime(
-                                                          totalAmounts.get(orderDto.getOrder().getSymbol())))
-                                                      .peek(OrderDto::calculateActualWaitingTime)
-                                     .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                                                      .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
-                                                      .peek(OrderDto::calculatePriceToSellWithoutProfit)
-                                                      .peek(OrderDto::calculatePriceToSell)
-                                                      .peek(OrderDto::calculatePriceToSellPercentage)
-                                     .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                                     .peek(orderDto -> LOGGER.info(orderDto.print()))
-                                     .max(comparing(OrderDto::getPriceToSellPercentage))
-                                     .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
+        Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
+        return openOrders.parallelStream()
+                         .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
+                         .map(Order::getSymbol)
+                         .distinct()
+                         .map(symbol -> openOrders.stream()
+                                                  .filter(order -> order.getSymbol().equals(symbol))
+                                                  .min(getOrderComparator()))
+                         .map(Optional::orElseThrow)
+                         .map(OrderDto::new)
+                         .peek(OrderDto::calculateOrderBtcAmount)
+                         .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
+                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol())))
+                         .peek(OrderDto::calculateActualWaitingTime)
+                         .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
+                         .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
+                         .peek(OrderDto::calculatePriceToSellWithoutProfit)
+                         .peek(OrderDto::calculatePriceToSell)
+                         .peek(OrderDto::calculatePriceToSellPercentage)
+                         .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                         .peek(orderDto -> LOGGER.info(orderDto.print()))
+                         .max(comparing(OrderDto::getPriceToSellPercentage))
+                         .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
+
     }
 
 

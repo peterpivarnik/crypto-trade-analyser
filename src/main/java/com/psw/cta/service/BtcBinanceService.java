@@ -41,6 +41,7 @@ import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
+import com.psw.cta.service.dto.OrderDtoUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,6 +53,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +68,9 @@ class BtcBinanceService {
         this.binanceApiRestClient = new BinanceApiRestClientImpl("",
                                                                  "");
     }
+
+    @Autowired
+    private OrderDtoUtil orderDtoUtil;
 
     @Time
     @Scheduled(cron = "0 */3 * * * ?")
@@ -332,23 +337,46 @@ class BtcBinanceService {
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(getOrderComparator()))
                          .map(Optional::orElseThrow)
-                         .map(OrderDto::new)
-                         .peek(OrderDto::calculateOrderBtcAmount)
+                         .map(this::createOrderDto)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .peek(orderDto -> orderDto.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol())))
-                         .peek(OrderDto::calculateActualWaitingTime)
+                         .map(orderDto -> updateOrderDtoWithWaitingTimes(totalAmounts, orderDto))
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                         .peek(orderDto -> orderDto.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol())))
-                         .peek(OrderDto::calculatePriceToSellWithoutProfit)
-                         .peek(OrderDto::calculatePriceToSell)
-                         .peek(OrderDto::calculatePriceToSellPercentage)
+                         .map(this::updateOrderDtoWithPrices)
                          .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                         .peek(orderDto -> LOGGER.info(orderDto.print()))
+                         .peek(orderDto -> LOGGER.info(orderDto.toString()))
                          .max(comparing(OrderDto::getPriceToSellPercentage))
                          .flatMap(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))));
-
     }
 
+    private OrderDto createOrderDto(Order order) {
+        BigDecimal orderPrice = orderDtoUtil.calculateOrderPrice(order);
+        BigDecimal orderBtcAmount = orderDtoUtil.calculateOrderBtcAmount(order, orderPrice);
+        OrderDto orderDto = new OrderDto(order);
+        orderDto.setOrderPrice(orderPrice);
+        orderDto.setOrderBtcAmount(orderBtcAmount);
+        return orderDto;
+    }
+
+    private OrderDto updateOrderDtoWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderDto orderDto) {
+        BigDecimal minWaitingTime = orderDtoUtil.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol()), orderDto.getOrderBtcAmount());
+        BigDecimal actualWaitingTime = orderDtoUtil.calculateActualWaitingTime(orderDto.getOrder());
+        orderDto.setMinWaitingTime(minWaitingTime);
+        orderDto.setActualWaitingTime(actualWaitingTime);
+        return orderDto;
+    }
+
+    private OrderDto updateOrderDtoWithPrices(OrderDto orderDto) {
+        BigDecimal orderPrice = orderDto.getOrderPrice();
+        BigDecimal currentPrice = orderDtoUtil.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()));
+        BigDecimal priceToSellWithoutProfit = orderDtoUtil.calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
+        BigDecimal priceToSell = orderDtoUtil.calculatePriceToSell(orderPrice, priceToSellWithoutProfit);
+        BigDecimal priceToSellPercentage = orderDtoUtil.calculatePriceToSellPercentage(priceToSell, orderPrice);
+        orderDto.setCurrentPrice(currentPrice);
+        orderDto.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
+        orderDto.setPriceToSell(priceToSell);
+        orderDto.setPriceToSellPercentage(priceToSellPercentage);
+        return orderDto;
+    }
 
     private Optional<String> rebuy(OrderDto orderDto, BigDecimal symbolOpenOrders) {
         return binanceApiRestClient.getExchangeInfo()

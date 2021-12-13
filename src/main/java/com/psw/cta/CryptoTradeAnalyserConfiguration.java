@@ -1,5 +1,6 @@
 package com.psw.cta;
 
+import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -27,5 +28,11 @@ class CryptoTradeAnalyserConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf().disable();
+    }
+
+    @Bean
+    public BinanceApiRestClientImpl binanceApiRestClientImpl() {
+        return new BinanceApiRestClientImpl("",
+                                            "");
     }
 }

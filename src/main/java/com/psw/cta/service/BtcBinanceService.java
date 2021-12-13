@@ -37,7 +37,6 @@ import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
-import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
 import com.psw.cta.service.dto.OrderDto;
@@ -53,7 +52,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -63,18 +61,15 @@ class BtcBinanceService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BtcBinanceService.class);
 
     private final BinanceApiRestClient binanceApiRestClient;
+    private final OrderDtoUtil orderDtoUtil;
 
-    BtcBinanceService() {
-        this.binanceApiRestClient = new BinanceApiRestClientImpl("",
-                                                                 "");
+    public BtcBinanceService(BinanceApiRestClient binanceApiRestClient, OrderDtoUtil orderDtoUtil) {
+        this.binanceApiRestClient = binanceApiRestClient;
+        this.orderDtoUtil = orderDtoUtil;
     }
 
-    @Autowired
-    private OrderDtoUtil orderDtoUtil;
-
     @Time
-    @Scheduled(cron = "0 */3 * * * ?")
-//    @Scheduled(fixedDelay = 100000, initialDelay = 0)
+    @Scheduled(fixedDelay = 1000 * 60 * 3, initialDelay = 0)
     public void invest() {
         LOGGER.info("******************************************************************************************");
         LOGGER.info("Start of investing.");

@@ -323,6 +323,7 @@ class BtcBinanceService {
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
         Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
+        LOGGER.info("totalAmounts: " + totalAmounts);
         return openOrders.parallelStream()
                          .filter(order -> !failedClientOrderIds.contains(order.getClientOrderId()))
                          .map(Order::getSymbol)

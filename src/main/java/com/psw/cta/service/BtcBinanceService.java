@@ -39,6 +39,7 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.aspect.Time;
 import com.psw.cta.service.dto.CryptoDto;
+import com.psw.cta.service.dto.CryptoUtil;
 import com.psw.cta.service.dto.OrderDto;
 import com.psw.cta.service.dto.OrderDtoUtil;
 import java.math.BigDecimal;
@@ -62,10 +63,12 @@ class BtcBinanceService {
 
     private final BinanceApiRestClient binanceApiRestClient;
     private final OrderDtoUtil orderDtoUtil;
+    private final CryptoUtil cryptoUtil;
 
-    public BtcBinanceService(BinanceApiRestClient binanceApiRestClient, OrderDtoUtil orderDtoUtil) {
+    public BtcBinanceService(BinanceApiRestClient binanceApiRestClient, OrderDtoUtil orderDtoUtil, CryptoUtil cryptoUtil) {
         this.binanceApiRestClient = binanceApiRestClient;
         this.orderDtoUtil = orderDtoUtil;
+        this.cryptoUtil = cryptoUtil;
     }
 
     @Time
@@ -184,22 +187,28 @@ class BtcBinanceService {
                             .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                             .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
                             .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                            .peek(dto -> dto.calculateTicker24hr(tickers))
-                            .peek(CryptoDto::calculateVolume)
+                            .peek(dto -> dto.setTicker24hr(cryptoUtil.calculateTicker24hr(tickers, dto.getSymbolInfo().getSymbol())))
+                            .peek(dto -> dto.setVolume(cryptoUtil.calculateVolume(dto.getTicker24hr())))
                             .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
                             .peek(dto -> dto.setDepth20(getDepth(dto.getSymbolInfo().getSymbol())))
-                            .peek(CryptoDto::calculateCurrentPrice)
-                            .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+                            .peek(dto -> dto.setCurrentPrice(cryptoUtil.calculateCurrentPrice(dto.getDepth20())))
+                            .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001 ")) > 0)
                             .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MINUTES, 96)))
-                            .peek(CryptoDto::calculateLastThreeMaxAverage)
-                            .peek(CryptoDto::calculatePreviousThreeMaxAverage)
+                            .peek(dto -> dto.setLastThreeMaxAverage(cryptoUtil.calculateLastThreeMaxAverage(dto.getFifteenMinutesCandleStickData())))
+                            .peek(dto -> dto.setPreviousThreeMaxAverage(cryptoUtil.calculatePreviousThreeMaxAverage(dto.getFifteenMinutesCandleStickData())))
                             .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
-                            .peek(CryptoDto::calculateSumDiffsPercent)
-                            .peek(CryptoDto::calculateSumDiffsPercent10h)
-                            .peek(CryptoDto::calculatePriceToSell)
-                            .peek(CryptoDto::calculatePriceToSellPercentage)
+                            .peek(dto -> dto.setSumDiffsPerc(cryptoUtil.calculateSumDiffsPercent(dto.getFifteenMinutesCandleStickData(),
+                                                                                                 dto.getCurrentPrice())))
+                            .peek(dto -> dto.setSumDiffsPerc10h(cryptoUtil.calculateSumDiffsPercent10h(dto.getFifteenMinutesCandleStickData(),
+                                                                                                       dto.getCurrentPrice())))
+                            .peek(dto -> dto.setPriceToSell(cryptoUtil.calculatePriceToSell(dto.getFifteenMinutesCandleStickData(), dto.getCurrentPrice())))
+                            .peek(dto -> dto.setPriceToSellPercentage(cryptoUtil.calculatePriceToSellPercentage(dto.getPriceToSell(), dto.getCurrentPrice())))
                             .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                            .peek(CryptoDto::calculateWeight)
+                            .peek(dto -> dto.setWeight(cryptoUtil.calculateWeight(dto.getDepth20(),
+                                                                                  dto.getPriceToSell(),
+                                                                                  dto.getCurrentPrice(),
+                                                                                  dto.getVolume(),
+                                                                                  dto.getPriceToSellPercentage())))
                             .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                             .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                             .limit(20)

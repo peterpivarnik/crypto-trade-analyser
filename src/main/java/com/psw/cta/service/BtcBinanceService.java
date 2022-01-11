@@ -185,34 +185,68 @@ class BtcBinanceService {
                             .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
                             .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
                             .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                            .peek(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
+                            .map(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
                             .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                            .peek(dto -> dto.setTicker24hr(cryptoUtil.calculateTicker24hr(tickers, dto.getSymbolInfo().getSymbol())))
-                            .peek(dto -> dto.setVolume(cryptoUtil.calculateVolume(dto.getTicker24hr())))
+                            .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
                             .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                            .peek(dto -> dto.setDepth20(getDepth(dto.getSymbolInfo().getSymbol())))
-                            .peek(dto -> dto.setCurrentPrice(cryptoUtil.calculateCurrentPrice(dto.getDepth20())))
+                            .map(this::updateCryptoDtoWithCurrentPrice)
                             .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001 ")) > 0)
-                            .peek(dto -> dto.setFifteenMinutesCandleStickData(getCandleStickData(dto, FIFTEEN_MINUTES, 96)))
-                            .peek(dto -> dto.setLastThreeMaxAverage(cryptoUtil.calculateLastThreeMaxAverage(dto.getFifteenMinutesCandleStickData())))
-                            .peek(dto -> dto.setPreviousThreeMaxAverage(cryptoUtil.calculatePreviousThreeMaxAverage(dto.getFifteenMinutesCandleStickData())))
+                            .map(this::updateCryptoDtoWithLeastMaxAverage)
                             .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
-                            .peek(dto -> dto.setSumDiffsPerc(cryptoUtil.calculateSumDiffsPercent(dto.getFifteenMinutesCandleStickData(),
-                                                                                                 dto.getCurrentPrice())))
-                            .peek(dto -> dto.setSumDiffsPerc10h(cryptoUtil.calculateSumDiffsPercent10h(dto.getFifteenMinutesCandleStickData(),
-                                                                                                       dto.getCurrentPrice())))
-                            .peek(dto -> dto.setPriceToSell(cryptoUtil.calculatePriceToSell(dto.getFifteenMinutesCandleStickData(), dto.getCurrentPrice())))
-                            .peek(dto -> dto.setPriceToSellPercentage(cryptoUtil.calculatePriceToSellPercentage(dto.getPriceToSell(), dto.getCurrentPrice())))
+                            .map(this::updateCryptoDtoWithPrices)
                             .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                            .peek(dto -> dto.setWeight(cryptoUtil.calculateWeight(dto.getDepth20(),
-                                                                                  dto.getPriceToSell(),
-                                                                                  dto.getCurrentPrice(),
-                                                                                  dto.getVolume(),
-                                                                                  dto.getPriceToSellPercentage())))
+                            .map(this::updateCryptoDtoWithSumDiffPerc)
                             .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                             .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                             .limit(20)
                             .forEach(this::tradeCrypto);
+    }
+
+    private CryptoDto updateCryptoDtoWithVolume(CryptoDto cryptoDto, List<TickerStatistics> tickers) {
+        TickerStatistics ticker24hr = cryptoUtil.calculateTicker24hr(tickers, cryptoDto.getSymbolInfo().getSymbol());
+        BigDecimal volume = cryptoUtil.calculateVolume(ticker24hr);
+        cryptoDto.setTicker24hr(ticker24hr);
+        cryptoDto.setVolume(volume);
+        return cryptoDto;
+    }
+
+    private CryptoDto updateCryptoDtoWithCurrentPrice(CryptoDto cryptoDto) {
+        String symbol = cryptoDto.getSymbolInfo().getSymbol();
+        OrderBook depth = getDepth(symbol);
+        BigDecimal currentPrice = cryptoUtil.calculateCurrentPrice(depth);
+        cryptoDto.setDepth20(depth);
+        cryptoDto.setCurrentPrice(currentPrice);
+        return cryptoDto;
+    }
+
+    private CryptoDto updateCryptoDtoWithLeastMaxAverage(CryptoDto cryptoDto) {
+        List<Candlestick> candleStickData = getCandleStickData(cryptoDto, FIFTEEN_MINUTES, 96);
+        BigDecimal lastThreeMaxAverage = cryptoUtil.calculateLastThreeMaxAverage(candleStickData);
+        BigDecimal previousThreeMaxAverage = cryptoUtil.calculatePreviousThreeMaxAverage(candleStickData);
+        cryptoDto.setFifteenMinutesCandleStickData(candleStickData);
+        cryptoDto.setLastThreeMaxAverage(lastThreeMaxAverage);
+        cryptoDto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
+        return cryptoDto;
+    }
+
+    private CryptoDto updateCryptoDtoWithPrices(CryptoDto cryptoDto) {
+        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
+        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
+        BigDecimal priceToSell = cryptoUtil.calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal priceToSellPercentage = cryptoUtil.calculatePriceToSellPercentage(priceToSell, currentPrice);
+        cryptoDto.setPriceToSell(priceToSell);
+        cryptoDto.setPriceToSellPercentage(priceToSellPercentage);
+        return cryptoDto;
+    }
+
+    private CryptoDto updateCryptoDtoWithSumDiffPerc(CryptoDto cryptoDto) {
+        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
+        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
+        BigDecimal sumDiffsPerc = cryptoUtil.calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal sumDiffsPerc10h = cryptoUtil.calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
+        cryptoDto.setSumDiffsPerc(sumDiffsPerc);
+        cryptoDto.setSumDiffsPerc10h(sumDiffsPerc10h);
+        return cryptoDto;
     }
 
     private List<TickerStatistics> getAll24hTickers() {

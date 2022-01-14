@@ -536,7 +536,7 @@ class BtcBinanceService {
                          .peek(orderDto -> LOGGER.info(orderDto.toString()))
                          .max(comparing(OrderDto::getPriceToSellPercentage))
                          .map(orderDto -> rebuy(orderDto, new BigDecimal(countOrdersBySymbol.apply(orderDto))))
-                         .orElseThrow();
+                         .orElseGet(RebuyResultDto::new);
     }
 
     private OrderDto createOrderDto(Order order) {

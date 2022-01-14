@@ -12,8 +12,9 @@ public class OrderDto {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal priceToSellWithoutProfit;
-    private BigDecimal minWaitingTime;
-    private BigDecimal actualWaitingTime;
+    private BigDecimal minWaitingTime = BigDecimal.ZERO;
+    private BigDecimal actualWaitingTime = BigDecimal.ZERO;
+
 
     public OrderDto(Order order) {
         this.order = order;
@@ -41,6 +42,10 @@ public class OrderDto {
 
     public void setCurrentPrice(BigDecimal currentPrice) {
         this.currentPrice = currentPrice;
+    }
+
+    public BigDecimal getCurrentPrice() {
+        return currentPrice;
     }
 
     public BigDecimal getPriceToSell() {
@@ -90,7 +95,7 @@ public class OrderDto {
                ", priceToSellWithoutProfit=" + priceToSellWithoutProfit +
                ", minWaitingTime=" + minWaitingTime +
                ", actualWaitingTime=" + actualWaitingTime.toPlainString() +
-               ", timeDifference=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
+               ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
                '}';
     }
 }

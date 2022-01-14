@@ -1,7 +1,5 @@
 package com.psw.cta.service;
 
-import static java.math.RoundingMode.CEILING;
-
 import java.math.BigDecimal;
 
 public class Fibonacci {
@@ -31,10 +29,6 @@ public class Fibonacci {
                                                                            new BigDecimal("46368"),
                                                                            new BigDecimal("75025"),
                                                                            new BigDecimal("121393")};
-
-    public static final BigDecimal GOLDEN_RATIO =
-        FIBONACCI_SEQUENCE[FIBONACCI_SEQUENCE.length - 1].divide(FIBONACCI_SEQUENCE[FIBONACCI_SEQUENCE.length - 2], 8, CEILING);
-    public static final BigDecimal HUNDREDTH_OF_GOLDEN_RATIO = GOLDEN_RATIO.divide(new BigDecimal("100"), 8, CEILING);
 
     private Fibonacci() {
     }

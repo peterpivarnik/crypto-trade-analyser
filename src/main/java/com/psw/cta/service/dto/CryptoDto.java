@@ -1,14 +1,10 @@
 package com.psw.cta.service.dto;
 
-import static java.math.RoundingMode.UP;
-
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
-import java.util.Comparator;
 import java.util.List;
 
 public class CryptoDto {
@@ -33,6 +29,34 @@ public class CryptoDto {
     private BigDecimal lastThreeMaxAverage;
     private BigDecimal previousThreeMaxAverage;
 
+    private BigDecimal slope;
+    private BigDecimal priceCount;
+    private BigDecimal priceCountToSlope;
+
+    public BigDecimal getPriceCount() {
+        return priceCount;
+    }
+
+    public void setPriceCount(BigDecimal priceCount) {
+        this.priceCount = priceCount;
+    }
+
+    public BigDecimal getPriceCountToSlope() {
+        return priceCountToSlope;
+    }
+
+    public void setPriceCountToSlope(BigDecimal priceCountToSlope) {
+        this.priceCountToSlope = priceCountToSlope;
+    }
+
+    public BigDecimal getSlope() {
+        return slope;
+    }
+
+    public void setSlope(BigDecimal slope) {
+        this.slope = slope;
+    }
+
     public List<Candlestick> getFifteenMinutesCandleStickData() {
         return fifteenMinutesCandleStickData;
     }
@@ -45,8 +69,9 @@ public class CryptoDto {
         return threeMonthsCandleStickData;
     }
 
-    public void setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
+    public CryptoDto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
         this.threeMonthsCandleStickData = threeMonthsCandleStickData;
+        return this;
     }
 
     public TickerStatistics getTicker24hr() {
@@ -141,19 +166,21 @@ public class CryptoDto {
         this.previousThreeMaxAverage = previousThreeMaxAverage;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "CryptoDto{" +
-            ", symbolInfo=" + symbolInfo +
-            ", currentPrice=" + currentPrice +
-            ", volume=" + volume +
-            ", sumDiffsPerc=" + sumDiffsPerc +
-            ", sumDiffsPerc10h=" + sumDiffsPerc10h +
-            ", priceToSell=" + priceToSell +
-            ", priceToSellPercentage=" + priceToSellPercentage +
-            ", weight=" + weight +
-            ", lastThreeMaxAverage=" + lastThreeMaxAverage +
-            ", previousThreeMaxAverage=" + previousThreeMaxAverage +
-            '}';
+               ", symbolInfo=" + symbolInfo +
+               ", currentPrice=" + currentPrice +
+               ", volume=" + volume +
+               ", sumDiffsPerc=" + sumDiffsPerc +
+               ", sumDiffsPerc10h=" + sumDiffsPerc10h +
+               ", priceToSell=" + priceToSell +
+               ", priceToSellPercentage=" + priceToSellPercentage +
+               ", weight=" + weight +
+               ", lastThreeMaxAverage=" + lastThreeMaxAverage +
+               ", previousThreeMaxAverage=" + previousThreeMaxAverage +
+               ", slope=" + slope.toPlainString() +
+               ", priceCount=" + priceCount.toPlainString() +
+               ", priceCountToSlope=" + priceCountToSlope.toPlainString() +
+               '}';
     }
 }

@@ -193,20 +193,20 @@ class BtcBinanceService {
 
         List<TickerStatistics> tickers = getAll24hTickers();
         return exchangeInfo.getSymbols()
-                           .parallelStream()
-                           .map(CryptoDto::new)
-                           .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
-                           .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
-                           .filter(dto -> !bigOrderKeys.contains(dto.getSymbolInfo().getSymbol()))
-                           .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+                    .parallelStream()
+                    .map(CryptoDto::new)
+                    .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
+                    .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
+                    .filter(dto -> !bigOrderKeys.contains(dto.getSymbolInfo().getSymbol()))
+                    .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                            .map(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
                            .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                           .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
-                           .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                           .map(this::updateCryptoDtoWithCurrentPrice)
-                           .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                           .map(this::updateCryptoDtoWithSlopeData)
-                           .filter(cryptoDto -> cryptoDto.getSlope().compareTo(BigDecimal.ZERO) < 0)
+                    .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
+                    .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                    .map(this::updateCryptoDtoWithCurrentPrice)
+                    .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+                    .map(this::updateCryptoDtoWithSlopeData)
+                    .filter(cryptoDto -> cryptoDto.getSlope().compareTo(BigDecimal.ZERO) < 0)
                            .min(comparing(CryptoDto::getPriceCountToSlope))
                            .orElseThrow();
     }
@@ -250,7 +250,8 @@ class BtcBinanceService {
         BigDecimal high = new BigDecimal(candle.getHigh());
         BigDecimal low = new BigDecimal(candle.getLow());
         return open.add(close).add(high).add(low)
-                   .divide(new BigDecimal("4"), 8, CEILING);
+                   .divide(new BigDecimal("4"), 8, CEILING)
+            ;
     }
 
     private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
@@ -685,7 +686,7 @@ class BtcBinanceService {
     private BigDecimal waitUntilHaveBalance(String asset, BigDecimal quantity) {
         BigDecimal myBalance = getMyBalance(asset);
         if (myBalance.compareTo(quantity) >= 0) {
-            return quantity;
+            return myBalance;
         } else {
             sleep(500);
             return waitUntilHaveBalance(asset, quantity);

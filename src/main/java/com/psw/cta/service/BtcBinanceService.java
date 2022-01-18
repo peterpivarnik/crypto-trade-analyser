@@ -333,7 +333,6 @@ class BtcBinanceService {
                           .map(this::updateCryptoDtoWithSumDiffPerc)
                           .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                           .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                          .limit(20)
                           .forEach(this::tradeCrypto);
     }
 

@@ -191,7 +191,7 @@ class BtcBinanceService {
         LOGGER.info("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedBidQuantity = roundDown(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, MARKET, null, roundedBidQuantity.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
@@ -415,7 +415,7 @@ class BtcBinanceService {
             BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
             BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
             BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
-            BigDecimal roundedMyQuatity = round(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
+            BigDecimal roundedMyQuatity = roundUp(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
             BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
             if (roundedMyQuatity.multiply(new BigDecimal(orderBookEntry.getPrice())).compareTo(minNotionalFromMinNotionalFilter) < 0) {
                 LOGGER.info("Skip trading due to low trade amount: quantity: " + roundedMyQuatity + ", price: " + orderBookEntry.getPrice());
@@ -595,7 +595,7 @@ class BtcBinanceService {
         LOGGER.info("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
         BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         LOGGER.info("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-        BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         BigDecimal minQuantity = getMinQuantity(minValueFromLotSizeFilter, minValueFromLotSizeFilter, minValueFromMinNotionalFilter, roundedPriceToSell);
         placeSellOrderWithFibonacci(completeQuantityToSell, minQuantity, 1, symbolInfo, roundedPriceToSell);
     }
@@ -604,7 +604,7 @@ class BtcBinanceService {
         BigDecimal myQuantity = orderBtcAmount.divide(orderPrice, 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
-        BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedQuantity = roundUp(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
         NewOrder buyOrder = new NewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
         LOGGER.info("New buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
@@ -643,8 +643,8 @@ class BtcBinanceService {
         LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
-        BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedBidQuantity = roundDown(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
@@ -672,11 +672,18 @@ class BtcBinanceService {
         }
     }
 
-    private BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+    private BigDecimal roundUp(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);
         return amountToRound.subtract(remainder).add(valueFromFilter);
     }
+
+    private BigDecimal roundDown(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+        BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
+        BigDecimal remainder = amountToRound.remainder(valueFromFilter);
+        return amountToRound.subtract(remainder);
+    }
+
 
     private BigDecimal getValueFromFilter(SymbolInfo symbolInfo, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         return symbolInfo.getFilters()

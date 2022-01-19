@@ -108,9 +108,11 @@ class BtcBinanceService {
                                              .values()
                                              .size();
         LOGGER.info("Unique open orders: " + uniqueOpenOrdersSize);
+        binanceApiRestClient.getExchangeInfo();
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
             buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
+        binanceApiRestClient.getExchangeInfo();
     }
 
     private List<CryptoDto> getCryptoDtos(List<CryptoDto> cryptoDtos, ExchangeInfo exchangeInfo) {
@@ -498,6 +500,8 @@ class BtcBinanceService {
                                           Supplier<List<CryptoDto>> cryptoDtosSupplier,
                                           Map<String, BigDecimal> totalAmounts,
                                           ExchangeInfo exchangeInfo) {
+        LOGGER.info("******************************");
+        LOGGER.info("Buying big amounts");
         Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();

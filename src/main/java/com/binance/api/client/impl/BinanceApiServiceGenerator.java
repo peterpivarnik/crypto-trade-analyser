@@ -74,9 +74,11 @@ public class BinanceApiServiceGenerator {
             Response<T> response = call.execute();
             if (response.isSuccessful()) {
                 Headers headers = response.headers();
-                LOGGER.info("url: " + call.request().url());
-                LOGGER.info("x-mbx-used-weight: " + headers.get("x-mbx-used-weight"));
-                LOGGER.info("x-mbx-used-weight-1m: " + headers.get("x-mbx-used-weight-1m"));
+                if (call.request().url().toString().contains("exchangeInfo")) {
+                    LOGGER.info("url: " + call.request().url());
+                    LOGGER.info("x-mbx-used-weight: " + headers.get("x-mbx-used-weight"));
+                    LOGGER.info("x-mbx-used-weight-1m: " + headers.get("x-mbx-used-weight-1m"));
+                }
                 return response.body();
             } else {
                 BinanceApiError apiError = getBinanceApiError(response);

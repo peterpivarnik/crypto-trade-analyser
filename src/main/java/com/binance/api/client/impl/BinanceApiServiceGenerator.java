@@ -4,26 +4,28 @@ import com.binance.api.client.BinanceApiError;
 import com.binance.api.client.constant.BinanceApiConstants;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.security.AuthenticationInterceptor;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.concurrent.TimeUnit;
 import okhttp3.Dispatcher;
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Converter;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.util.concurrent.TimeUnit;
-
 /**
  * Generates a Binance API implementation based on @see {@link BinanceApiService}.
  */
 public class BinanceApiServiceGenerator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BinanceApiServiceGenerator.class);
     private static final OkHttpClient sharedClient;
     private static final Converter.Factory converterFactory = JacksonConverterFactory.create();
 
@@ -32,15 +34,15 @@ public class BinanceApiServiceGenerator {
         dispatcher.setMaxRequestsPerHost(500);
         dispatcher.setMaxRequests(500);
         sharedClient = new OkHttpClient.Builder()
-                .dispatcher(dispatcher)
-                .pingInterval(20, TimeUnit.SECONDS)
-                .build();
+            .dispatcher(dispatcher)
+            .pingInterval(20, TimeUnit.SECONDS)
+            .build();
     }
 
     @SuppressWarnings("unchecked")
     private static final Converter<ResponseBody, BinanceApiError> errorBodyConverter =
-            (Converter<ResponseBody, BinanceApiError>)converterFactory.responseBodyConverter(
-                    BinanceApiError.class, new Annotation[0], null);
+        (Converter<ResponseBody, BinanceApiError>) converterFactory.responseBodyConverter(
+            BinanceApiError.class, new Annotation[0], null);
 
     public static <S> S createService(Class<S> serviceClass) {
         return createService(serviceClass, null, null);
@@ -48,8 +50,8 @@ public class BinanceApiServiceGenerator {
 
     public static <S> S createService(Class<S> serviceClass, String apiKey, String secret) {
         Retrofit.Builder retrofitBuilder = new Retrofit.Builder()
-                .baseUrl(BinanceApiConstants.API_BASE_URL)
-                .addConverterFactory(converterFactory);
+            .baseUrl(BinanceApiConstants.API_BASE_URL)
+            .addConverterFactory(converterFactory);
 
         if (StringUtils.isEmpty(apiKey) || StringUtils.isEmpty(secret)) {
             retrofitBuilder.client(sharedClient);
@@ -71,6 +73,10 @@ public class BinanceApiServiceGenerator {
         try {
             Response<T> response = call.execute();
             if (response.isSuccessful()) {
+                Headers headers = response.headers();
+                LOGGER.info("url: " + call.request().url());
+                LOGGER.info("x-mbx-used-weight: " + headers.get("x-mbx-used-weight"));
+                LOGGER.info("x-mbx-used-weight-1m: " + headers.get("x-mbx-used-weight-1m"));
                 return response.body();
             } else {
                 BinanceApiError apiError = getBinanceApiError(response);

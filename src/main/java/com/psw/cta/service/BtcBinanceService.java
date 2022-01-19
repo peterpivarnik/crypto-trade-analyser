@@ -125,19 +125,21 @@ class BtcBinanceService {
 
     private List<CryptoDto> getCryptoDtos(ExchangeInfo exchangeInfo) {
         List<TickerStatistics> tickers = getAll24hTickers();
-        return exchangeInfo.getSymbols()
-                           .parallelStream()
-                           .map(CryptoDto::new)
-                           .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
-                           .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
-                           .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                           .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
-                           .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                           .map(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
-                           .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                           .map(this::updateCryptoDtoWithCurrentPrice)
-                           .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                           .collect(Collectors.toList());
+        List<CryptoDto> cryptoDtos = exchangeInfo.getSymbols()
+                                                 .parallelStream()
+                                                 .map(CryptoDto::new)
+                                                 .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
+                                                 .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
+                                                 .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+                                                 .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
+                                                 .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                                                 .map(dto -> dto.setThreeMonthsCandleStickData(getCandleStickData(dto, DAILY, 90)))
+                                                 .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
+                                                 .map(this::updateCryptoDtoWithCurrentPrice)
+                                                 .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+                                                 .collect(Collectors.toList());
+        LOGGER.info("Cryptos count: " + cryptoDtos.size());
+        return cryptoDtos;
     }
 
     private List<CryptoDto> diversify(OrderDto orderToCancel,

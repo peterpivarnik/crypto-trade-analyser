@@ -605,11 +605,10 @@ class BtcBinanceService {
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
         BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
-        BigDecimal quantity = doubleIfNecessary(roundedQuantity, orderPrice, symbolInfo);
-        NewOrder buyOrder = new NewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, quantity.toPlainString());
+        NewOrder buyOrder = new NewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString());
         LOGGER.info("New buyOrder: " + buyOrder);
         binanceApiRestClient.newOrder(buyOrder);
-        return quantity;
+        return roundedQuantity;
     }
 
     private BigDecimal getMinQuantity(BigDecimal accumulatedMinValue,
@@ -621,15 +620,6 @@ class BtcBinanceService {
             return accumulatedMinValue;
         }
         return getMinQuantity(accumulatedMinValue.add(minValueFromLotSizeFilter), minValueFromLotSizeFilter, minValueFromMinNotionalFilter, priceToSellFinal);
-    }
-
-
-    private BigDecimal doubleIfNecessary(BigDecimal roundedQuantity, BigDecimal orderPrice, SymbolInfo symbolInfo) {
-        BigDecimal minNotional = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
-        if (roundedQuantity.multiply(orderPrice).compareTo(minNotional) < 0) {
-            return roundedQuantity.multiply(new BigDecimal("2"));
-        }
-        return roundedQuantity;
     }
 
     private void placeSellOrderWithFibonacci(BigDecimal completeQuantityToSell,
@@ -685,7 +675,7 @@ class BtcBinanceService {
     private BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-        return amountToRound.subtract(remainder);
+        return amountToRound.subtract(remainder).add(valueFromFilter);
     }
 
     private BigDecimal getValueFromFilter(SymbolInfo symbolInfo, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {

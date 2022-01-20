@@ -46,7 +46,6 @@ import com.psw.cta.service.dto.OrderDtoUtil;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,12 +68,18 @@ class BtcBinanceService {
     private final OrderDtoUtil orderDtoUtil;
     private final CryptoUtil cryptoUtil;
     private final LeastSquares leastSquares;
+    private final Utils utils;
 
-    public BtcBinanceService(BinanceApiRestClient binanceApiRestClient, OrderDtoUtil orderDtoUtil, CryptoUtil cryptoUtil, LeastSquares leastSquares) {
+    public BtcBinanceService(BinanceApiRestClient binanceApiRestClient,
+                             OrderDtoUtil orderDtoUtil,
+                             CryptoUtil cryptoUtil,
+                             LeastSquares leastSquares,
+                             Utils utils) {
         this.binanceApiRestClient = binanceApiRestClient;
         this.orderDtoUtil = orderDtoUtil;
         this.cryptoUtil = cryptoUtil;
         this.leastSquares = leastSquares;
+        this.utils = utils;
     }
 
     @Time
@@ -110,6 +115,7 @@ class BtcBinanceService {
         LOGGER.info("Unique open orders: " + uniqueOpenOrdersSize);
         binanceApiRestClient.getExchangeInfo();
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
+            sleep(1000 * 60 * 2);
             buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
         binanceApiRestClient.getExchangeInfo();
@@ -264,9 +270,10 @@ class BtcBinanceService {
         BigDecimal close = new BigDecimal(candle.getClose());
         BigDecimal high = new BigDecimal(candle.getHigh());
         BigDecimal low = new BigDecimal(candle.getLow());
-        return open.add(close).add(high).add(low)
-                   .divide(new BigDecimal("4"), 8, CEILING)
-            ;
+        return open.add(close)
+                   .add(high)
+                   .add(low)
+                   .divide(new BigDecimal("4"), 8, CEILING);
     }
 
     private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
@@ -278,12 +285,6 @@ class BtcBinanceService {
                          .stream()
                          .sorted(Map.Entry.comparingByValue())
                          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-    }
-
-    private Comparator<Order> getOrderComparator() {
-        return comparing((Order order) -> new BigDecimal(order.getPrice()))
-            .thenComparing(order -> new BigDecimal(order.getOrigQty()))
-            .thenComparing(order -> new BigDecimal(order.getTime()));
     }
 
     private BigDecimal buyBnB() {
@@ -518,7 +519,7 @@ class BtcBinanceService {
                          .distinct()
                          .map(symbol -> openOrders.stream()
                                                   .filter(order -> order.getSymbol().equals(symbol))
-                                                  .min(getOrderComparator()))
+                                                  .min(utils.getOrderComparator()))
                          .map(Optional::orElseThrow)
                          .map(this::createOrderDto)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)

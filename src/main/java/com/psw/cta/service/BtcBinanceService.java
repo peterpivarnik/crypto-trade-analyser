@@ -155,10 +155,6 @@ class BtcBinanceService {
         LOGGER.info("******************************");
         LOGGER.info("Diversifying amounts");
 
-        // 1. cancel existing order
-        LOGGER.info("orderToCancel: " + orderToCancel);
-        cancelRequest(orderToCancel);
-
         // 2. sell cancelled order
         BigDecimal currentQuantity = getQuantityFromOrder(orderToCancel);
         LOGGER.info("currentQuantity: " + currentQuantity);
@@ -176,8 +172,7 @@ class BtcBinanceService {
             LOGGER.info("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
 
             BigDecimal currentBtcAmount = currentQuantity.multiply(orderToCancel.getCurrentPrice())
-                                                         .divide(new BigDecimal(cryptosToBuy.size()), 8, CEILING)
-                                                         .multiply(new BigDecimal("2"));
+                                                         .divide(new BigDecimal(cryptosToBuy.size()), 8, CEILING);
             LOGGER.info("currentBtcAmount: " + currentBtcAmount);
             BigDecimal boughtQuantity = buy(symbolInfo, currentBtcAmount, cryptoToBuyCurrentPrice);
             LOGGER.info("boughtQuantity: " + boughtQuantity);

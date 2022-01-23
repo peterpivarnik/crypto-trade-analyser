@@ -14,6 +14,7 @@ import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_M
 import static com.psw.cta.service.Fibonacci.FIBONACCI_SEQUENCE;
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.DOWN;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
@@ -598,6 +599,7 @@ class BtcBinanceService {
         BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         LOGGER.info("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
         BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
         BigDecimal minQuantity = getMinQuantity(minValueFromLotSizeFilter, minValueFromLotSizeFilter, minValueFromMinNotionalFilter, roundedPriceToSell);
         placeSellOrderWithFibonacci(completeQuantityToSell, minQuantity, 1, symbolInfo, roundedPriceToSell);
     }

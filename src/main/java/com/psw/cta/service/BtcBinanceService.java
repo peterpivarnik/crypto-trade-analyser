@@ -646,8 +646,8 @@ class BtcBinanceService {
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
-        BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = roundDown(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        waitUntilHaveBalance(asset, quantity);
+        BigDecimal roundedBidQuantity = roundDown(symbolInfo, quantity, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         LOGGER.info("My new sellOrder: " + sellOrder);

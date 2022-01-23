@@ -155,6 +155,10 @@ class BtcBinanceService {
         LOGGER.info("******************************");
         LOGGER.info("Diversifying amounts");
 
+        // 1. cancel existing order
+        LOGGER.info("orderToCancel: " + orderToCancel);
+        cancelRequest(orderToCancel);
+
         // 2. sell cancelled order
         BigDecimal currentQuantity = getQuantityFromOrder(orderToCancel);
         LOGGER.info("currentQuantity: " + currentQuantity);
@@ -565,6 +569,16 @@ class BtcBinanceService {
                                        ExchangeInfo exchangeInfo) {
         LOGGER.info("Rebuying: symbol=" + symbolInfo.getSymbol());
         LOGGER.info("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
+        BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
+        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
+            return diversify(orderDto, cryptoDtosSupplier, totalAmounts, exchangeInfo);
+        } else {
+            rebuySingleOrder(symbolInfo, orderDto);
+            return emptyList();
+        }
+    }
+
+    private void rebuySingleOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         // 1. cancel existing order
         cancelRequest(orderDto);
         // 2. buy
@@ -575,14 +589,7 @@ class BtcBinanceService {
         // 3. create new order
         BigDecimal quantityToSell = getQuantityFromOrder(orderDto);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-        BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
-
-        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
-            return diversify(orderDto, cryptoDtosSupplier, totalAmounts, exchangeInfo);
-        } else {
-            placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
-            return emptyList();
-        }
+        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
     }
 
     private void placeSellOrders(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal completeQuantityToSell) {

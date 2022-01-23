@@ -116,7 +116,6 @@ class BtcBinanceService {
         LOGGER.info("Unique open orders: " + uniqueOpenOrdersSize);
         binanceApiRestClient.getExchangeInfo();
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
-            sleep(1000 * 60 * 2);
             buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
         binanceApiRestClient.getExchangeInfo();
@@ -131,6 +130,7 @@ class BtcBinanceService {
     }
 
     private List<CryptoDto> getCryptoDtos(ExchangeInfo exchangeInfo) {
+        sleep(1000 * 60);
         List<TickerStatistics> tickers = getAll24hTickers();
         List<CryptoDto> cryptoDtos = exchangeInfo.getSymbols()
                                                  .parallelStream()

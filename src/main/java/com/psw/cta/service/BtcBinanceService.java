@@ -178,7 +178,9 @@ class BtcBinanceService {
             LOGGER.info("boughtQuantity: " + boughtQuantity);
 
             // 4. place sell order
-            BigDecimal finalPriceWithProfit = getFinalPriceWithProfit(orderToCancel, boughtQuantity);
+            BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getPriceToSell())
+                                                                     .divide(orderToCancel.getCurrentPrice(), 8, CEILING)
+                                                                     .multiply(new BigDecimal("1.01"));
             LOGGER.info("finalPriceWithProfit: " + finalPriceWithProfit);
             placeSellOrders(symbolInfo, finalPriceWithProfit, boughtQuantity);
         });
@@ -201,15 +203,6 @@ class BtcBinanceService {
         LOGGER.info("My new sellOrder: " + sellOrder);
         binanceApiRestClient.newOrder(sellOrder);
     }
-
-    private BigDecimal getFinalPriceWithProfit(OrderDto orderToCancel, BigDecimal boughtQuantity) {
-        BigDecimal totalBtcAmount = orderToCancel.getOrderBtcAmount();
-        LOGGER.info("totalBtcAmount: " + totalBtcAmount);
-        BigDecimal totalBtcAmountWithProfit = totalBtcAmount.multiply(new BigDecimal("1.05"));
-        LOGGER.info("totalBtcAmountWithProfit: " + totalBtcAmountWithProfit);
-        return totalBtcAmountWithProfit.divide(boughtQuantity, 8, CEILING);
-    }
-
 
     private List<CryptoDto> getCryptoToBuy(List<CryptoDto> cryptoDtos, Map<String, BigDecimal> totalAmounts) {
         List<String> bigOrderKeys = totalAmounts.entrySet()

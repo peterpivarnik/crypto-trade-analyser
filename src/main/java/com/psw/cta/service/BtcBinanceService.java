@@ -183,7 +183,7 @@ class BtcBinanceService {
             LOGGER.info("boughtQuantity: " + boughtQuantity);
 
             // 4. place sell order
-            BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getPriceToSell())
+            BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
                                                                      .divide(orderToCancel.getCurrentPrice(), 8, CEILING)
                                                                      .multiply(new BigDecimal("1.01"));
             LOGGER.info("finalPriceWithProfit: " + finalPriceWithProfit);

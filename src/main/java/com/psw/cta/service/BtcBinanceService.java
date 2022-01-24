@@ -427,11 +427,11 @@ class BtcBinanceService {
             // 5. place bid
             if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
                 try {
-                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
+                    placeCompleteSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 } catch (Exception e) {
                     LOGGER.info("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
                     sleep(61000);
-                    placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
+                    placeCompleteSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
                 }
             }
         }
@@ -590,7 +590,7 @@ class BtcBinanceService {
         // 3. create new order
         BigDecimal quantityToSell = getQuantityFromOrder(orderDto);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-        placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
+        placeCompleteSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
     }
 
     private void placeSellOrders(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal completeQuantityToSell) {
@@ -636,17 +636,28 @@ class BtcBinanceService {
         BigDecimal quantityToSell = minValueFromFilter.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
         LOGGER.info("quantityToSell: " + quantityToSell);
         if (quantityToSell.compareTo(completeQuantityToSell) < 0) {
-            placeSellOrder(symbolInfo, priceToSell, quantityToSell);
+            placePartialSellOrder(symbolInfo, priceToSell, quantityToSell);
             placeSellOrderWithFibonacci(completeQuantityToSell.subtract(quantityToSell), minValueFromFilter, fibonacciIndex + 1, symbolInfo, priceToSell);
         } else {
-            placeSellOrder(symbolInfo, priceToSell, completeQuantityToSell);
+            placeCompleteSellOrder(symbolInfo, priceToSell, completeQuantityToSell);
         }
     }
 
-    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
-        LOGGER.info("Place new order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
+    private void placeCompleteSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
+        LOGGER.info("Place complete sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
+        String asset = getAssetFromSymbolInfo(symbolInfo);
+        BigDecimal balance = waitUntilHaveBalance(asset, quantity);
+        placeSellOrder(symbolInfo, priceToSell, balance);
+    }
+
+    private void placePartialSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
+        LOGGER.info("Place partial sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         waitUntilHaveBalance(asset, quantity);
+        placeSellOrder(symbolInfo, priceToSell, quantity);
+    }
+
+    private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         BigDecimal roundedBidQuantity = roundDown(symbolInfo, quantity, LOT_SIZE, SymbolFilter::getMinQty);
         BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());

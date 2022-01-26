@@ -8,12 +8,9 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Dispatcher;
-import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Converter;
 import retrofit2.Response;
@@ -25,7 +22,6 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
  */
 public class BinanceApiServiceGenerator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BinanceApiServiceGenerator.class);
     private static final OkHttpClient sharedClient;
     private static final Converter.Factory converterFactory = JacksonConverterFactory.create();
 
@@ -73,12 +69,6 @@ public class BinanceApiServiceGenerator {
         try {
             Response<T> response = call.execute();
             if (response.isSuccessful()) {
-                Headers headers = response.headers();
-                if (call.request().url().toString().contains("exchangeInfo")) {
-                    LOGGER.info("url: " + call.request().url());
-                    LOGGER.info("x-mbx-used-weight: " + headers.get("x-mbx-used-weight"));
-                    LOGGER.info("x-mbx-used-weight-1m: " + headers.get("x-mbx-used-weight-1m"));
-                }
                 return response.body();
             } else {
                 BinanceApiError apiError = getBinanceApiError(response);

@@ -6,9 +6,7 @@ import com.binance.api.client.domain.account.Order;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.function.Function;
-import org.springframework.stereotype.Component;
 
-@Component
 public class Utils {
 
     public Comparator<Order> getOrderComparator() {

@@ -9,9 +9,7 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class CryptoUtil {
 
     public TickerStatistics calculateTicker24hr(List<TickerStatistics> tickers, String symbol) {

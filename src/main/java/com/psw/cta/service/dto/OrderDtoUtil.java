@@ -14,9 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
-import org.springframework.stereotype.Component;
 
-@Component
 public class OrderDtoUtil {
 
     public BigDecimal calculateOrderPrice(Order order) {

@@ -3,9 +3,7 @@ package com.psw.cta.service;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
-import org.springframework.stereotype.Component;
 
-@Component
 public class LeastSquares {
 
     public double getSlope(List<BigDecimal> data) {

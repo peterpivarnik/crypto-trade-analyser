@@ -82,8 +82,7 @@ public class BtcBinanceService {
     }
 
     public void invest() {
-        logger.log("******************************************************************************************");
-        logger.log("Start of investing.");
+        logger.log("***** ***** Start of investing ***** *****");
         BigDecimal bnbBalance = buyBnB();
         List<Order> openOrders = binanceApiRestClient.getOpenOrders(new OrderRequest(null));
         BigDecimal sumFromOrders = openOrders.parallelStream()
@@ -110,11 +109,9 @@ public class BtcBinanceService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        binanceApiRestClient.getExchangeInfo();
         if (haveBalanceForBuySmallAmounts(getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
             buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
-        binanceApiRestClient.getExchangeInfo();
     }
 
     private List<CryptoDto> getCryptoDtos(List<CryptoDto> cryptoDtos, ExchangeInfo exchangeInfo) {
@@ -149,8 +146,7 @@ public class BtcBinanceService {
                                       Supplier<List<CryptoDto>> cryptoDtosSupplier,
                                       Map<String, BigDecimal> totalAmounts,
                                       ExchangeInfo exchangeInfo) {
-        logger.log("******************************");
-        logger.log("Diversifying amounts");
+        logger.log("***** ***** Diversifying amounts ***** *****");
 
         // 1. cancel existing order
         logger.log("orderToCancel: " + orderToCancel);
@@ -168,10 +164,8 @@ public class BtcBinanceService {
             // 3. buy
             logger.log("cryptoToBuy: " + cryptoToBuy);
             SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
-            logger.log("symbolInfo: " + symbolInfo);
             BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
             logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-
             BigDecimal currentBtcAmount = currentQuantity.multiply(orderToCancel.getCurrentPrice())
                                                          .divide(new BigDecimal(cryptosToBuy.size()), 8, CEILING);
             logger.log("currentBtcAmount: " + currentBtcAmount);
@@ -180,8 +174,8 @@ public class BtcBinanceService {
 
             // 4. place sell order
             BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
-                                                                     .divide(orderToCancel.getCurrentPrice(), 8, CEILING)
-                                                                     .multiply(new BigDecimal("1.01"));
+                                                                     .multiply(new BigDecimal("1.01"))
+                                                                     .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
             logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
             placeSellOrders(symbolInfo, finalPriceWithProfit, boughtQuantity);
         });
@@ -277,10 +271,8 @@ public class BtcBinanceService {
     }
 
     private BigDecimal buyBnB() {
-        logger.log("***************");
-        logger.log("Buying BNB");
+        logger.log("***** ***** Buying BNB ***** *****");
         BigDecimal myBnbBalance = getMyBalance("BNB");
-        logger.log("myBnbBalance: " + myBnbBalance);
         if (myBnbBalance.compareTo(new BigDecimal("2")) < 0) {
             BigDecimal currentBnbBtcPrice = getCurrentBnbBtcPrice();
             logger.log("currentBnbBtcPrice: " + currentBnbBtcPrice);
@@ -316,8 +308,7 @@ public class BtcBinanceService {
     }
 
     private void buySmallAmounts(Supplier<List<CryptoDto>> cryptoDtosSupplier) {
-        logger.log("******************************");
-        logger.log("Buying small amounts");
+        logger.log("***** ***** Buying small amounts ***** *****");
         cryptoDtosSupplier.get()
                           .stream()
                           .map(this::updateCryptoDtoWithLeastMaxAverage)
@@ -392,7 +383,7 @@ public class BtcBinanceService {
 
     private synchronized void tradeCrypto(CryptoDto crypto) {
         // 1. get balance on account
-        logger.log("Trading crypto " + crypto.getSymbolInfo().getSymbol());
+        logger.log("Trading crypto " + crypto);
         String symbol = crypto.getSymbolInfo().getSymbol();
         BigDecimal myBtcBalance = getMyBalance("BTC");
 
@@ -492,8 +483,7 @@ public class BtcBinanceService {
                                           Supplier<List<CryptoDto>> cryptoDtosSupplier,
                                           Map<String, BigDecimal> totalAmounts,
                                           ExchangeInfo exchangeInfo) {
-        logger.log("******************************");
-        logger.log("Buying big amounts");
+        logger.log("***** ***** Buying big amounts ***** *****");
         Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
                                                                              .count();
@@ -576,6 +566,7 @@ public class BtcBinanceService {
     }
 
     private void rebuySingleOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
+        logger.log("OrderDto: " + orderDto);
         BigDecimal mybtcBalance = getMyBalance("BTC");
         if (mybtcBalance.compareTo(orderDto.getOrderBtcAmount()) < 0) {
             logger.log("BTC balance too low, skip rebuy of crypto.");

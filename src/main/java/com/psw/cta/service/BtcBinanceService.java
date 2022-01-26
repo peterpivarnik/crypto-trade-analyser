@@ -11,8 +11,6 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.utils.Fibonacci.FIBONACCI_SEQUENCE;
-import static com.psw.cta.utils.LeastSquares.getSlope;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
 import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
@@ -21,6 +19,8 @@ import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
+import static com.psw.cta.utils.Fibonacci.FIBONACCI_SEQUENCE;
+import static com.psw.cta.utils.LeastSquares.getSlope;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
@@ -56,8 +56,8 @@ import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.CryptoDto;
-import com.psw.cta.utils.CryptoUtils;
 import com.psw.cta.dto.OrderDto;
+import com.psw.cta.utils.CryptoUtils;
 import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -576,6 +576,11 @@ public class BtcBinanceService {
     }
 
     private void rebuySingleOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
+        BigDecimal mybtcBalance = getMyBalance("BTC");
+        if (mybtcBalance.compareTo(orderDto.getOrderBtcAmount()) < 0) {
+            logger.log("BTC balance too low, skip rebuy of crypto.");
+            return;
+        }
         // 1. cancel existing order
         cancelRequest(orderDto);
         // 2. buy

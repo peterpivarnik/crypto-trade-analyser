@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.utils;
 
 import static java.util.Comparator.comparing;
 
@@ -7,9 +7,9 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.function.Function;
 
-public class Utils {
+public class CommonUtils {
 
-    public Comparator<Order> getOrderComparator() {
+    public static Comparator<Order> getOrderComparator() {
         Function<Order, BigDecimal> quantityFunction = order -> new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
         Function<Order, BigDecimal> btcAmountFunction =
             order -> (new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()))).multiply(new BigDecimal(order.getPrice()));

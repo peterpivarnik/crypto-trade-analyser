@@ -11,7 +11,22 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.service.Fibonacci.FIBONACCI_SEQUENCE;
+import static com.psw.cta.utils.Fibonacci.FIBONACCI_SEQUENCE;
+import static com.psw.cta.utils.LeastSquares.getSlope;
+import static com.psw.cta.utils.CommonUtils.getOrderComparator;
+import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
+import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeMaxAverage;
+import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
+import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
+import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
+import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
+import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
+import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
+import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
+import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
+import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
+import static com.psw.cta.utils.OrderUtils.calculatePriceToSellWithoutProfit;
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
@@ -40,10 +55,10 @@ import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
-import com.psw.cta.service.dto.CryptoDto;
-import com.psw.cta.service.dto.CryptoUtil;
-import com.psw.cta.service.dto.OrderDto;
-import com.psw.cta.service.dto.OrderDtoUtil;
+import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.utils.CryptoUtils;
+import com.psw.cta.dto.OrderDto;
+import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Collections;
@@ -60,11 +75,6 @@ public class BtcBinanceService {
 
     private final BinanceApiRestClient binanceApiRestClient;
     private final LambdaLogger logger;
-
-    private final OrderDtoUtil orderDtoUtil = new OrderDtoUtil();
-    private final CryptoUtil cryptoUtil = new CryptoUtil();
-    private final LeastSquares leastSquares = new LeastSquares();
-    private final Utils utils = new Utils();
 
     public BtcBinanceService(BinanceApiRestClient binanceApiRestClient, LambdaLogger logger) {
         this.binanceApiRestClient = binanceApiRestClient;
@@ -220,7 +230,7 @@ public class BtcBinanceService {
 
     private CryptoDto updateCryptoDtoWithSlopeData(CryptoDto cryptoDto) {
         List<BigDecimal> averagePrices = getAveragePrices(cryptoDto);
-        double leastSquaresSlope = leastSquares.getSlope(averagePrices);
+        double leastSquaresSlope = getSlope(averagePrices);
         if (Double.isNaN(leastSquaresSlope)) {
             leastSquaresSlope = 0.0000000001;
         }
@@ -321,8 +331,8 @@ public class BtcBinanceService {
     }
 
     private CryptoDto updateCryptoDtoWithVolume(CryptoDto cryptoDto, List<TickerStatistics> tickers) {
-        TickerStatistics ticker24hr = cryptoUtil.calculateTicker24hr(tickers, cryptoDto.getSymbolInfo().getSymbol());
-        BigDecimal volume = cryptoUtil.calculateVolume(ticker24hr);
+        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, cryptoDto.getSymbolInfo().getSymbol());
+        BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
         cryptoDto.setTicker24hr(ticker24hr);
         cryptoDto.setVolume(volume);
         return cryptoDto;
@@ -331,7 +341,7 @@ public class BtcBinanceService {
     private CryptoDto updateCryptoDtoWithCurrentPrice(CryptoDto cryptoDto) {
         String symbol = cryptoDto.getSymbolInfo().getSymbol();
         OrderBook depth = getDepth(symbol);
-        BigDecimal currentPrice = cryptoUtil.calculateCurrentPrice(depth);
+        BigDecimal currentPrice = calculateCurrentPrice(depth);
         cryptoDto.setDepth20(depth);
         cryptoDto.setCurrentPrice(currentPrice);
         return cryptoDto;
@@ -339,8 +349,8 @@ public class BtcBinanceService {
 
     private CryptoDto updateCryptoDtoWithLeastMaxAverage(CryptoDto cryptoDto) {
         List<Candlestick> candleStickData = getCandleStickData(cryptoDto, FIFTEEN_MINUTES, 96);
-        BigDecimal lastThreeMaxAverage = cryptoUtil.calculateLastThreeMaxAverage(candleStickData);
-        BigDecimal previousThreeMaxAverage = cryptoUtil.calculatePreviousThreeMaxAverage(candleStickData);
+        BigDecimal lastThreeMaxAverage = calculateLastThreeMaxAverage(candleStickData);
+        BigDecimal previousThreeMaxAverage = calculatePreviousThreeMaxAverage(candleStickData);
         cryptoDto.setFifteenMinutesCandleStickData(candleStickData);
         cryptoDto.setLastThreeMaxAverage(lastThreeMaxAverage);
         cryptoDto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
@@ -350,8 +360,8 @@ public class BtcBinanceService {
     private CryptoDto updateCryptoDtoWithPrices(CryptoDto cryptoDto) {
         List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        BigDecimal priceToSell = cryptoUtil.calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal priceToSellPercentage = cryptoUtil.calculatePriceToSellPercentage(priceToSell, currentPrice);
+        BigDecimal priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal priceToSellPercentage = calculatePriceToSellPercentage(priceToSell, currentPrice);
         cryptoDto.setPriceToSell(priceToSell);
         cryptoDto.setPriceToSellPercentage(priceToSellPercentage);
         return cryptoDto;
@@ -360,8 +370,8 @@ public class BtcBinanceService {
     private CryptoDto updateCryptoDtoWithSumDiffPerc(CryptoDto cryptoDto) {
         List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        BigDecimal sumDiffsPerc = cryptoUtil.calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal sumDiffsPerc10h = cryptoUtil.calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal sumDiffsPerc = calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal sumDiffsPerc10h = calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
         cryptoDto.setSumDiffsPerc(sumDiffsPerc);
         cryptoDto.setSumDiffsPerc10h(sumDiffsPerc10h);
         return cryptoDto;
@@ -498,7 +508,7 @@ public class BtcBinanceService {
                          .distinct()
                          .map(symbol -> openOrders.stream()
                                                   .filter(order -> order.getSymbol().equals(symbol))
-                                                  .min(utils.getOrderComparator()))
+                                                  .min(getOrderComparator()))
                          .map(Optional::orElseThrow)
                          .map(this::createOrderDto)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
@@ -519,8 +529,8 @@ public class BtcBinanceService {
     }
 
     private OrderDto createOrderDto(Order order) {
-        BigDecimal orderPrice = orderDtoUtil.calculateOrderPrice(order);
-        BigDecimal orderBtcAmount = orderDtoUtil.calculateOrderBtcAmount(order, orderPrice);
+        BigDecimal orderPrice = calculateOrderPrice(order);
+        BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
         OrderDto orderDto = new OrderDto(order);
         orderDto.setOrderPrice(orderPrice);
         orderDto.setOrderBtcAmount(orderBtcAmount);
@@ -528,8 +538,8 @@ public class BtcBinanceService {
     }
 
     private OrderDto updateOrderDtoWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderDto orderDto) {
-        BigDecimal minWaitingTime = orderDtoUtil.calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol()), orderDto.getOrderBtcAmount());
-        BigDecimal actualWaitingTime = orderDtoUtil.calculateActualWaitingTime(orderDto.getOrder());
+        BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol()), orderDto.getOrderBtcAmount());
+        BigDecimal actualWaitingTime = calculateActualWaitingTime(orderDto.getOrder());
         orderDto.setMinWaitingTime(minWaitingTime);
         orderDto.setActualWaitingTime(actualWaitingTime);
         return orderDto;
@@ -537,10 +547,10 @@ public class BtcBinanceService {
 
     private OrderDto updateOrderDtoWithPrices(OrderDto orderDto) {
         BigDecimal orderPrice = orderDto.getOrderPrice();
-        BigDecimal currentPrice = orderDtoUtil.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()));
-        BigDecimal priceToSellWithoutProfit = orderDtoUtil.calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
-        BigDecimal priceToSell = orderDtoUtil.calculatePriceToSell(orderPrice, priceToSellWithoutProfit);
-        BigDecimal priceToSellPercentage = orderDtoUtil.calculatePriceToSellPercentage(priceToSell, orderPrice);
+        BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()));
+        BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit);
+        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(priceToSell, orderPrice);
         orderDto.setCurrentPrice(currentPrice);
         orderDto.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
         orderDto.setPriceToSell(priceToSell);

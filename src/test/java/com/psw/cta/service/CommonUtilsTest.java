@@ -1,5 +1,6 @@
 package com.psw.cta.service;
 
+import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.binance.api.client.domain.account.Order;
@@ -9,14 +10,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class UtilsTest {
-
-    @InjectMocks
-    private Utils utils;
+class CommonUtilsTest {
 
     @Test
     void shouldOrderByOriginalQuantity() {
@@ -24,7 +21,7 @@ class UtilsTest {
         Order order2 = createOrder("20", "0", "10", 10L);
         Order order3 = createOrder("50", "0", "10", 10L);
 
-        Comparator<Order> orderComparator = utils.getOrderComparator();
+        Comparator<Order> orderComparator = getOrderComparator();
 
         List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                          .sorted(orderComparator)
@@ -38,7 +35,7 @@ class UtilsTest {
         Order order2 = createOrder("20", "0", "10", 10L);
         Order order3 = createOrder("50", "45", "10", 10L);
 
-        Comparator<Order> orderComparator = utils.getOrderComparator();
+        Comparator<Order> orderComparator = getOrderComparator();
 
         List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                          .sorted(orderComparator)
@@ -52,7 +49,7 @@ class UtilsTest {
         Order order2 = createOrder("20", "0", "20", 10L);
         Order order3 = createOrder("50", "30", "10", 10L);
 
-        Comparator<Order> orderComparator = utils.getOrderComparator();
+        Comparator<Order> orderComparator = getOrderComparator();
 
         List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                          .sorted(orderComparator)
@@ -66,7 +63,7 @@ class UtilsTest {
         Order order2 = createOrder("20", "0", "10", 11L);
         Order order3 = createOrder("50", "30", "10", 10L);
 
-        Comparator<Order> orderComparator = utils.getOrderComparator();
+        Comparator<Order> orderComparator = getOrderComparator();
 
         List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                          .sorted(orderComparator)

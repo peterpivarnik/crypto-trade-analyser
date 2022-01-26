@@ -1,4 +1,4 @@
-package com.psw.cta.service.dto;
+package com.psw.cta.utils;
 
 import static java.lang.Math.sqrt;
 import static java.math.RoundingMode.UP;
@@ -15,18 +15,18 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 
-public class OrderDtoUtil {
+public class OrderUtils {
 
-    public BigDecimal calculateOrderPrice(Order order) {
+    public static BigDecimal calculateOrderPrice(Order order) {
         return new BigDecimal(order.getPrice());
     }
 
-    public BigDecimal calculateOrderBtcAmount(Order order, BigDecimal orderPrice) {
+    public static BigDecimal calculateOrderBtcAmount(Order order, BigDecimal orderPrice) {
         BigDecimal orderAltAmount = new BigDecimal(order.getOrigQty());
         return orderAltAmount.multiply(orderPrice);
     }
 
-    public BigDecimal calculateCurrentPrice(OrderBook depth20) {
+    public static BigDecimal calculateCurrentPrice(OrderBook depth20) {
         return depth20.getAsks()
                       .parallelStream()
                       .map(OrderBookEntry::getPrice)
@@ -35,35 +35,35 @@ public class OrderDtoUtil {
                       .orElseThrow(RuntimeException::new);
     }
 
-    public BigDecimal calculatePriceToSellWithoutProfit(BigDecimal orderPrice, BigDecimal currentPrice) {
+    public static BigDecimal calculatePriceToSellWithoutProfit(BigDecimal orderPrice, BigDecimal currentPrice) {
         BigDecimal subtract = orderPrice.subtract(currentPrice);
         BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
         return currentPrice.add(divide);
     }
 
-    public BigDecimal calculatePriceToSell(BigDecimal orderPrice, BigDecimal priceToSellWithoutProfit) {
+    public static BigDecimal calculatePriceToSell(BigDecimal orderPrice, BigDecimal priceToSellWithoutProfit) {
         BigDecimal subtract = orderPrice.subtract(priceToSellWithoutProfit);
         BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
         return priceToSellWithoutProfit.add(divide);
     }
 
-    public BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal orderPrice) {
+    public static BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal orderPrice) {
         BigDecimal percentage = priceToSell.multiply(new BigDecimal("100")).divide(orderPrice, 8, UP);
         return new BigDecimal("100").subtract(percentage);
     }
 
-    public BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount, BigDecimal orderBtcAmount) {
+    public static BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount, BigDecimal orderBtcAmount) {
         BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
         return totalWaitingTime.add(orderWaitingTime);
     }
 
-    private BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
+    private static BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
         double totalTime = 100 * sqrt(totalAmount.doubleValue());
         return new BigDecimal(totalTime, new MathContext(3));
     }
 
-    public BigDecimal calculateActualWaitingTime(Order order) {
+    public static BigDecimal calculateActualWaitingTime(Order order) {
         LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(order.getTime()), ZoneId.systemDefault());
         LocalDateTime now = LocalDateTime.now();
         Duration duration = Duration.between(date, now);

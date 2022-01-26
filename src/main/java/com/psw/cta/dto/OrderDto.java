@@ -1,4 +1,4 @@
-package com.psw.cta.service.dto;
+package com.psw.cta.dto;
 
 import com.binance.api.client.domain.account.Order;
 import java.math.BigDecimal;

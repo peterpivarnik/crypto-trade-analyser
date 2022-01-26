@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.service.BtcBinanceService;
-import com.psw.cta.service.dto.Input;
+import com.psw.cta.dto.Input;
 
 public class ServiceHandler implements RequestHandler<Input, Object> {
 

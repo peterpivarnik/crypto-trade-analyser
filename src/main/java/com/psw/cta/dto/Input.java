@@ -1,4 +1,4 @@
-package com.psw.cta.service.dto;
+package com.psw.cta.dto;
 
 public class Input {
 

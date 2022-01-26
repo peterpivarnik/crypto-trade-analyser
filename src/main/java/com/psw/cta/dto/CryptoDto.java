@@ -1,4 +1,4 @@
-package com.psw.cta.service.dto;
+package com.psw.cta.dto;
 
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;

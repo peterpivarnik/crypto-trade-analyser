@@ -16,7 +16,7 @@ public class CryptoTraderApplication {
     private static LambdaLogger getLogger() {
         return new LambdaLogger() {
             @Override public void log(String message) {
-                System.out.print(message);
+                System.out.println(message);
             }
 
             @Override public void log(byte[] bytes) {

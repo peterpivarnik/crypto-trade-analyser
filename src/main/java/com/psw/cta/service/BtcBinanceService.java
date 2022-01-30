@@ -218,7 +218,7 @@ public class BtcBinanceService {
 
     private void cancelRequest(OrderDto orderToCancel) {
         CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderToCancel.getOrder().getSymbol(), orderToCancel.getOrder().getClientOrderId());
-        logger.log("New cancelOrderRequest" + cancelOrderRequest);
+        logger.log("New cancelOrderRequest: " + cancelOrderRequest);
         binanceApiRestClient.cancelOrder(cancelOrderRequest);
     }
 

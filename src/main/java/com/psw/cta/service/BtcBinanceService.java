@@ -627,7 +627,7 @@ public class BtcBinanceService {
         logger.log("Fibonacci number: " + FIBONACCI_SEQUENCE[fibonacciIndex]);
         BigDecimal quantityToSell = minValueFromFilter.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
         logger.log("quantityToSell: " + quantityToSell);
-        if (quantityToSell.compareTo(completeQuantityToSell) < 0) {
+        if (quantityToSell.compareTo(completeQuantityToSell) < 0 && completeQuantityToSell.subtract(quantityToSell).compareTo(minValueFromFilter) > 0) {
             placePartialSellOrder(symbolInfo, priceToSell, quantityToSell);
             placeSellOrderWithFibonacci(completeQuantityToSell.subtract(quantityToSell), minValueFromFilter, fibonacciIndex + 1, symbolInfo, priceToSell);
         } else {

@@ -55,7 +55,8 @@ public class OrderUtils {
     public static BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount, BigDecimal orderBtcAmount) {
         BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
-        return totalWaitingTime.add(orderWaitingTime);
+        BigDecimal waitingTime = totalWaitingTime.add(orderWaitingTime);
+        return waitingTime.multiply(new BigDecimal("2"));
     }
 
     private static BigDecimal getTimeFromAmount(BigDecimal totalAmount) {

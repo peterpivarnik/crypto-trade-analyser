@@ -1,6 +1,7 @@
 package com.psw.cta.utils;
 
 import static java.lang.Math.sqrt;
+import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.UP;
 
 import com.binance.api.client.domain.account.Order;
@@ -41,10 +42,14 @@ public class OrderUtils {
         return currentPrice.add(divide);
     }
 
-    public static BigDecimal calculatePriceToSell(BigDecimal orderPrice, BigDecimal priceToSellWithoutProfit) {
-        BigDecimal subtract = orderPrice.subtract(priceToSellWithoutProfit);
-        BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
-        return priceToSellWithoutProfit.add(divide);
+    public static BigDecimal calculatePriceToSell(BigDecimal orderPrice, BigDecimal priceToSellWithoutProfit, BigDecimal orderBtcAmount) {
+        if (orderBtcAmount.compareTo(new BigDecimal("0.01")) < 0) {
+            BigDecimal subtract = orderPrice.subtract(priceToSellWithoutProfit);
+            BigDecimal divide = subtract.divide(new BigDecimal("2"), 8, UP);
+            return priceToSellWithoutProfit.add(divide);
+        } else {
+            return priceToSellWithoutProfit.multiply(new BigDecimal("1.005")).divide(ONE, 8, UP);
+        }
     }
 
     public static BigDecimal calculatePriceToSellPercentage(BigDecimal priceToSell, BigDecimal orderPrice) {

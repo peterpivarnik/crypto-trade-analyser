@@ -493,7 +493,7 @@ public class BtcBinanceService {
                                                                                                                 .equals(orderDto.getOrder().getSymbol()))
                                                                                 .findAny()
                                                                                 .orElseThrow();
-        return openOrders.parallelStream()
+         return openOrders.parallelStream()
                          .map(Order::getSymbol)
                          .distinct()
                          .map(symbol -> openOrders.stream()
@@ -539,7 +539,7 @@ public class BtcBinanceService {
         BigDecimal orderPrice = orderDto.getOrderPrice();
         BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()));
         BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit, orderDto.getOrderBtcAmount());
         BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(priceToSell, orderPrice);
         orderDto.setCurrentPrice(currentPrice);
         orderDto.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
@@ -557,7 +557,7 @@ public class BtcBinanceService {
         logger.log("Rebuying: symbol=" + symbolInfo.getSymbol());
         logger.log("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
-        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
+        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
             return diversify(orderDto, cryptoDtosSupplier, totalAmounts, exchangeInfo);
         } else {
             rebuySingleOrder(symbolInfo, orderDto);

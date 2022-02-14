@@ -57,6 +57,16 @@ public class OrderUtils {
         return new BigDecimal("100").subtract(percentage);
     }
 
+    public static BigDecimal calculateOrderPricePercentage(BigDecimal currentPrice, BigDecimal orderPrice) {
+        BigDecimal percentage = currentPrice.multiply(new BigDecimal("100")).divide(orderPrice, 8, UP);
+        return new BigDecimal("100").subtract(percentage);
+    }
+
+    public static BigDecimal calculateOrderPriceToPriceToSellPercentage(BigDecimal currentPrice, BigDecimal priceToSell) {
+        BigDecimal percentage = currentPrice.multiply(new BigDecimal("100")).divide(priceToSell, 8, UP);
+        return new BigDecimal("100").subtract(percentage);
+    }
+
     public static BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount, BigDecimal orderBtcAmount) {
         BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);

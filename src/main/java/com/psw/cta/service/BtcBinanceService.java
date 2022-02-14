@@ -494,17 +494,17 @@ public class BtcBinanceService {
                                                                                 .findAny()
                                                                                 .orElseThrow();
          return openOrders.parallelStream()
-                         .map(Order::getSymbol)
-                         .distinct()
-                         .map(symbol -> openOrders.stream()
-                                                  .filter(order -> order.getSymbol().equals(symbol))
-                                                  .min(getOrderComparator()))
-                         .map(Optional::orElseThrow)
-                         .map(this::createOrderDto)
+                  .map(Order::getSymbol)
+                  .distinct()
+                  .map(symbol -> openOrders.stream()
+                                           .filter(order -> order.getSymbol().equals(symbol))
+                                           .min(getOrderComparator()))
+                  .map(Optional::orElseThrow)
+                  .map(this::createOrderDto)
                          .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .map(orderDto -> updateOrderDtoWithWaitingTimes(totalAmounts, orderDto))
+                  .map(orderDto -> updateOrderDtoWithWaitingTimes(totalAmounts, orderDto))
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                         .map(this::updateOrderDtoWithPrices)
+                  .map(this::updateOrderDtoWithPrices)
                          .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
                          .peek(orderDto -> logger.log(orderDto.toString()))
                          .map(orderDto -> rebuyOrder(symbolFunction.apply(orderDto),
@@ -540,11 +540,13 @@ public class BtcBinanceService {
         BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(getDepth(orderDto.getOrder().getSymbol()));
         BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit, orderDto.getOrderBtcAmount());
-        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(priceToSell, orderPrice);
+        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(currentPrice, priceToSell);
+        BigDecimal orderPricePercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
         orderDto.setCurrentPrice(currentPrice);
         orderDto.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
         orderDto.setPriceToSell(priceToSell);
         orderDto.setPriceToSellPercentage(priceToSellPercentage);
+        orderDto.setOrderPricePercentage(orderPricePercentage);
         return orderDto;
     }
 

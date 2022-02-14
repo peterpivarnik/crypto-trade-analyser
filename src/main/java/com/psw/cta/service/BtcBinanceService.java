@@ -592,8 +592,10 @@ public class BtcBinanceService {
         logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
         BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-        BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedPriceToSell = roundDown(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        logger.log("roundedPriceToSell: " + roundedPriceToSell);
         roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
+        logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
         BigDecimal minQuantity = getMinQuantity(minValueFromLotSizeFilter, minValueFromLotSizeFilter, minValueFromMinNotionalFilter, roundedPriceToSell);
         placeSellOrderWithFibonacci(completeQuantityToSell, minQuantity, 1, symbolInfo, roundedPriceToSell);
     }

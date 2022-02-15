@@ -159,28 +159,49 @@ public class BtcBinanceService {
         sellMarketOrder(symbolInfoOfSellOrder, currentQuantity);
 
         List<CryptoDto> cryptoDtos = cryptoDtosSupplier.get();
-        List<CryptoDto> cryptosToBuy = getCryptoToBuy(cryptoDtos, totalAmounts);
-        cryptosToBuy.forEach(cryptoToBuy -> {
-            // 3. buy
-            logger.log("cryptoToBuy: " + cryptoToBuy);
-            SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
-            BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
-            logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-            BigDecimal currentBtcAmount = currentQuantity.multiply(orderToCancel.getCurrentPrice())
-                                                         .divide(new BigDecimal(cryptosToBuy.size()), 8, CEILING);
-            logger.log("currentBtcAmount: " + currentBtcAmount);
-            BigDecimal boughtQuantity = buy(symbolInfo, currentBtcAmount, cryptoToBuyCurrentPrice);
-            logger.log("boughtQuantity: " + boughtQuantity);
-
-            // 4. place sell order
-            BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
-                                                                     .multiply(new BigDecimal("1.01"))
-                                                                     .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
-            logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-            placeSellOrders(symbolInfo, finalPriceWithProfit, boughtQuantity);
-        });
-
+        BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
+        List<CryptoDto> cryptoToBuy = getCryptoToBuy(cryptoDtos, totalAmounts);
+        buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 1);
         return cryptoDtos;
+    }
+
+    private void buyAndSellWithFibonacci(OrderDto orderToCancel, List<CryptoDto> cryptoToBuy, BigDecimal btcAmountToSpend, int fibonacciIndex) {
+        BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
+        BigDecimal fibonnaciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
+        logger.log("btcAmountToSpend: " + btcAmountToSpend);
+        logger.log("fibonnaciAmountToSpend: " + fibonnaciAmountToSpend);
+        if (btcAmountToSpend.compareTo(fibonnaciAmountToSpend) > 0) {
+            buyAndSell(orderToCancel, cryptoToBuy.get(fibonacciIndex - 1), fibonnaciAmountToSpend);
+            buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, btcAmountToSpend.subtract(fibonnaciAmountToSpend), fibonacciIndex + 1);
+        } else {
+            buyAndSell(orderToCancel, cryptoToBuy.get(fibonacciIndex - 1), btcAmountToSpend);
+        }
+    }
+
+    private void buyAndSell(OrderDto orderToCancel, CryptoDto cryptoDto, BigDecimal btcAmountToSpend) {
+        // 3. buy
+        logger.log("cryptoToBuy: " + cryptoDto);
+        SymbolInfo symbolInfo = cryptoDto.getSymbolInfo();
+        BigDecimal cryptoToBuyCurrentPrice = cryptoDto.getCurrentPrice();
+        logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
+        BigDecimal boughtQuantity = buy(symbolInfo, btcAmountToSpend, cryptoToBuyCurrentPrice);
+        logger.log("boughtQuantity: " + boughtQuantity);
+
+        // 4. place sell order
+        BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
+                                                                 .multiply(new BigDecimal("1.01"))
+                                                                 .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
+        logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
+
+        BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+        logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+        BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
+        logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+        BigDecimal roundedPriceToSell = roundDown(symbolInfo, finalPriceWithProfit, PRICE_FILTER, SymbolFilter::getTickSize);
+        logger.log("roundedPriceToSell: " + roundedPriceToSell);
+        roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
+        logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
+        placeCompleteSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
     }
 
     private BigDecimal getQuantityFromOrder(OrderDto orderToCancel) {
@@ -211,7 +232,6 @@ public class BtcBinanceService {
                          .map(this::updateCryptoDtoWithSlopeData)
                          .filter(cryptoDto -> cryptoDto.getSlope().compareTo(BigDecimal.ZERO) < 0)
                          .sorted(comparing(CryptoDto::getPriceCountToSlope))
-                         .limit(4)
                          .collect(Collectors.toList());
     }
 
@@ -587,19 +607,6 @@ public class BtcBinanceService {
         placeCompleteSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
     }
 
-    private void placeSellOrders(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal completeQuantityToSell) {
-        BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-        logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-        BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
-        logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-        BigDecimal roundedPriceToSell = roundDown(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
-        logger.log("roundedPriceToSell: " + roundedPriceToSell);
-        roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
-        logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-        BigDecimal minQuantity = getMinQuantity(minValueFromLotSizeFilter, minValueFromLotSizeFilter, minValueFromMinNotionalFilter, roundedPriceToSell);
-        placeSellOrderWithFibonacci(completeQuantityToSell, minQuantity, 1, symbolInfo, roundedPriceToSell);
-    }
-
     private BigDecimal buy(SymbolInfo symbolInfo, BigDecimal orderBtcAmount, BigDecimal orderPrice) {
         BigDecimal myQuantity = orderBtcAmount.divide(orderPrice, 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
@@ -611,46 +618,11 @@ public class BtcBinanceService {
         return roundedQuantity;
     }
 
-    private BigDecimal getMinQuantity(BigDecimal accumulatedMinValue,
-                                      BigDecimal minValueFromLotSizeFilter,
-                                      BigDecimal minValueFromMinNotionalFilter,
-                                      BigDecimal priceToSellFinal) {
-        if (accumulatedMinValue.compareTo(minValueFromLotSizeFilter) > 0
-            && accumulatedMinValue.multiply(priceToSellFinal).compareTo(minValueFromMinNotionalFilter) > 0) {
-            return accumulatedMinValue;
-        }
-        return getMinQuantity(accumulatedMinValue.add(minValueFromLotSizeFilter), minValueFromLotSizeFilter, minValueFromMinNotionalFilter, priceToSellFinal);
-    }
-
-    private void placeSellOrderWithFibonacci(BigDecimal completeQuantityToSell,
-                                             BigDecimal minValueFromFilter,
-                                             int fibonacciIndex,
-                                             SymbolInfo symbolInfo,
-                                             BigDecimal priceToSell) {
-        logger.log("Complete quantity in fibonacci: " + completeQuantityToSell);
-        logger.log("Fibonacci number: " + FIBONACCI_SEQUENCE[fibonacciIndex]);
-        BigDecimal quantityToSell = minValueFromFilter.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
-        logger.log("quantityToSell: " + quantityToSell);
-        if (quantityToSell.compareTo(completeQuantityToSell) < 0 && completeQuantityToSell.subtract(quantityToSell).compareTo(minValueFromFilter) > 0) {
-            placePartialSellOrder(symbolInfo, priceToSell, quantityToSell);
-            placeSellOrderWithFibonacci(completeQuantityToSell.subtract(quantityToSell), minValueFromFilter, fibonacciIndex + 1, symbolInfo, priceToSell);
-        } else {
-            placeCompleteSellOrder(symbolInfo, priceToSell, completeQuantityToSell);
-        }
-    }
-
     private void placeCompleteSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
         logger.log("Place complete sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal balance = waitUntilHaveBalance(asset, quantity);
         placeSellOrder(symbolInfo, priceToSell, balance);
-    }
-
-    private void placePartialSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
-        logger.log("Place partial sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
-        String asset = getAssetFromSymbolInfo(symbolInfo);
-        waitUntilHaveBalance(asset, quantity);
-        placeSellOrder(symbolInfo, priceToSell, quantity);
     }
 
     private void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {

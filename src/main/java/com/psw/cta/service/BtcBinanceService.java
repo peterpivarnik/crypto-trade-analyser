@@ -123,7 +123,9 @@ public class BtcBinanceService {
     }
 
     private List<CryptoDto> getCryptoDtos(ExchangeInfo exchangeInfo) {
+        logger.log("Sleep for 1 minute before get all cryptos");
         sleep(1000 * 60);
+        logger.log("Get all cryptos");
         List<TickerStatistics> tickers = getAll24hTickers();
         List<CryptoDto> cryptoDtos = exchangeInfo.getSymbols()
                                                  .parallelStream()
@@ -222,7 +224,7 @@ public class BtcBinanceService {
 
     private List<CryptoDto> getCryptoToBuy(List<CryptoDto> cryptoDtos, Map<String, BigDecimal> totalAmounts) {
         List<String> bigOrderKeys = totalAmounts.entrySet()
-                                                .stream()
+                                                .parallelStream()
                                                 .filter(entry -> entry.getValue().compareTo(new BigDecimal("0.005")) > 0)
                                                 .map(Map.Entry::getKey)
                                                 .collect(Collectors.toList());
@@ -262,7 +264,7 @@ public class BtcBinanceService {
                                            .max(comparing(candle -> new BigDecimal(candle.getHigh())))
                                            .orElseThrow();
         return cryptoDto.getThreeMonthsCandleStickData()
-                        .stream()
+                        .parallelStream()
                         .filter(candle -> candle.getOpenTime() > candlestick.getOpenTime())
                         .map(this::getAveragePrice)
                         .collect(Collectors.toList());
@@ -513,10 +515,10 @@ public class BtcBinanceService {
                                                                                                                 .equals(orderDto.getOrder().getSymbol()))
                                                                                 .findAny()
                                                                                 .orElseThrow();
-        return openOrders.parallelStream()
+        return openOrders.stream()
                          .map(Order::getSymbol)
                          .distinct()
-                         .map(symbol -> openOrders.stream()
+                         .map(symbol -> openOrders.parallelStream()
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(getOrderComparator()))
                          .map(Optional::orElseThrow)

@@ -2,15 +2,15 @@ package com.psw.cta;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.service.BinanceApiService;
-import com.psw.cta.service.BtcBinanceService;
+import com.psw.cta.service.BtcService;
 import java.io.IOException;
 
 public class CryptoTraderApplication {
     public static void main(String[] args) {
         LambdaLogger logger = getLogger();
         BinanceApiService binanceApiService = new BinanceApiService(args[0], args[1], logger);
-        BtcBinanceService btcBinanceService = new BtcBinanceService(binanceApiService, logger);
-        btcBinanceService.invest();
+        BtcService btcService = new BtcService(binanceApiService, logger);
+        btcService.startTrading();
     }
 
     private static LambdaLogger getLogger() {

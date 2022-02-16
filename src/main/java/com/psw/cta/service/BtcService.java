@@ -61,18 +61,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class BtcBinanceService {
+public class BtcService {
 
     private final BinanceApiService binanceApiService;
     private final LambdaLogger logger;
 
-    public BtcBinanceService(BinanceApiService binanceApiService, LambdaLogger logger) {
+    public BtcService(BinanceApiService binanceApiService, LambdaLogger logger) {
         this.binanceApiService = binanceApiService;
         this.logger = logger;
     }
 
-    public void invest() {
-        logger.log("***** ***** Start of investing ***** *****");
+    public void startTrading() {
+        logger.log("***** ***** Start of trading ***** *****");
         BigDecimal bnbBalance = buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
         BigDecimal sumFromOrders = openOrders.parallelStream()

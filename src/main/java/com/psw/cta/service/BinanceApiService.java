@@ -8,6 +8,7 @@ import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.psw.cta.service.BtcService.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundDown;
 import static com.psw.cta.utils.CommonUtils.roundUp;
@@ -95,11 +96,11 @@ public class BinanceApiService {
     }
 
     private BigDecimal mapToBtcBalance(Pair<BigDecimal, String> pair) {
-        if (pair.getRight().equals("BTC")) {
+        if (pair.getRight().equals(ASSET_BTC)) {
             return pair.getLeft();
         } else {
             try {
-                BigDecimal price = getDepth(pair.getRight() + "BTC")
+                BigDecimal price = getDepth(pair.getRight() + ASSET_BTC)
                     .getBids()
                     .parallelStream()
                     .map(OrderBookEntry::getPrice)

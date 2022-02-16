@@ -27,7 +27,6 @@ import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
 import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSellWithoutProfit;
-import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
 import static java.util.Collections.emptyList;
@@ -63,17 +62,23 @@ import java.util.stream.Collectors;
 
 public class BtcService {
 
+    public static final String ASSET_BNB = "BNB";
+    public static final String ASSET_BTC = "BTC";
+    public static final String SYMBOL_BNB_BTC = "BNBBTC";
+
+    private final BnbService bnbService;
     private final BinanceApiService binanceApiService;
     private final LambdaLogger logger;
 
-    public BtcService(BinanceApiService binanceApiService, LambdaLogger logger) {
+    public BtcService(BnbService bnbService, BinanceApiService binanceApiService, LambdaLogger logger) {
+        this.bnbService = bnbService;
         this.binanceApiService = binanceApiService;
         this.logger = logger;
     }
 
     public void startTrading() {
         logger.log("***** ***** Start of trading ***** *****");
-        BigDecimal bnbBalance = buyBnB();
+        BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
         BigDecimal sumFromOrders = openOrders.parallelStream()
                                              .map(order -> new BigDecimal(order.getPrice())
@@ -81,8 +86,8 @@ public class BtcService {
                                                                .subtract(new BigDecimal(order.getExecutedQty()))))
                                              .reduce(BigDecimal.ZERO, BigDecimal::add);
         logger.log("Number of open orders: " + openOrders.size());
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance("BTC");
-        BigDecimal bnbAmount = bnbBalance.multiply(getCurrentBnbBtcPrice());
+        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+        BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
         BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance).add(bnbAmount);
         logger.log("My possible balance: " + myTotalPossibleBalance);
         BigDecimal myTotalBalance = binanceApiService.getMyTotalBalance();
@@ -99,7 +104,7 @@ public class BtcService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        if (haveBalanceForBuySmallAmounts(binanceApiService.getMyBalance("BTC")) && uniqueOpenOrdersSize <= minOpenOrders) {
+        if (haveBalanceForBuySmallAmounts(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
             buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
     }
@@ -120,8 +125,8 @@ public class BtcService {
         List<CryptoDto> cryptoDtos = exchangeInfo.getSymbols()
                                                  .parallelStream()
                                                  .map(CryptoDto::new)
-                                                 .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith("BTC"))
-                                                 .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith("BNBBTC"))
+                                                 .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
+                                                 .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
                                                  .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                                                  .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
                                                  .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
@@ -266,41 +271,6 @@ public class BtcService {
                          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    private BigDecimal buyBnB() {
-        logger.log("***** ***** Buying BNB ***** *****");
-        BigDecimal myBnbBalance = binanceApiService.getMyBalance("BNB");
-        if (myBnbBalance.compareTo(new BigDecimal("2")) < 0) {
-            BigDecimal quantityToBuy = getBnbQuantityToBuy();
-            binanceApiService.createNewOrder("BNBBTC", SELL, quantityToBuy);
-            return binanceApiService.getMyBalance("BNB");
-        }
-        return myBnbBalance;
-    }
-
-
-    private BigDecimal getBnbQuantityToBuy() {
-        BigDecimal currentBnbBtcPrice = getCurrentBnbBtcPrice();
-        logger.log("currentBnbBtcPrice: " + currentBnbBtcPrice);
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance("BTC");
-        BigDecimal maxPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
-        logger.log("maxPossibleBnbQuantity: " + maxPossibleBnbQuantity);
-        BigDecimal quantityToBuy = ONE;
-        if (maxPossibleBnbQuantity.compareTo(ONE) < 0) {
-            quantityToBuy = maxPossibleBnbQuantity;
-        }
-        return quantityToBuy;
-    }
-
-    private BigDecimal getCurrentBnbBtcPrice() {
-        return binanceApiService.getDepth("BNBBTC")
-                                .getAsks()
-                                .parallelStream()
-                                .max(comparing(OrderBookEntry::getPrice))
-                                .map(OrderBookEntry::getPrice)
-                                .map(BigDecimal::new)
-                                .orElseThrow(RuntimeException::new);
-    }
-
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
         BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("10"));
         BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("100"));
@@ -373,7 +343,7 @@ public class BtcService {
         // 1. get balance on account
         logger.log("Trading crypto " + crypto);
         String symbol = crypto.getSymbolInfo().getSymbol();
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance("BTC");
+        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
 
         // 2. get max possible buy
         OrderBookEntry orderBookEntry = binanceApiService.getMinOrderBookEntry(symbol);
@@ -506,7 +476,7 @@ public class BtcService {
 
     private void rebuySingleOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
         logger.log("OrderDto: " + orderDto);
-        BigDecimal mybtcBalance = binanceApiService.getMyBalance("BTC");
+        BigDecimal mybtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
         if (mybtcBalance.compareTo(orderDto.getOrderBtcAmount()) < 0) {
             logger.log("BTC balance too low, skip rebuy of crypto.");
             return;

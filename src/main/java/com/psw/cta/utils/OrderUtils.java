@@ -7,6 +7,7 @@ import static java.math.RoundingMode.UP;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
+import com.psw.cta.dto.OrderDto;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
@@ -62,11 +63,6 @@ public class OrderUtils {
         return new BigDecimal("100").subtract(percentage);
     }
 
-    public static BigDecimal calculateOrderPriceToPriceToSellPercentage(BigDecimal currentPrice, BigDecimal priceToSell) {
-        BigDecimal percentage = currentPrice.multiply(new BigDecimal("100")).divide(priceToSell, 8, UP);
-        return new BigDecimal("100").subtract(percentage);
-    }
-
     public static BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount, BigDecimal orderBtcAmount) {
         BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
@@ -85,5 +81,11 @@ public class OrderUtils {
         Duration duration = Duration.between(date, now);
         double actualWaitingTimeDouble = (double) duration.get(ChronoUnit.SECONDS) / (double) 3600;
         return new BigDecimal(actualWaitingTimeDouble, new MathContext(5));
+    }
+
+    public static BigDecimal getQuantityFromOrder(OrderDto orderToCancel) {
+        BigDecimal originalQuantity = new BigDecimal(orderToCancel.getOrder().getOrigQty());
+        BigDecimal executedQuantity = new BigDecimal(orderToCancel.getOrder().getExecutedQty());
+        return originalQuantity.subtract(executedQuantity);
     }
 }

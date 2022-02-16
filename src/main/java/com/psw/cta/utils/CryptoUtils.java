@@ -1,12 +1,17 @@
 package com.psw.cta.utils;
 
+import static com.psw.cta.utils.CommonUtils.getAveragePrices;
+import static com.psw.cta.utils.LeastSquares.getSlope;
+import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
+import com.psw.cta.dto.CryptoDto;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Comparator;
 import java.util.List;
 
@@ -42,7 +47,7 @@ public class CryptoUtils {
                                             .divide(new BigDecimal("3"), 8, UP);
     }
 
-    public static  BigDecimal calculateSumDiffsPercent(List<Candlestick> fifteenMinutesCandleStickData, BigDecimal currentPrice) {
+    public static BigDecimal calculateSumDiffsPercent(List<Candlestick> fifteenMinutesCandleStickData, BigDecimal currentPrice) {
         return calculateSumDiffsPerc(4, fifteenMinutesCandleStickData, currentPrice);
     }
 
@@ -104,22 +109,6 @@ public class CryptoUtils {
                           .subtract(new BigDecimal("100"));
     }
 
-    public static BigDecimal calculateWeight(OrderBook depth20, BigDecimal priceToSell, BigDecimal currentPrice, BigDecimal volume, BigDecimal priceToSellPercentage) {
-        BigDecimal ratio;
-        final BigDecimal sum = depth20.getAsks().parallelStream()
-                                      .filter(data -> (new BigDecimal(data.getPrice()).compareTo(priceToSell) < 0))
-                                      .map(data -> (new BigDecimal(data.getPrice()).multiply(new BigDecimal(data.getQty()))))
-                                      .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (sum.compareTo(BigDecimal.ZERO) == 0 && priceToSell.compareTo(currentPrice) > 0) {
-            ratio = new BigDecimal(Double.MAX_VALUE);
-        } else if (sum.compareTo(BigDecimal.ZERO) == 0) {
-            ratio = BigDecimal.ZERO;
-        } else {
-            ratio = volume.divide(sum, 8, UP);
-        }
-        return priceToSellPercentage.multiply(ratio);
-    }
-
     public static BigDecimal calculatePreviousThreeMaxAverage(List<Candlestick> fifteenMinutesCandleStickData) {
         int skipSize = fifteenMinutesCandleStickData.size() - 6;
         return fifteenMinutesCandleStickData.stream()
@@ -129,5 +118,20 @@ public class CryptoUtils {
                                             .map(BigDecimal::new)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add)
                                             .divide(new BigDecimal("3"), 8, UP);
+    }
+
+
+    public static CryptoDto updateCryptoDtoWithSlopeData(CryptoDto cryptoDto) {
+        List<BigDecimal> averagePrices = getAveragePrices(cryptoDto);
+        double leastSquaresSlope = getSlope(averagePrices);
+        if (Double.isNaN(leastSquaresSlope)) {
+            leastSquaresSlope = 0.0000000001;
+        }
+        BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
+        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
+        cryptoDto.setSlope(slope);
+        cryptoDto.setPriceCount(priceCount);
+        cryptoDto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
+        return cryptoDto;
     }
 }

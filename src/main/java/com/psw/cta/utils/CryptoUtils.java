@@ -9,7 +9,7 @@ import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Comparator;
@@ -121,17 +121,17 @@ public class CryptoUtils {
     }
 
 
-    public static CryptoDto updateCryptoDtoWithSlopeData(CryptoDto cryptoDto) {
-        List<BigDecimal> averagePrices = getAveragePrices(cryptoDto);
+    public static Crypto updateCryptoWithSlopeData(Crypto crypto) {
+        List<BigDecimal> averagePrices = getAveragePrices(crypto);
         double leastSquaresSlope = getSlope(averagePrices);
         if (Double.isNaN(leastSquaresSlope)) {
             leastSquaresSlope = 0.0000000001;
         }
         BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
         BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
-        cryptoDto.setSlope(slope);
-        cryptoDto.setPriceCount(priceCount);
-        cryptoDto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
-        return cryptoDto;
+        crypto.setSlope(slope);
+        crypto.setPriceCount(priceCount);
+        crypto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
+        return crypto;
     }
 }

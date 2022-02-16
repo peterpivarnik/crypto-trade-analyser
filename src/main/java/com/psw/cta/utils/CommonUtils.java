@@ -9,7 +9,7 @@ import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.service.BnbService;
 import com.psw.cta.service.DiversifyService;
@@ -76,16 +76,16 @@ public class CommonUtils {
     }
 
 
-    public static List<BigDecimal> getAveragePrices(CryptoDto cryptoDto) {
-        Candlestick candlestick = cryptoDto.getThreeMonthsCandleStickData()
-                                           .stream()
-                                           .max(comparing(candle -> new BigDecimal(candle.getHigh())))
-                                           .orElseThrow();
-        return cryptoDto.getThreeMonthsCandleStickData()
-                        .parallelStream()
-                        .filter(candle -> candle.getOpenTime() > candlestick.getOpenTime())
-                        .map(CommonUtils::getAveragePrice)
-                        .collect(Collectors.toList());
+    public static List<BigDecimal> getAveragePrices(Crypto crypto) {
+        Candlestick candlestick = crypto.getThreeMonthsCandleStickData()
+                                        .stream()
+                                        .max(comparing(candle -> new BigDecimal(candle.getHigh())))
+                                        .orElseThrow();
+        return crypto.getThreeMonthsCandleStickData()
+                     .parallelStream()
+                     .filter(candle -> candle.getOpenTime() > candlestick.getOpenTime())
+                     .map(CommonUtils::getAveragePrice)
+                     .collect(Collectors.toList());
     }
 
     private static BigDecimal getAveragePrice(Candlestick candle) {

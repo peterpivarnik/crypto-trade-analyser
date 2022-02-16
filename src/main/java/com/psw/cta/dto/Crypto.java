@@ -7,9 +7,9 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
 import java.util.List;
 
-public class CryptoDto {
+public class Crypto {
 
-    public CryptoDto(SymbolInfo symbolInfo) {
+    public Crypto(SymbolInfo symbolInfo) {
         this.symbolInfo = symbolInfo;
     }
 
@@ -69,7 +69,7 @@ public class CryptoDto {
         return threeMonthsCandleStickData;
     }
 
-    public CryptoDto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
+    public Crypto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
         this.threeMonthsCandleStickData = threeMonthsCandleStickData;
         return this;
     }
@@ -167,7 +167,7 @@ public class CryptoDto {
     }
 
     @Override public String toString() {
-        return "CryptoDto{" +
+        return "Crypto{" +
                ", symbolInfo=" + symbolInfo +
                ", currentPrice=" + currentPrice +
                ", volume=" + volume +

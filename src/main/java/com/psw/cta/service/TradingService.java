@@ -13,7 +13,7 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.TickerStatistics;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderDto;
 import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
@@ -73,45 +73,45 @@ public class TradingService {
         logger.log("totalAmounts: " + totalAmounts);
 
         ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
-        List<CryptoDto> cryptoDtos = repeatTrading(openOrders, myBtcBalance, () -> getCryptoDtos(exchangeInfo), totalAmounts, exchangeInfo);
+        List<Crypto> cryptos = repeatTrading(openOrders, myBtcBalance, () -> getCryptos(exchangeInfo), totalAmounts, exchangeInfo);
         int uniqueOpenOrdersSize = openOrders.parallelStream()
                                              .collect(toMap(Order::getSymbolWithPrice, order -> order, (order1, order2) -> order1))
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
         if (initialTradingService.haveBalanceForInitialTrading(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
-            initTrading(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
+            initTrading(() -> getCryptos(cryptos, exchangeInfo));
         }
     }
 
-    private List<CryptoDto> getCryptoDtos(List<CryptoDto> cryptoDtos, ExchangeInfo exchangeInfo) {
-        if (!cryptoDtos.isEmpty()) {
-            return cryptoDtos;
+    private List<Crypto> getCryptos(List<Crypto> cryptos, ExchangeInfo exchangeInfo) {
+        if (!cryptos.isEmpty()) {
+            return cryptos;
         } else {
-            return getCryptoDtos(exchangeInfo);
+            return getCryptos(exchangeInfo);
         }
     }
 
-    private List<CryptoDto> getCryptoDtos(ExchangeInfo exchangeInfo) {
+    private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
         logger.log("Sleep for 1 minute before get all cryptos");
         sleep(1000 * 60, logger);
         logger.log("Get all cryptos");
         List<TickerStatistics> tickers = binanceApiService.getAll24hTickers();
-        List<CryptoDto> cryptoDtos = exchangeInfo.getSymbols()
-                                                 .parallelStream()
-                                                 .map(CryptoDto::new)
-                                                 .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
-                                                 .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
-                                                 .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                                                 .map(cryptoDto -> updateCryptoDtoWithVolume(cryptoDto, tickers))
-                                                 .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                                                 .map(dto -> dto.setThreeMonthsCandleStickData(binanceApiService.getCandleStickData(dto, DAILY, 90)))
-                                                 .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
-                                                 .map(this::updateCryptoDtoWithCurrentPrice)
-                                                 .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
-                                                 .collect(Collectors.toList());
-        logger.log("Cryptos count: " + cryptoDtos.size());
-        return cryptoDtos;
+        List<Crypto> cryptos = exchangeInfo.getSymbols()
+                                           .parallelStream()
+                                           .map(Crypto::new)
+                                           .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
+                                           .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
+                                           .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+                                           .map(crypto -> updateCryptoWithVolume(crypto, tickers))
+                                           .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                                           .map(dto -> dto.setThreeMonthsCandleStickData(binanceApiService.getCandleStickData(dto, DAILY, 90)))
+                                           .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
+                                           .map(this::updateCryptoWithCurrentPrice)
+                                           .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+                                           .collect(Collectors.toList());
+        logger.log("Cryptos count: " + cryptos.size());
+        return cryptos;
     }
 
     private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
@@ -132,28 +132,28 @@ public class TradingService {
     }
 
 
-    private CryptoDto updateCryptoDtoWithVolume(CryptoDto cryptoDto, List<TickerStatistics> tickers) {
-        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, cryptoDto.getSymbolInfo().getSymbol());
+    private Crypto updateCryptoWithVolume(Crypto crypto, List<TickerStatistics> tickers) {
+        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, crypto.getSymbolInfo().getSymbol());
         BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
-        cryptoDto.setTicker24hr(ticker24hr);
-        cryptoDto.setVolume(volume);
-        return cryptoDto;
+        crypto.setTicker24hr(ticker24hr);
+        crypto.setVolume(volume);
+        return crypto;
     }
 
-    private CryptoDto updateCryptoDtoWithCurrentPrice(CryptoDto cryptoDto) {
-        String symbol = cryptoDto.getSymbolInfo().getSymbol();
+    private Crypto updateCryptoWithCurrentPrice(Crypto crypto) {
+        String symbol = crypto.getSymbolInfo().getSymbol();
         OrderBook depth = binanceApiService.getDepth(symbol);
         BigDecimal currentPrice = calculateCurrentPrice(depth);
-        cryptoDto.setDepth20(depth);
-        cryptoDto.setCurrentPrice(currentPrice);
-        return cryptoDto;
+        crypto.setDepth20(depth);
+        crypto.setCurrentPrice(currentPrice);
+        return crypto;
     }
 
-    private List<CryptoDto> repeatTrading(List<Order> openOrders,
-                                          BigDecimal myBtcBalance,
-                                          Supplier<List<CryptoDto>> cryptoDtosSupplier,
-                                          Map<String, BigDecimal> totalAmounts,
-                                          ExchangeInfo exchangeInfo) {
+    private List<Crypto> repeatTrading(List<Order> openOrders,
+                                       BigDecimal myBtcBalance,
+                                       Supplier<List<Crypto>> cryptosSupplier,
+                                       Map<String, BigDecimal> totalAmounts,
+                                       ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Buying big amounts ***** *****");
         Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
                                                                              .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
@@ -181,7 +181,7 @@ public class TradingService {
                          .map(orderDto -> repeatTradingService.repeatTrade(symbolFunction.apply(orderDto),
                                                                            orderDto,
                                                                            new BigDecimal(countOrdersBySymbol.apply(orderDto)),
-                                                                           cryptoDtosSupplier,
+                                                                           cryptosSupplier,
                                                                            totalAmounts,
                                                                            exchangeInfo))
                          .filter(list -> !list.isEmpty())
@@ -190,17 +190,17 @@ public class TradingService {
     }
 
 
-    private void initTrading(Supplier<List<CryptoDto>> cryptoDtosSupplier) {
+    private void initTrading(Supplier<List<Crypto>> cryptosSupplier) {
         logger.log("***** ***** Buying small amounts ***** *****");
-        cryptoDtosSupplier.get()
-                          .stream()
-                          .map(initialTradingService::updateCryptoDtoWithLeastMaxAverage)
-                          .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
-                          .map(initialTradingService::updateCryptoDtoWithPrices)
-                          .filter(dto -> dto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
-                          .map(initialTradingService::updateCryptoDtoWithSumDiffPerc)
-                          .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                          .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                          .forEach(initialTradingService::buyCrypto);
+        cryptosSupplier.get()
+                       .stream()
+                       .map(initialTradingService::updateCryptoWithLeastMaxAverage)
+                       .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
+                       .map(initialTradingService::updateCryptoWithPrices)
+                       .filter(dto -> dto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                       .map(initialTradingService::updateCryptoWithSumDiffPerc)
+                       .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+                       .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+                       .forEach(initialTradingService::buyCrypto);
     }
 }

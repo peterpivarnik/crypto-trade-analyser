@@ -20,7 +20,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBookEntry;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -38,37 +38,37 @@ public class InitialTradingService {
         return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 
-    public CryptoDto updateCryptoDtoWithLeastMaxAverage(CryptoDto cryptoDto) {
-        List<Candlestick> candleStickData = binanceApiService.getCandleStickData(cryptoDto, FIFTEEN_MINUTES, 96);
+    public Crypto updateCryptoWithLeastMaxAverage(Crypto crypto) {
+        List<Candlestick> candleStickData = binanceApiService.getCandleStickData(crypto, FIFTEEN_MINUTES, 96);
         BigDecimal lastThreeMaxAverage = calculateLastThreeMaxAverage(candleStickData);
         BigDecimal previousThreeMaxAverage = calculatePreviousThreeMaxAverage(candleStickData);
-        cryptoDto.setFifteenMinutesCandleStickData(candleStickData);
-        cryptoDto.setLastThreeMaxAverage(lastThreeMaxAverage);
-        cryptoDto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
-        return cryptoDto;
+        crypto.setFifteenMinutesCandleStickData(candleStickData);
+        crypto.setLastThreeMaxAverage(lastThreeMaxAverage);
+        crypto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
+        return crypto;
     }
 
-    public CryptoDto updateCryptoDtoWithPrices(CryptoDto cryptoDto) {
-        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
-        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
+    public Crypto updateCryptoWithPrices(Crypto crypto) {
+        List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
+        BigDecimal currentPrice = crypto.getCurrentPrice();
         BigDecimal priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
         BigDecimal priceToSellPercentage = calculatePriceToSellPercentage(priceToSell, currentPrice);
-        cryptoDto.setPriceToSell(priceToSell);
-        cryptoDto.setPriceToSellPercentage(priceToSellPercentage);
-        return cryptoDto;
+        crypto.setPriceToSell(priceToSell);
+        crypto.setPriceToSellPercentage(priceToSellPercentage);
+        return crypto;
     }
 
-    public CryptoDto updateCryptoDtoWithSumDiffPerc(CryptoDto cryptoDto) {
-        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
-        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
+    public Crypto updateCryptoWithSumDiffPerc(Crypto crypto) {
+        List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
+        BigDecimal currentPrice = crypto.getCurrentPrice();
         BigDecimal sumDiffsPerc = calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
         BigDecimal sumDiffsPerc10h = calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
-        cryptoDto.setSumDiffsPerc(sumDiffsPerc);
-        cryptoDto.setSumDiffsPerc10h(sumDiffsPerc10h);
-        return cryptoDto;
+        crypto.setSumDiffsPerc(sumDiffsPerc);
+        crypto.setSumDiffsPerc10h(sumDiffsPerc10h);
+        return crypto;
     }
 
-    public synchronized void buyCrypto(CryptoDto crypto) {
+    public synchronized void buyCrypto(Crypto crypto) {
         // 1. get balance on account
         logger.log("Trading crypto " + crypto);
         String symbol = crypto.getSymbolInfo().getSymbol();
@@ -90,14 +90,14 @@ public class InitialTradingService {
         }
     }
 
-    private BigDecimal getQuantityToBuy(CryptoDto crypto, BigDecimal myBtcBalance, OrderBookEntry orderBookEntry) {
+    private BigDecimal getQuantityToBuy(Crypto crypto, BigDecimal myBtcBalance, OrderBookEntry orderBookEntry) {
         BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
         BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
         BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
         return roundUp(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
     }
 
-    private boolean shouldBuyAndSell(CryptoDto crypto,
+    private boolean shouldBuyAndSell(Crypto crypto,
                                      BigDecimal myBtcBalance,
                                      OrderBookEntry orderBookEntry,
                                      BigDecimal btcAmount,
@@ -107,7 +107,7 @@ public class InitialTradingService {
                && isMoreThanMinValue(btcAmount, minNotionalFromMinNotionalFilter);
     }
 
-    private boolean isStillValid(CryptoDto crypto, OrderBookEntry orderBookEntry) {
+    private boolean isStillValid(Crypto crypto, OrderBookEntry orderBookEntry) {
         return new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice());
     }
 
@@ -115,7 +115,7 @@ public class InitialTradingService {
         return btcAmount.compareTo(minNotionalFromMinNotionalFilter) >= 0;
     }
 
-    private void placeSellOrder(CryptoDto crypto, BigDecimal quantity) {
+    private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
         try {
             binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
         } catch (Exception e) {

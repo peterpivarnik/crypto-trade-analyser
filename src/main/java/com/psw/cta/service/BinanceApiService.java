@@ -34,7 +34,7 @@ import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderDto;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
@@ -67,8 +67,8 @@ public class BinanceApiService {
         return binanceApiRestClient.getOrderBook(symbol, 20);
     }
 
-    public List<Candlestick> getCandleStickData(CryptoDto cryptoDto, CandlestickInterval interval, Integer limit) {
-        final String symbol = cryptoDto.getSymbolInfo().getSymbol();
+    public List<Candlestick> getCandleStickData(Crypto crypto, CandlestickInterval interval, Integer limit) {
+        final String symbol = crypto.getSymbolInfo().getSymbol();
         return binanceApiRestClient.getCandlestickBars(symbol, interval, limit, null, null);
     }
 

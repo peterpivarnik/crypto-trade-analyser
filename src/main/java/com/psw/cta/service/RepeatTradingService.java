@@ -17,7 +17,7 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
-import com.psw.cta.dto.CryptoDto;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderDto;
 import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
@@ -69,17 +69,17 @@ public class RepeatTradingService {
         return orderDto;
     }
 
-    public synchronized List<CryptoDto> repeatTrade(SymbolInfo symbolInfo,
-                                                    OrderDto orderDto,
-                                                    BigDecimal currentNumberOfOpenOrdersBySymbol,
-                                                    Supplier<List<CryptoDto>> cryptoDtosSupplier,
-                                                    Map<String, BigDecimal> totalAmounts,
-                                                    ExchangeInfo exchangeInfo) {
+    public synchronized List<Crypto> repeatTrade(SymbolInfo symbolInfo,
+                                                 OrderDto orderDto,
+                                                 BigDecimal currentNumberOfOpenOrdersBySymbol,
+                                                 Supplier<List<Crypto>> cryptosSupplier,
+                                                 Map<String, BigDecimal> totalAmounts,
+                                                 ExchangeInfo exchangeInfo) {
         logger.log("Rebuying: symbol=" + symbolInfo.getSymbol());
         logger.log("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
         if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
-            return diversifyService.diversify(orderDto, cryptoDtosSupplier, totalAmounts, exchangeInfo);
+            return diversifyService.diversify(orderDto, cryptosSupplier, totalAmounts, exchangeInfo);
         } else {
             rebuySingleOrder(symbolInfo, orderDto);
             return emptyList();

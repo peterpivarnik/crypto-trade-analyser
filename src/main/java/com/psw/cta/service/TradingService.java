@@ -15,6 +15,7 @@ import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.Constants;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -25,11 +26,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class TradingService {
-
-    public static final String ASSET_BNB = "BNB";
-    public static final String ASSET_BTC = "BTC";
-    public static final String SYMBOL_BNB_BTC = "BNBBTC";
-    public static final BigDecimal MIN_PROFIT_PERCENT = new BigDecimal("0.5");
 
     private final InitialTradingService initialTradingService;
     private final RepeatTradingService repeatTradingService;
@@ -59,7 +55,7 @@ public class TradingService {
                                                                .subtract(new BigDecimal(order.getExecutedQty()))))
                                              .reduce(BigDecimal.ZERO, BigDecimal::add);
         logger.log("Number of open orders: " + openOrders.size());
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+        BigDecimal myBtcBalance = binanceApiService.getMyBalance(Constants.ASSET_BTC);
         BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
         BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance).add(bnbAmount);
         logger.log("My possible balance: " + myTotalPossibleBalance);
@@ -77,7 +73,7 @@ public class TradingService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        if (initialTradingService.haveBalanceForInitialTrading(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
+        if (initialTradingService.haveBalanceForInitialTrading(binanceApiService.getMyBalance(Constants.ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
             initTrading(() -> getCryptos(cryptos, exchangeInfo));
         }
     }
@@ -98,8 +94,8 @@ public class TradingService {
         List<Crypto> cryptos = exchangeInfo.getSymbols()
                                            .parallelStream()
                                            .map(Crypto::new)
-                                           .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
-                                           .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
+                                           .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(Constants.ASSET_BTC))
+                                           .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(Constants.SYMBOL_BNB_BTC))
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                                            .map(crypto -> initialTradingService.updateCryptoWithVolume(crypto, tickers))
                                            .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
@@ -141,7 +137,7 @@ public class TradingService {
                          .map(orderWrapper -> repeatTradingService.updateOrderWrapperWithWaitingTimes(totalAmounts, orderWrapper))
                          .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
                          .map(repeatTradingService::updateOrderWrapperWithPrices)
-                         .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                         .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                          .peek(orderWrapper -> logger.log(orderWrapper.toString()))
                          .map(orderWrapper -> repeatTradingService.repeatTrade(symbolFunction.apply(orderWrapper),
                                                                                orderWrapper,
@@ -162,7 +158,7 @@ public class TradingService {
                        .map(initialTradingService::updateCryptoWithLeastMaxAverage)
                        .filter(crypto -> crypto.getLastThreeMaxAverage().compareTo(crypto.getPreviousThreeMaxAverage()) > 0)
                        .map(initialTradingService::updateCryptoWithPrices)
-                       .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                       .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                        .map(initialTradingService::updateCryptoWithSumDiffPerc)
                        .filter(crypto -> crypto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
                        .filter(crypto -> crypto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)

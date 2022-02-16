@@ -8,7 +8,7 @@ import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static com.psw.cta.service.TradingService.ASSET_BTC;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundDown;
 import static com.psw.cta.utils.CommonUtils.roundUp;

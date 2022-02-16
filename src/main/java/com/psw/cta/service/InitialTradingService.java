@@ -4,7 +4,7 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.service.TradingService.ASSET_BTC;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundUp;
 import static com.psw.cta.utils.CommonUtils.sleep;

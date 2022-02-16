@@ -1,7 +1,7 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.MAX_NUM_ORDERS;
-import static com.psw.cta.service.TradingService.ASSET_BTC;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;

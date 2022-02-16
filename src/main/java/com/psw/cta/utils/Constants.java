@@ -2,7 +2,12 @@ package com.psw.cta.utils;
 
 import java.math.BigDecimal;
 
-public class Fibonacci {
+public class Constants {
+
+    public static final String SYMBOL_BNB_BTC = "BNBBTC";
+    public static final String ASSET_BNB = "BNB";
+    public static final String ASSET_BTC = "BTC";
+    public static final BigDecimal MIN_PROFIT_PERCENT = new BigDecimal("0.5");
     public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[]{new BigDecimal("1"),
                                                                            new BigDecimal("1"),
                                                                            new BigDecimal("2"),
@@ -30,6 +35,6 @@ public class Fibonacci {
                                                                            new BigDecimal("75025"),
                                                                            new BigDecimal("121393")};
 
-    private Fibonacci() {
+    private Constants() {
     }
 }

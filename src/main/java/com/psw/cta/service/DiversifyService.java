@@ -5,7 +5,7 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundDown;
-import static com.psw.cta.utils.Fibonacci.FIBONACCI_SEQUENCE;
+import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;

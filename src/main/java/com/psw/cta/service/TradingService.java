@@ -1,9 +1,10 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
+import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
+import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -11,14 +12,11 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
-import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -103,50 +101,15 @@ public class TradingService {
                                            .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
                                            .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
-                                           .map(crypto -> updateCryptoWithVolume(crypto, tickers))
+                                           .map(crypto -> initialTradingService.updateCryptoWithVolume(crypto, tickers))
                                            .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
                                            .map(crypto -> crypto.setThreeMonthsCandleStickData(binanceApiService.getCandleStickData(crypto, DAILY, 90)))
                                            .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
-                                           .map(this::updateCryptoWithCurrentPrice)
+                                           .map(initialTradingService::updateCryptoWithCurrentPrice)
                                            .filter(crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                                            .collect(Collectors.toList());
         logger.log("Cryptos count: " + cryptos.size());
         return cryptos;
-    }
-
-    private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
-        return openOrders.stream()
-                         .collect(toMap(Order::getSymbol,
-                                        order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())),
-                                        BigDecimal::add))
-                         .entrySet()
-                         .stream()
-                         .sorted(Map.Entry.comparingByValue())
-                         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-    }
-
-    private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
-        BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("5"));
-        BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("50"));
-        return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
-    }
-
-
-    private Crypto updateCryptoWithVolume(Crypto crypto, List<TickerStatistics> tickers) {
-        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, crypto.getSymbolInfo().getSymbol());
-        BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
-        crypto.setTicker24hr(ticker24hr);
-        crypto.setVolume(volume);
-        return crypto;
-    }
-
-    private Crypto updateCryptoWithCurrentPrice(Crypto crypto) {
-        String symbol = crypto.getSymbolInfo().getSymbol();
-        OrderBook depth = binanceApiService.getDepth(symbol);
-        BigDecimal currentPrice = calculateCurrentPrice(depth);
-        crypto.setDepth20(depth);
-        crypto.setCurrentPrice(currentPrice);
-        return crypto;
     }
 
     private List<Crypto> repeatTrading(List<Order> openOrders,

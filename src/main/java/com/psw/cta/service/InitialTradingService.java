@@ -8,6 +8,7 @@ import static com.psw.cta.service.TradingService.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
 import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeMaxAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
@@ -19,8 +20,11 @@ import static java.math.RoundingMode.CEILING;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
+import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -65,6 +69,23 @@ public class InitialTradingService {
         BigDecimal sumDiffsPerc10h = calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
         crypto.setSumDiffsPerc(sumDiffsPerc);
         crypto.setSumDiffsPerc10h(sumDiffsPerc10h);
+        return crypto;
+    }
+
+    public Crypto updateCryptoWithVolume(Crypto crypto, List<TickerStatistics> tickers) {
+        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, crypto.getSymbolInfo().getSymbol());
+        BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
+        crypto.setTicker24hr(ticker24hr);
+        crypto.setVolume(volume);
+        return crypto;
+    }
+
+    public Crypto updateCryptoWithCurrentPrice(Crypto crypto) {
+        String symbol = crypto.getSymbolInfo().getSymbol();
+        OrderBook depth = binanceApiService.getDepth(symbol);
+        BigDecimal currentPrice = calculateCurrentPrice(depth);
+        crypto.setDepth20(depth);
+        crypto.setCurrentPrice(currentPrice);
         return crypto;
     }
 

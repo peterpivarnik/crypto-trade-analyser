@@ -2,6 +2,7 @@ package com.psw.cta.utils;
 
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Order;
@@ -18,7 +19,9 @@ import com.psw.cta.service.RepeatTradingService;
 import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -97,5 +100,22 @@ public class CommonUtils {
                    .add(high)
                    .add(low)
                    .divide(new BigDecimal("4"), 8, CEILING);
+    }
+
+    public static Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
+        return openOrders.stream()
+                         .collect(toMap(Order::getSymbol,
+                                        order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())),
+                                        BigDecimal::add))
+                         .entrySet()
+                         .stream()
+                         .sorted(Map.Entry.comparingByValue())
+                         .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+
+    public static int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
+        BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("5"));
+        BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("50"));
+        return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
     }
 }

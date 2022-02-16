@@ -266,8 +266,8 @@ public class TradingService {
     }
 
     private int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
-        BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("10"));
-        BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("100"));
+        BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("5"));
+        BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("50"));
         return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
     }
 

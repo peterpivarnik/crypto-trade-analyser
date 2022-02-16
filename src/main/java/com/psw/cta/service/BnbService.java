@@ -1,9 +1,9 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.psw.cta.service.BtcService.ASSET_BNB;
-import static com.psw.cta.service.BtcService.ASSET_BTC;
-import static com.psw.cta.service.BtcService.SYMBOL_BNB_BTC;
+import static com.psw.cta.service.TradingService.ASSET_BNB;
+import static com.psw.cta.service.TradingService.ASSET_BTC;
+import static com.psw.cta.service.TradingService.SYMBOL_BNB_BTC;
 import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;

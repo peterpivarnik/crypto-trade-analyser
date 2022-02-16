@@ -60,7 +60,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class BtcService {
+public class TradingService {
 
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
@@ -70,7 +70,7 @@ public class BtcService {
     private final BinanceApiService binanceApiService;
     private final LambdaLogger logger;
 
-    public BtcService(BnbService bnbService, BinanceApiService binanceApiService, LambdaLogger logger) {
+    public TradingService(BnbService bnbService, BinanceApiService binanceApiService, LambdaLogger logger) {
         this.bnbService = bnbService;
         this.binanceApiService = binanceApiService;
         this.logger = logger;

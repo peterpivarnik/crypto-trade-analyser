@@ -21,7 +21,6 @@ import com.binance.api.client.domain.OrderSide;
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.NewOrder;
-import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
@@ -160,14 +159,14 @@ public class BinanceApiService {
         createNewOrder(sellOrder);
     }
 
-    public NewOrderResponse createNewOrder(String symbol, OrderSide buy, BigDecimal roundedMyQuatity) {
+    public void createNewOrder(String symbol, OrderSide buy, BigDecimal roundedMyQuatity) {
         NewOrder buyOrder = new NewOrder(symbol, buy, MARKET, GTC, roundedMyQuatity.toPlainString());
-        return createNewOrder(buyOrder);
+        createNewOrder(buyOrder);
     }
 
-    private NewOrderResponse createNewOrder(NewOrder newOrder) {
+    private void createNewOrder(NewOrder newOrder) {
         logger.log("My new order: " + newOrder);
-        return binanceApiRestClient.newOrder(newOrder);
+        binanceApiRestClient.newOrder(newOrder);
     }
 
     private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {

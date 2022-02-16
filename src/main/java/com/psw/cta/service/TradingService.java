@@ -1,24 +1,15 @@
 package com.psw.cta.service;
 
-import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MAX_NUM_ORDERS;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
-import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundDown;
-import static com.psw.cta.utils.CommonUtils.roundUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
-import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
-import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeMaxAverage;
-import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
-import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
-import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
-import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
 import static com.psw.cta.utils.Fibonacci.FIBONACCI_SEQUENCE;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
@@ -34,8 +25,6 @@ import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.OrderStatus;
-import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
@@ -43,7 +32,6 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.CryptoDto;
 import com.psw.cta.dto.OrderDto;
@@ -65,12 +53,18 @@ public class TradingService {
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
     public static final String SYMBOL_BNB_BTC = "BNBBTC";
+    public static final BigDecimal MIN_PROFIT_PERCENT = new BigDecimal("0.5");
 
+    private final InitialTradingService initialTradingService;
     private final BnbService bnbService;
     private final BinanceApiService binanceApiService;
     private final LambdaLogger logger;
 
-    public TradingService(BnbService bnbService, BinanceApiService binanceApiService, LambdaLogger logger) {
+    public TradingService(InitialTradingService initialTradingService,
+                          BnbService bnbService,
+                          BinanceApiService binanceApiService,
+                          LambdaLogger logger) {
+        this.initialTradingService = initialTradingService;
         this.bnbService = bnbService;
         this.binanceApiService = binanceApiService;
         this.logger = logger;
@@ -104,8 +98,8 @@ public class TradingService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        if (haveBalanceForBuySmallAmounts(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
-            buySmallAmounts(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
+        if (initialTradingService.haveBalanceForInitialTrading(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
+            initTrading(() -> getCryptoDtos(cryptoDtos, exchangeInfo));
         }
     }
 
@@ -277,19 +271,6 @@ public class TradingService {
         return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
     }
 
-    private void buySmallAmounts(Supplier<List<CryptoDto>> cryptoDtosSupplier) {
-        logger.log("***** ***** Buying small amounts ***** *****");
-        cryptoDtosSupplier.get()
-                          .stream()
-                          .map(this::updateCryptoDtoWithLeastMaxAverage)
-                          .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
-                          .map(this::updateCryptoDtoWithPrices)
-                          .filter(dto -> dto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
-                          .map(this::updateCryptoDtoWithSumDiffPerc)
-                          .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                          .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
-                          .forEach(this::tradeCrypto);
-    }
 
     private CryptoDto updateCryptoDtoWithVolume(CryptoDto cryptoDto, List<TickerStatistics> tickers) {
         TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, cryptoDto.getSymbolInfo().getSymbol());
@@ -308,82 +289,6 @@ public class TradingService {
         return cryptoDto;
     }
 
-    private CryptoDto updateCryptoDtoWithLeastMaxAverage(CryptoDto cryptoDto) {
-        List<Candlestick> candleStickData = binanceApiService.getCandleStickData(cryptoDto, FIFTEEN_MINUTES, 96);
-        BigDecimal lastThreeMaxAverage = calculateLastThreeMaxAverage(candleStickData);
-        BigDecimal previousThreeMaxAverage = calculatePreviousThreeMaxAverage(candleStickData);
-        cryptoDto.setFifteenMinutesCandleStickData(candleStickData);
-        cryptoDto.setLastThreeMaxAverage(lastThreeMaxAverage);
-        cryptoDto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
-        return cryptoDto;
-    }
-
-    private CryptoDto updateCryptoDtoWithPrices(CryptoDto cryptoDto) {
-        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
-        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        BigDecimal priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal priceToSellPercentage = calculatePriceToSellPercentage(priceToSell, currentPrice);
-        cryptoDto.setPriceToSell(priceToSell);
-        cryptoDto.setPriceToSellPercentage(priceToSellPercentage);
-        return cryptoDto;
-    }
-
-    private CryptoDto updateCryptoDtoWithSumDiffPerc(CryptoDto cryptoDto) {
-        List<Candlestick> fifteenMinutesCandleStickData = cryptoDto.getFifteenMinutesCandleStickData();
-        BigDecimal currentPrice = cryptoDto.getCurrentPrice();
-        BigDecimal sumDiffsPerc = calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal sumDiffsPerc10h = calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
-        cryptoDto.setSumDiffsPerc(sumDiffsPerc);
-        cryptoDto.setSumDiffsPerc10h(sumDiffsPerc10h);
-        return cryptoDto;
-    }
-
-
-    private synchronized void tradeCrypto(CryptoDto crypto) {
-        // 1. get balance on account
-        logger.log("Trading crypto " + crypto);
-        String symbol = crypto.getSymbolInfo().getSymbol();
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
-
-        // 2. get max possible buy
-        OrderBookEntry orderBookEntry = binanceApiService.getMinOrderBookEntry(symbol);
-        logger.log("OrderBookEntry: " + orderBookEntry);
-
-        // 3. calculate amount to buy
-        if (isStillValid(crypto, orderBookEntry) && haveBalanceForBuySmallAmounts(myBtcBalance)) {
-            BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-            BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
-            BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
-            BigDecimal roundedMyQuatity = roundUp(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
-            BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
-            if (roundedMyQuatity.multiply(new BigDecimal(orderBookEntry.getPrice())).compareTo(minNotionalFromMinNotionalFilter) < 0) {
-                logger.log("Skip trading due to low trade amount: quantity: " + roundedMyQuatity + ", price: " + orderBookEntry.getPrice());
-                return;
-            }
-
-            // 4. buy
-            NewOrderResponse newOrderResponse = binanceApiService.createNewOrder(symbol, SELL, roundedMyQuatity);
-            // 5. place bid
-            if (newOrderResponse.getStatus() == OrderStatus.FILLED) {
-                try {
-                    binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
-                } catch (Exception e) {
-                    logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
-                    sleep(61000, logger);
-                    binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), roundedMyQuatity);
-                }
-            }
-        }
-    }
-
-
-    private boolean isStillValid(CryptoDto crypto, OrderBookEntry orderBookEntry) {
-        return new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice());
-    }
-
-    private boolean haveBalanceForBuySmallAmounts(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
-    }
 
     private List<CryptoDto> buyBigAmounts(List<Order> openOrders,
                                           BigDecimal myBtcBalance,
@@ -412,7 +317,7 @@ public class TradingService {
                          .map(orderDto -> updateOrderDtoWithWaitingTimes(totalAmounts, orderDto))
                          .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
                          .map(this::updateOrderDtoWithPrices)
-                         .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(new BigDecimal("0.5")) > 0)
+                         .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
                          .peek(orderDto -> logger.log(orderDto.toString()))
                          .map(orderDto -> rebuyOrder(symbolFunction.apply(orderDto),
                                                      orderDto,
@@ -457,12 +362,12 @@ public class TradingService {
         return orderDto;
     }
 
-    private List<CryptoDto> rebuyOrder(SymbolInfo symbolInfo,
-                                       OrderDto orderDto,
-                                       BigDecimal currentNumberOfOpenOrdersBySymbol,
-                                       Supplier<List<CryptoDto>> cryptoDtosSupplier,
-                                       Map<String, BigDecimal> totalAmounts,
-                                       ExchangeInfo exchangeInfo) {
+    private synchronized List<CryptoDto> rebuyOrder(SymbolInfo symbolInfo,
+                                                    OrderDto orderDto,
+                                                    BigDecimal currentNumberOfOpenOrdersBySymbol,
+                                                    Supplier<List<CryptoDto>> cryptoDtosSupplier,
+                                                    Map<String, BigDecimal> totalAmounts,
+                                                    ExchangeInfo exchangeInfo) {
         logger.log("Rebuying: symbol=" + symbolInfo.getSymbol());
         logger.log("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
@@ -492,5 +397,19 @@ public class TradingService {
         BigDecimal quantityToSell = getQuantityFromOrder(orderDto);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
         binanceApiService.placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
+    }
+
+    private void initTrading(Supplier<List<CryptoDto>> cryptoDtosSupplier) {
+        logger.log("***** ***** Buying small amounts ***** *****");
+        cryptoDtosSupplier.get()
+                          .stream()
+                          .map(initialTradingService::updateCryptoDtoWithLeastMaxAverage)
+                          .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
+                          .map(initialTradingService::updateCryptoDtoWithPrices)
+                          .filter(dto -> dto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                          .map(initialTradingService::updateCryptoDtoWithSumDiffPerc)
+                          .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+                          .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+                          .forEach(initialTradingService::buyCrypto);
     }
 }

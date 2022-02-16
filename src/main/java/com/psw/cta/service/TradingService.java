@@ -14,7 +14,7 @@ import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.OrderDto;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -100,15 +100,15 @@ public class TradingService {
         List<Crypto> cryptos = exchangeInfo.getSymbols()
                                            .parallelStream()
                                            .map(Crypto::new)
-                                           .filter(dto -> dto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
-                                           .filter(dto -> !dto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
-                                           .filter(dto -> dto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
+                                           .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
+                                           .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
+                                           .filter(crypto -> crypto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                                            .map(crypto -> updateCryptoWithVolume(crypto, tickers))
-                                           .filter(dto -> dto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                                           .map(dto -> dto.setThreeMonthsCandleStickData(binanceApiService.getCandleStickData(dto, DAILY, 90)))
-                                           .filter(dto -> dto.getThreeMonthsCandleStickData().size() >= 90)
+                                           .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                                           .map(crypto -> crypto.setThreeMonthsCandleStickData(binanceApiService.getCandleStickData(crypto, DAILY, 90)))
+                                           .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
                                            .map(this::updateCryptoWithCurrentPrice)
-                                           .filter(dto -> dto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
+                                           .filter(crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001")) > 0)
                                            .collect(Collectors.toList());
         logger.log("Cryptos count: " + cryptos.size());
         return cryptos;
@@ -155,15 +155,17 @@ public class TradingService {
                                        Map<String, BigDecimal> totalAmounts,
                                        ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Buying big amounts ***** *****");
-        Function<OrderDto, Long> countOrdersBySymbol = orderDto -> openOrders.parallelStream()
-                                                                             .filter(order -> order.getSymbol().equals(orderDto.getOrder().getSymbol()))
-                                                                             .count();
-        Function<OrderDto, SymbolInfo> symbolFunction = orderDto -> exchangeInfo.getSymbols()
-                                                                                .parallelStream()
-                                                                                .filter(symbolInfo -> symbolInfo.getSymbol()
-                                                                                                                .equals(orderDto.getOrder().getSymbol()))
-                                                                                .findAny()
-                                                                                .orElseThrow();
+        Function<OrderWrapper, Long> countOrdersBySymbol = orderWrapper -> openOrders.parallelStream()
+                                                                                     .filter(
+                                                                                         order -> order.getSymbol().equals(orderWrapper.getOrder().getSymbol()))
+                                                                                     .count();
+        Function<OrderWrapper, SymbolInfo> symbolFunction = orderWrapper -> exchangeInfo.getSymbols()
+                                                                                        .parallelStream()
+                                                                                        .filter(symbolInfo -> symbolInfo.getSymbol()
+                                                                                                                        .equals(orderWrapper.getOrder()
+                                                                                                                                            .getSymbol()))
+                                                                                        .findAny()
+                                                                                        .orElseThrow();
         return openOrders.stream()
                          .map(Order::getSymbol)
                          .distinct()
@@ -171,19 +173,19 @@ public class TradingService {
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(getOrderComparator()))
                          .map(Optional::orElseThrow)
-                         .map(repeatTradingService::createOrderDto)
-                         .filter(orderDto -> orderDto.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .map(orderDto -> repeatTradingService.updateOrderDtoWithWaitingTimes(totalAmounts, orderDto))
-                         .filter(orderDto -> orderDto.getActualWaitingTime().compareTo(orderDto.getMinWaitingTime()) > 0)
-                         .map(repeatTradingService::updateOrderDtoWithPrices)
-                         .filter(orderDto -> orderDto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
-                         .peek(orderDto -> logger.log(orderDto.toString()))
-                         .map(orderDto -> repeatTradingService.repeatTrade(symbolFunction.apply(orderDto),
-                                                                           orderDto,
-                                                                           new BigDecimal(countOrdersBySymbol.apply(orderDto)),
-                                                                           cryptosSupplier,
-                                                                           totalAmounts,
-                                                                           exchangeInfo))
+                         .map(repeatTradingService::createOrderWrapper)
+                         .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
+                         .map(orderWrapper -> repeatTradingService.updateOrderWrapperWithWaitingTimes(totalAmounts, orderWrapper))
+                         .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
+                         .map(repeatTradingService::updateOrderWrapperWithPrices)
+                         .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                         .peek(orderWrapper -> logger.log(orderWrapper.toString()))
+                         .map(orderWrapper -> repeatTradingService.repeatTrade(symbolFunction.apply(orderWrapper),
+                                                                               orderWrapper,
+                                                                               new BigDecimal(countOrdersBySymbol.apply(orderWrapper)),
+                                                                               cryptosSupplier,
+                                                                               totalAmounts,
+                                                                               exchangeInfo))
                          .filter(list -> !list.isEmpty())
                          .findFirst()
                          .orElseGet(Collections::emptyList);
@@ -195,12 +197,12 @@ public class TradingService {
         cryptosSupplier.get()
                        .stream()
                        .map(initialTradingService::updateCryptoWithLeastMaxAverage)
-                       .filter(dto -> dto.getLastThreeMaxAverage().compareTo(dto.getPreviousThreeMaxAverage()) > 0)
+                       .filter(crypto -> crypto.getLastThreeMaxAverage().compareTo(crypto.getPreviousThreeMaxAverage()) > 0)
                        .map(initialTradingService::updateCryptoWithPrices)
-                       .filter(dto -> dto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
+                       .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
                        .map(initialTradingService::updateCryptoWithSumDiffPerc)
-                       .filter(dto -> dto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                       .filter(dto -> dto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+                       .filter(crypto -> crypto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
+                       .filter(crypto -> crypto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
                        .forEach(initialTradingService::buyCrypto);
     }
 }

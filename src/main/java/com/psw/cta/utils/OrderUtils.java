@@ -7,7 +7,7 @@ import static java.math.RoundingMode.UP;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
-import com.psw.cta.dto.OrderDto;
+import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
@@ -83,7 +83,7 @@ public class OrderUtils {
         return new BigDecimal(actualWaitingTimeDouble, new MathContext(5));
     }
 
-    public static BigDecimal getQuantityFromOrder(OrderDto orderToCancel) {
+    public static BigDecimal getQuantityFromOrder(OrderWrapper orderToCancel) {
         BigDecimal originalQuantity = new BigDecimal(orderToCancel.getOrder().getOrigQty());
         BigDecimal executedQuantity = new BigDecimal(orderToCancel.getOrder().getExecutedQty());
         return originalQuantity.subtract(executedQuantity);

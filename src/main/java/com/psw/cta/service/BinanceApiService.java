@@ -35,7 +35,7 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.OrderDto;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -126,7 +126,7 @@ public class BinanceApiService {
         return myBalance;
     }
 
-    public void cancelRequest(OrderDto orderToCancel) {
+    public void cancelRequest(OrderWrapper orderToCancel) {
         CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderToCancel.getOrder().getSymbol(), orderToCancel.getOrder().getClientOrderId());
         logger.log("New cancelOrderRequest: " + cancelOrderRequest);
         binanceApiRestClient.cancelOrder(cancelOrderRequest);

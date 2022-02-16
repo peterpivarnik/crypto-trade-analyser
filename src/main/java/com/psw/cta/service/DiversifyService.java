@@ -16,7 +16,7 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.OrderDto;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -34,7 +34,7 @@ public class DiversifyService {
         this.logger = logger;
     }
 
-    public List<Crypto> diversify(OrderDto orderToCancel,
+    public List<Crypto> diversify(OrderWrapper orderToCancel,
                                   Supplier<List<Crypto>> cryptosSupplier,
                                   Map<String, BigDecimal> totalAmounts,
                                   ExchangeInfo exchangeInfo) {
@@ -65,14 +65,14 @@ public class DiversifyService {
                                                 .collect(Collectors.toList());
 
         return cryptos.stream()
-                      .filter(dto -> !bigOrderKeys.contains(dto.getSymbolInfo().getSymbol()))
+                      .filter(crypto -> !bigOrderKeys.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(CryptoUtils::updateCryptoWithSlopeData)
                       .filter(crypto -> crypto.getSlope().compareTo(BigDecimal.ZERO) < 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope))
                       .collect(Collectors.toList());
     }
 
-    private void buyAndSellWithFibonacci(OrderDto orderToCancel, List<Crypto> cryptoToBuy, BigDecimal btcAmountToSpend, int fibonacciIndex) {
+    private void buyAndSellWithFibonacci(OrderWrapper orderToCancel, List<Crypto> cryptoToBuy, BigDecimal btcAmountToSpend, int fibonacciIndex) {
         BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
         BigDecimal fibonnaciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
         logger.log("btcAmountToSpend: " + btcAmountToSpend);
@@ -85,7 +85,7 @@ public class DiversifyService {
         }
     }
 
-    private void buyAndSell(OrderDto orderToCancel, Crypto crypto, BigDecimal btcAmountToSpend) {
+    private void buyAndSell(OrderWrapper orderToCancel, Crypto crypto, BigDecimal btcAmountToSpend) {
         // 3. buy
         logger.log("cryptoToBuy: " + crypto);
         SymbolInfo symbolInfo = crypto.getSymbolInfo();

@@ -18,7 +18,7 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.OrderDto;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,40 +37,40 @@ public class RepeatTradingService {
         this.logger = logger;
     }
 
-    public OrderDto createOrderDto(Order order) {
+    public OrderWrapper createOrderWrapper(Order order) {
         BigDecimal orderPrice = calculateOrderPrice(order);
         BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
-        OrderDto orderDto = new OrderDto(order);
-        orderDto.setOrderPrice(orderPrice);
-        orderDto.setOrderBtcAmount(orderBtcAmount);
-        return orderDto;
+        OrderWrapper orderWrapper = new OrderWrapper(order);
+        orderWrapper.setOrderPrice(orderPrice);
+        orderWrapper.setOrderBtcAmount(orderBtcAmount);
+        return orderWrapper;
     }
 
-    public OrderDto updateOrderDtoWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderDto orderDto) {
-        BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderDto.getOrder().getSymbol()), orderDto.getOrderBtcAmount());
-        BigDecimal actualWaitingTime = calculateActualWaitingTime(orderDto.getOrder());
-        orderDto.setMinWaitingTime(minWaitingTime);
-        orderDto.setActualWaitingTime(actualWaitingTime);
-        return orderDto;
+    public OrderWrapper updateOrderWrapperWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
+        BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()), orderWrapper.getOrderBtcAmount());
+        BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
+        orderWrapper.setMinWaitingTime(minWaitingTime);
+        orderWrapper.setActualWaitingTime(actualWaitingTime);
+        return orderWrapper;
     }
 
-    public OrderDto updateOrderDtoWithPrices(OrderDto orderDto) {
-        BigDecimal orderPrice = orderDto.getOrderPrice();
-        BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(binanceApiService.getDepth(orderDto.getOrder().getSymbol()));
+    public OrderWrapper updateOrderWrapperWithPrices(OrderWrapper orderWrapper) {
+        BigDecimal orderPrice = orderWrapper.getOrderPrice();
+        BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(binanceApiService.getDepth(orderWrapper.getOrder().getSymbol()));
         BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit, orderDto.getOrderBtcAmount());
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit, orderWrapper.getOrderBtcAmount());
         BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(currentPrice, priceToSell);
         BigDecimal orderPricePercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
-        orderDto.setCurrentPrice(currentPrice);
-        orderDto.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
-        orderDto.setPriceToSell(priceToSell);
-        orderDto.setPriceToSellPercentage(priceToSellPercentage);
-        orderDto.setOrderPricePercentage(orderPricePercentage);
-        return orderDto;
+        orderWrapper.setCurrentPrice(currentPrice);
+        orderWrapper.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
+        orderWrapper.setPriceToSell(priceToSell);
+        orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
+        orderWrapper.setOrderPricePercentage(orderPricePercentage);
+        return orderWrapper;
     }
 
     public synchronized List<Crypto> repeatTrade(SymbolInfo symbolInfo,
-                                                 OrderDto orderDto,
+                                                 OrderWrapper orderWrapper,
                                                  BigDecimal currentNumberOfOpenOrdersBySymbol,
                                                  Supplier<List<Crypto>> cryptosSupplier,
                                                  Map<String, BigDecimal> totalAmounts,
@@ -78,31 +78,31 @@ public class RepeatTradingService {
         logger.log("Rebuying: symbol=" + symbolInfo.getSymbol());
         logger.log("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
-        if ((orderDto.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
-            return diversifyService.diversify(orderDto, cryptosSupplier, totalAmounts, exchangeInfo);
+        if ((orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
+            return diversifyService.diversify(orderWrapper, cryptosSupplier, totalAmounts, exchangeInfo);
         } else {
-            rebuySingleOrder(symbolInfo, orderDto);
+            rebuySingleOrder(symbolInfo, orderWrapper);
             return emptyList();
         }
     }
 
-    private void rebuySingleOrder(SymbolInfo symbolInfo, OrderDto orderDto) {
-        logger.log("OrderDto: " + orderDto);
+    private void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
+        logger.log("OrderWrapper: " + orderWrapper);
         BigDecimal mybtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
-        if (mybtcBalance.compareTo(orderDto.getOrderBtcAmount()) < 0) {
+        if (mybtcBalance.compareTo(orderWrapper.getOrderBtcAmount()) < 0) {
             logger.log("BTC balance too low, skip rebuy of crypto.");
             return;
         }
         // 1. cancel existing order
-        binanceApiService.cancelRequest(orderDto);
+        binanceApiService.cancelRequest(orderWrapper);
         // 2. buy
-        BigDecimal orderBtcAmount = orderDto.getOrderBtcAmount();
-        BigDecimal orderPrice = orderDto.getOrderPrice();
+        BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
+        BigDecimal orderPrice = orderWrapper.getOrderPrice();
         binanceApiService.buy(symbolInfo, orderBtcAmount, orderPrice);
 
         // 3. create new order
-        BigDecimal quantityToSell = getQuantityFromOrder(orderDto);
+        BigDecimal quantityToSell = getQuantityFromOrder(orderWrapper);
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-        binanceApiService.placeSellOrder(symbolInfo, orderDto.getPriceToSell(), completeQuantityToSell);
+        binanceApiService.placeSellOrder(symbolInfo, orderWrapper.getPriceToSell(), completeQuantityToSell);
     }
 }

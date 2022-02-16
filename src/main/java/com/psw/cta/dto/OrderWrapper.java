@@ -3,7 +3,7 @@ package com.psw.cta.dto;
 import com.binance.api.client.domain.account.Order;
 import java.math.BigDecimal;
 
-public class OrderDto {
+public class OrderWrapper {
 
     private final Order order;
     private BigDecimal orderBtcAmount;
@@ -17,7 +17,7 @@ public class OrderDto {
     private BigDecimal actualWaitingTime = BigDecimal.ZERO;
 
 
-    public OrderDto(Order order) {
+    public OrderWrapper(Order order) {
         this.order = order;
     }
 
@@ -98,7 +98,7 @@ public class OrderDto {
     }
 
     @Override public String toString() {
-        return "OrderDto{" +
+        return "OrderWrapper{" +
                "order=" + order +
                ", orderBtcAmount=" + orderBtcAmount +
                ", orderPrice=" + orderPrice +

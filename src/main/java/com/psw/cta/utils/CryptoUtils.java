@@ -21,7 +21,7 @@ public class CryptoUtils {
         return tickers.parallelStream()
                       .filter(ticker -> ticker.getSymbol().equals(symbol))
                       .findAny()
-                      .orElseThrow(() -> new RuntimeException("Dto with symbol: " + symbol + "not found"));
+                      .orElseThrow(() -> new RuntimeException("Ticker with symbol: " + symbol + "not found"));
     }
 
     public static BigDecimal calculateVolume(TickerStatistics ticker24hr) {

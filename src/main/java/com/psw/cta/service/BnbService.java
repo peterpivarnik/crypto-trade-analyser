@@ -46,7 +46,7 @@ public class BnbService {
     }
 
     public BigDecimal getCurrentBnbBtcPrice() {
-        return binanceApiService.getDepth(SYMBOL_BNB_BTC)
+        return binanceApiService.getOrderBook(SYMBOL_BNB_BTC)
                                 .getAsks()
                                 .parallelStream()
                                 .max(comparing(OrderBookEntry::getPrice))

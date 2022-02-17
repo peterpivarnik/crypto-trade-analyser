@@ -10,7 +10,10 @@ import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.OrderBook;
+import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.service.BnbService;
 import com.psw.cta.service.DiversifyService;
@@ -117,5 +120,14 @@ public class CommonUtils {
         BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("5"));
         BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("50"));
         return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
+    }
+
+    public static BigDecimal calculateCurrentPrice(OrderBook orderBook) {
+        return orderBook.getAsks()
+                        .parallelStream()
+                        .map(OrderBookEntry::getPrice)
+                        .map(BigDecimal::new)
+                        .min(Comparator.naturalOrder())
+                        .orElseThrow(() -> new CryptoTraderException("No price found!"));
     }
 }

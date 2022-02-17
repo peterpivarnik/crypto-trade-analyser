@@ -45,7 +45,7 @@ public class DiversifyService {
         binanceApiService.cancelRequest(orderToCancel);
 
         // 2. sell cancelled order
-        BigDecimal currentQuantity = getQuantityFromOrder(orderToCancel);
+        BigDecimal currentQuantity = getQuantityFromOrder(orderToCancel.getOrder());
         logger.log("currentQuantity: " + currentQuantity);
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
         binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);

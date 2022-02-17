@@ -2,12 +2,11 @@ package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.getAveragePrices;
 import static com.psw.cta.utils.LeastSquares.getSlope;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 
 import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import java.math.BigDecimal;
@@ -28,22 +27,13 @@ public class CryptoUtils {
         return new BigDecimal(ticker24hr.getVolume());
     }
 
-    public static BigDecimal calculateCurrentPrice(OrderBook depth20) {
-        return depth20.getAsks()
-                      .parallelStream()
-                      .map(OrderBookEntry::getPrice)
-                      .map(BigDecimal::new)
-                      .min(Comparator.naturalOrder())
-                      .orElseThrow(RuntimeException::new);
-    }
-
     public static BigDecimal calculateLastThreeMaxAverage(List<Candlestick> fifteenMinutesCandleStickData) {
         int skipSize = fifteenMinutesCandleStickData.size() - 3;
         return fifteenMinutesCandleStickData.stream()
                                             .skip(skipSize)
                                             .map(Candlestick::getHigh)
                                             .map(BigDecimal::new)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                            .reduce(ZERO, BigDecimal::add)
                                             .divide(new BigDecimal("3"), 8, UP);
     }
 
@@ -58,7 +48,7 @@ public class CryptoUtils {
     private static BigDecimal calculateSumDiffsPerc(int numberOfDataToKeep, List<Candlestick> fifteenMinutesCandleStickData, BigDecimal currentPrice) {
         int size = fifteenMinutesCandleStickData.size();
         if (size - numberOfDataToKeep < 0) {
-            return BigDecimal.ZERO;
+            return ZERO;
         }
         return calculateSumDiffsPercentage(size - numberOfDataToKeep, fifteenMinutesCandleStickData, currentPrice);
     }
@@ -67,7 +57,7 @@ public class CryptoUtils {
         return fifteenMinutesCandleStickData.stream()
                                             .skip(size)
                                             .map(data -> getPercentualDifference(data, currentPrice))
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            .reduce(ZERO, BigDecimal::add);
     }
 
     private static BigDecimal getPercentualDifference(Candlestick data, BigDecimal currentPrice) {
@@ -89,7 +79,7 @@ public class CryptoUtils {
     public static BigDecimal calculatePriceToSell(List<Candlestick> fifteenMinutesCandleStickData, BigDecimal currentPrice) {
         int size = fifteenMinutesCandleStickData.size();
         if (size - 4 < 0) {
-            return BigDecimal.ZERO;
+            return ZERO;
         }
         return fifteenMinutesCandleStickData
             .stream()
@@ -97,7 +87,7 @@ public class CryptoUtils {
             .map(Candlestick::getHigh)
             .map(BigDecimal::new)
             .max(Comparator.naturalOrder())
-            .orElse(BigDecimal.ZERO)
+            .orElse(ZERO)
             .subtract(currentPrice)
             .divide(new BigDecimal("2"), 8, UP)
             .add(currentPrice);
@@ -116,7 +106,7 @@ public class CryptoUtils {
                                             .limit(3)
                                             .map(Candlestick::getHigh)
                                             .map(BigDecimal::new)
-                                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                            .reduce(ZERO, BigDecimal::add)
                                             .divide(new BigDecimal("3"), 8, UP);
     }
 

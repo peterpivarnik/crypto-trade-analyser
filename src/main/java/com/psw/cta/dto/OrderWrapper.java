@@ -12,7 +12,6 @@ public class OrderWrapper {
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal orderPricePercentage;
-    private BigDecimal priceToSellWithoutProfit;
     private BigDecimal minWaitingTime = BigDecimal.ZERO;
     private BigDecimal actualWaitingTime = BigDecimal.ZERO;
 
@@ -65,10 +64,6 @@ public class OrderWrapper {
         this.priceToSellPercentage = priceToSellPercentage;
     }
 
-    public void setPriceToSellWithoutProfit(BigDecimal priceToSellWithoutProfit) {
-        this.priceToSellWithoutProfit = priceToSellWithoutProfit;
-    }
-
     public BigDecimal getMinWaitingTime() {
         return minWaitingTime;
     }
@@ -91,10 +86,6 @@ public class OrderWrapper {
 
     public void setOrderPricePercentage(BigDecimal orderPricePercentage) {
         this.orderPricePercentage = orderPricePercentage;
-    }
-
-    public BigDecimal getPriceToSellWithoutProfit() {
-        return priceToSellWithoutProfit;
     }
 
     @Override public String toString() {

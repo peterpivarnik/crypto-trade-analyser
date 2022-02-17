@@ -8,10 +8,10 @@ import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundDown;
 import static com.psw.cta.utils.CommonUtils.roundUp;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
@@ -63,7 +63,7 @@ public class BinanceApiService {
         return binanceApiRestClient.getAll24HrPriceStatistics();
     }
 
-    public OrderBook getDepth(String symbol) {
+    public OrderBook getOrderBook(String symbol) {
         return binanceApiRestClient.getOrderBook(symbol, 20);
     }
 
@@ -99,7 +99,7 @@ public class BinanceApiService {
             return pair.getLeft();
         } else {
             try {
-                BigDecimal price = getDepth(pair.getRight() + ASSET_BTC)
+                BigDecimal price = getOrderBook(pair.getRight() + ASSET_BTC)
                     .getBids()
                     .parallelStream()
                     .map(OrderBookEntry::getPrice)

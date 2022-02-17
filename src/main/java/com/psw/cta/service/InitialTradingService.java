@@ -4,11 +4,11 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.CryptoUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeMaxAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
@@ -82,9 +82,9 @@ public class InitialTradingService {
 
     public Crypto updateCryptoWithCurrentPrice(Crypto crypto) {
         String symbol = crypto.getSymbolInfo().getSymbol();
-        OrderBook depth = binanceApiService.getDepth(symbol);
-        BigDecimal currentPrice = calculateCurrentPrice(depth);
-        crypto.setDepth20(depth);
+        OrderBook orderBook = binanceApiService.getOrderBook(symbol);
+        BigDecimal currentPrice = calculateCurrentPrice(orderBook);
+        crypto.setOrderBook(orderBook);
         crypto.setCurrentPrice(currentPrice);
         return crypto;
     }

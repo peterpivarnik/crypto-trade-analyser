@@ -16,7 +16,7 @@ public class Crypto {
     private List<Candlestick> fifteenMinutesCandleStickData;
     private List<Candlestick> threeMonthsCandleStickData;
     private TickerStatistics ticker24hr;
-    private OrderBook depth20;
+    private OrderBook orderBook;
     private final SymbolInfo symbolInfo;
 
     private BigDecimal currentPrice;
@@ -82,12 +82,12 @@ public class Crypto {
         this.ticker24hr = ticker24hr;
     }
 
-    public OrderBook getDepth20() {
-        return depth20;
+    public OrderBook getOrderBook() {
+        return orderBook;
     }
 
-    public void setDepth20(OrderBook depth20) {
-        this.depth20 = depth20;
+    public void setOrderBook(OrderBook orderBook) {
+        this.orderBook = orderBook;
     }
 
     public SymbolInfo getSymbolInfo() {

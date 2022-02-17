@@ -1,14 +1,15 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.MAX_NUM_ORDERS;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.MAX_ORDER_BTC_AMOUNT;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
 import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
-import static com.psw.cta.utils.OrderUtils.calculatePriceToSellWithoutProfit;
 import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.util.Collections.emptyList;
 
@@ -19,6 +20,8 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.CommonUtils;
+import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,13 +59,11 @@ public class RepeatTradingService {
 
     public OrderWrapper updateOrderWrapperWithPrices(OrderWrapper orderWrapper) {
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
-        BigDecimal currentPrice = OrderUtils.calculateCurrentPrice(binanceApiService.getDepth(orderWrapper.getOrder().getSymbol()));
-        BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, priceToSellWithoutProfit, orderWrapper.getOrderBtcAmount());
+        BigDecimal currentPrice = calculateCurrentPrice(binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()));
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount());
         BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(currentPrice, priceToSell);
         BigDecimal orderPricePercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
         orderWrapper.setCurrentPrice(currentPrice);
-        orderWrapper.setPriceToSellWithoutProfit(priceToSellWithoutProfit);
         orderWrapper.setPriceToSell(priceToSell);
         orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
         orderWrapper.setOrderPricePercentage(orderPricePercentage);
@@ -78,7 +79,7 @@ public class RepeatTradingService {
         logger.log("Rebuying: symbol=" + symbolInfo.getSymbol());
         logger.log("currentNumberOfOpenOrdersBySymbol=" + currentNumberOfOpenOrdersBySymbol);
         BigDecimal maxSymbolOpenOrders = getValueFromFilter(symbolInfo, MAX_NUM_ORDERS, SymbolFilter::getMaxNumOrders);
-        if ((orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.02")) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
+        if ((orderWrapper.getOrderBtcAmount().compareTo(MAX_ORDER_BTC_AMOUNT) > 0) && currentNumberOfOpenOrdersBySymbol.compareTo(maxSymbolOpenOrders) < 0) {
             return diversifyService.diversify(orderWrapper, cryptosSupplier, totalAmounts, exchangeInfo);
         } else {
             rebuySingleOrder(symbolInfo, orderWrapper);
@@ -101,7 +102,7 @@ public class RepeatTradingService {
         binanceApiService.buy(symbolInfo, orderBtcAmount, orderPrice);
 
         // 3. create new order
-        BigDecimal quantityToSell = getQuantityFromOrder(orderWrapper);
+        BigDecimal quantityToSell = getQuantityFromOrder(orderWrapper.getOrder());
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
         binanceApiService.placeSellOrder(symbolInfo, orderWrapper.getPriceToSell(), completeQuantityToSell);
     }

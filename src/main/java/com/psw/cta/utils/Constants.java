@@ -1,13 +1,24 @@
 package com.psw.cta.utils;
 
+import static java.math.RoundingMode.UP;
+
 import java.math.BigDecimal;
 
 public class Constants {
 
+    public static final BigDecimal TWO = new BigDecimal("2");
+    public static final BigDecimal HUNDRED_PERCENT = new BigDecimal("100");
+
+    public static final BigDecimal TIME_CONSTANT = TWO;
+
     public static final String SYMBOL_BNB_BTC = "BNBBTC";
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
+
     public static final BigDecimal MIN_PROFIT_PERCENT = new BigDecimal("0.5");
+    public static final BigDecimal MAX_ORDER_BTC_AMOUNT = new BigDecimal("0.02");
+    public static final BigDecimal HALF_OF_MAX_ORDER_BTC_AMOUNT = MAX_ORDER_BTC_AMOUNT.divide(TWO, 8, UP);
+
     public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[]{new BigDecimal("1"),
                                                                            new BigDecimal("1"),
                                                                            new BigDecimal("2"),

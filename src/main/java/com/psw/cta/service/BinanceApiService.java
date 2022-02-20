@@ -160,7 +160,7 @@ public class BinanceApiService {
     }
 
     public void createNewOrder(String symbol, OrderSide buy, BigDecimal roundedMyQuatity) {
-        NewOrder buyOrder = new NewOrder(symbol, buy, MARKET, GTC, roundedMyQuatity.toPlainString());
+        NewOrder buyOrder = new NewOrder(symbol, buy, MARKET, null, roundedMyQuatity.toPlainString());
         createNewOrder(buyOrder);
     }
 

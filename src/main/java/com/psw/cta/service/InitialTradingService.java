@@ -1,5 +1,6 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
@@ -105,7 +106,7 @@ public class InitialTradingService {
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(), MIN_NOTIONAL, SymbolFilter::getMinNotional);
         if (shouldBuyAndSell(crypto, myBtcBalance, orderBookEntry, btcAmount, minNotionalFromMinNotionalFilter)) {
             // 4. buy
-            binanceApiService.createNewOrder(symbol, SELL, quantity);
+            binanceApiService.createNewOrder(symbol, BUY, quantity);
             // 5. place sell order
             placeSellOrder(crypto, quantity);
         }

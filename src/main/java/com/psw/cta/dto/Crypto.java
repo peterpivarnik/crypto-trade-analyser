@@ -178,9 +178,9 @@ public class Crypto {
                ", weight=" + weight +
                ", lastThreeMaxAverage=" + lastThreeMaxAverage +
                ", previousThreeMaxAverage=" + previousThreeMaxAverage +
-               ", slope=" + slope.toPlainString() +
-               ", priceCount=" + priceCount.toPlainString() +
-               ", priceCountToSlope=" + priceCountToSlope.toPlainString() +
+               ", slope=" + (slope != null ? slope.toPlainString() : slope) +
+               ", priceCount=" + (priceCount != null ? priceCount.toPlainString() : priceCount) +
+               ", priceCountToSlope=" + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : priceCountToSlope) +
                '}';
     }
 }

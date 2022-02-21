@@ -11,6 +11,7 @@ import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
 
+import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.TickerStatistics;
@@ -19,9 +20,13 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
 
-public class CryptoUpdater {
+public class CryptoBuilder {
 
-    public static Crypto updateCryptoWithSlopeData(Crypto crypto) {
+    public static Crypto build(SymbolInfo symbolInfo) {
+        return new Crypto(symbolInfo);
+    }
+
+    public static Crypto withSlopeData(Crypto crypto) {
         List<BigDecimal> averagePrices = getAveragePrices(crypto);
         double leastSquaresSlope = getSlope(averagePrices);
         if (Double.isNaN(leastSquaresSlope)) {
@@ -35,7 +40,7 @@ public class CryptoUpdater {
         return crypto;
     }
 
-    public static Crypto updateCryptoWithLeastMaxAverage(Crypto crypto, List<Candlestick> candleStickData) {
+    public static Crypto withLeastMaxAverage(Crypto crypto, List<Candlestick> candleStickData) {
         BigDecimal lastThreeMaxAverage = calculateLastThreeMaxAverage(candleStickData);
         BigDecimal previousThreeMaxAverage = calculatePreviousThreeMaxAverage(candleStickData);
         crypto.setFifteenMinutesCandleStickData(candleStickData);
@@ -44,7 +49,7 @@ public class CryptoUpdater {
         return crypto;
     }
 
-    public static Crypto updateCryptoWithPrices(Crypto crypto) {
+    public static Crypto withPrices(Crypto crypto) {
         List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = crypto.getCurrentPrice();
         BigDecimal priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
@@ -54,7 +59,7 @@ public class CryptoUpdater {
         return crypto;
     }
 
-    public static Crypto updateCryptoWithSumDiffPerc(Crypto crypto) {
+    public static Crypto withSumDiffPerc(Crypto crypto) {
         List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = crypto.getCurrentPrice();
         BigDecimal sumDiffsPerc = calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
@@ -64,7 +69,7 @@ public class CryptoUpdater {
         return crypto;
     }
 
-    public static Crypto updateCryptoWithVolume(Crypto crypto, List<TickerStatistics> tickers) {
+    public static Crypto withVolume(Crypto crypto, List<TickerStatistics> tickers) {
         TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, crypto.getSymbolInfo().getSymbol());
         BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
         crypto.setTicker24hr(ticker24hr);
@@ -72,7 +77,7 @@ public class CryptoUpdater {
         return crypto;
     }
 
-    public static Crypto updateCryptoWithCurrentPrice(Crypto crypto, OrderBook orderBook) {
+    public static Crypto withCurrentPrice(Crypto crypto, OrderBook orderBook) {
         BigDecimal currentPrice = calculateCurrentPrice(orderBook);
         crypto.setOrderBook(orderBook);
         crypto.setCurrentPrice(currentPrice);

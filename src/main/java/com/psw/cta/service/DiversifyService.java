@@ -17,7 +17,7 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.utils.CryptoUpdater;
+import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class DiversifyService {
 
         return cryptos.stream()
                       .filter(crypto -> !bigOrderKeys.contains(crypto.getSymbolInfo().getSymbol()))
-                      .map(CryptoUpdater::updateCryptoWithSlopeData)
+                      .map(CryptoBuilder::withSlopeData)
                       .filter(crypto -> crypto.getSlope().compareTo(BigDecimal.ZERO) < 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope))
                       .collect(Collectors.toList());

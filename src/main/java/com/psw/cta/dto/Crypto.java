@@ -15,7 +15,6 @@ public class Crypto {
 
     private List<Candlestick> fifteenMinutesCandleStickData;
     private List<Candlestick> threeMonthsCandleStickData;
-    private TickerStatistics ticker24hr;
     private OrderBook orderBook;
     private final SymbolInfo symbolInfo;
 
@@ -72,14 +71,6 @@ public class Crypto {
     public Crypto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
         this.threeMonthsCandleStickData = threeMonthsCandleStickData;
         return this;
-    }
-
-    public TickerStatistics getTicker24hr() {
-        return ticker24hr;
-    }
-
-    public void setTicker24hr(TickerStatistics ticker24hr) {
-        this.ticker24hr = ticker24hr;
     }
 
     public OrderBook getOrderBook() {

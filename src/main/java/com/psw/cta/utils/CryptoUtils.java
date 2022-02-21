@@ -1,36 +1,43 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.getAveragePrices;
-import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.Comparator;
 import java.util.List;
 
 public class CryptoUtils {
 
-    public static TickerStatistics calculateTicker24hr(List<TickerStatistics> tickers, String symbol) {
+    public static BigDecimal getVolume(Crypto crypto, List<TickerStatistics> tickers) {
+        String symbol = crypto.getSymbolInfo().getSymbol();
         return tickers.parallelStream()
                       .filter(ticker -> ticker.getSymbol().equals(symbol))
+                      .map(TickerStatistics::getVolume)
+                      .map(BigDecimal::new)
                       .findAny()
-                      .orElseThrow(() -> new RuntimeException("Ticker with symbol: " + symbol + "not found"));
-    }
-
-    public static BigDecimal calculateVolume(TickerStatistics ticker24hr) {
-        return new BigDecimal(ticker24hr.getVolume());
+                      .orElseThrow(() -> new CryptoTraderException("Ticker with symbol: " + symbol + " not found."));
     }
 
     public static BigDecimal calculateLastThreeMaxAverage(List<Candlestick> fifteenMinutesCandleStickData) {
         int skipSize = fifteenMinutesCandleStickData.size() - 3;
         return fifteenMinutesCandleStickData.stream()
                                             .skip(skipSize)
+                                            .map(Candlestick::getHigh)
+                                            .map(BigDecimal::new)
+                                            .reduce(ZERO, BigDecimal::add)
+                                            .divide(new BigDecimal("3"), 8, UP);
+    }
+
+    public static BigDecimal calculatePreviousThreeMaxAverage(List<Candlestick> fifteenMinutesCandleStickData) {
+        int skipSize = fifteenMinutesCandleStickData.size() - 6;
+        return fifteenMinutesCandleStickData.stream()
+                                            .skip(skipSize)
+                                            .limit(3)
                                             .map(Candlestick::getHigh)
                                             .map(BigDecimal::new)
                                             .reduce(ZERO, BigDecimal::add)
@@ -98,17 +105,4 @@ public class CryptoUtils {
                           .divide(currentPrice, 8, UP)
                           .subtract(new BigDecimal("100"));
     }
-
-    public static BigDecimal calculatePreviousThreeMaxAverage(List<Candlestick> fifteenMinutesCandleStickData) {
-        int skipSize = fifteenMinutesCandleStickData.size() - 6;
-        return fifteenMinutesCandleStickData.stream()
-                                            .skip(skipSize)
-                                            .limit(3)
-                                            .map(Candlestick::getHigh)
-                                            .map(BigDecimal::new)
-                                            .reduce(ZERO, BigDecimal::add)
-                                            .divide(new BigDecimal("3"), 8, UP);
-    }
-
-
 }

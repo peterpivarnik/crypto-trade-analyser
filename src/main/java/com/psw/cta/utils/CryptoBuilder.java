@@ -8,6 +8,7 @@ import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
+import static com.psw.cta.utils.CryptoUtils.getVolume;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
 
@@ -70,9 +71,7 @@ public class CryptoBuilder {
     }
 
     public static Crypto withVolume(Crypto crypto, List<TickerStatistics> tickers) {
-        TickerStatistics ticker24hr = CryptoUtils.calculateTicker24hr(tickers, crypto.getSymbolInfo().getSymbol());
-        BigDecimal volume = CryptoUtils.calculateVolume(ticker24hr);
-        crypto.setTicker24hr(ticker24hr);
+        BigDecimal volume = getVolume(crypto, tickers);
         crypto.setVolume(volume);
         return crypto;
     }

@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.utils;
 
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -34,7 +34,7 @@ public class CommonUtils {
         BinanceApiService binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
         BnbService bnbService = new BnbService(binanceApiService, logger);
         InitialTradingService initialTradingService = new InitialTradingService(binanceApiService, logger);
-        DiversifyService diversifyService = new DiversifyService(binanceApiService, logger);
+        DiversifyService diversifyService = new DiversifyService(initialTradingService, binanceApiService, logger);
         RepeatTradingService repeatTradingService = new RepeatTradingService(diversifyService, binanceApiService, logger);
         return new TradingService(initialTradingService, repeatTradingService, bnbService, binanceApiService, logger);
     }

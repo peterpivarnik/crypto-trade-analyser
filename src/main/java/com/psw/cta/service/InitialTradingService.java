@@ -5,6 +5,7 @@ import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
 import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.getAveragePrices;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.round;
 import static com.psw.cta.utils.CommonUtils.sleep;
@@ -15,6 +16,7 @@ import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
 import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
+import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -26,6 +28,7 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.List;
 
 public class InitialTradingService {
@@ -36,6 +39,20 @@ public class InitialTradingService {
     public InitialTradingService(BinanceApiService binanceApiService, LambdaLogger logger) {
         this.binanceApiService = binanceApiService;
         this.logger = logger;
+    }
+
+    public Crypto updateCryptoWithSlopeData(Crypto crypto) {
+        List<BigDecimal> averagePrices = getAveragePrices(crypto);
+        double leastSquaresSlope = getSlope(averagePrices);
+        if (Double.isNaN(leastSquaresSlope)) {
+            leastSquaresSlope = 0.0000000001;
+        }
+        BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
+        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
+        crypto.setSlope(slope);
+        crypto.setPriceCount(priceCount);
+        crypto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
+        return crypto;
     }
 
     public boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {

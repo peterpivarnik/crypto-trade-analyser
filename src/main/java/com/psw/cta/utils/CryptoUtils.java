@@ -111,17 +111,4 @@ public class CryptoUtils {
     }
 
 
-    public static Crypto updateCryptoWithSlopeData(Crypto crypto) {
-        List<BigDecimal> averagePrices = getAveragePrices(crypto);
-        double leastSquaresSlope = getSlope(averagePrices);
-        if (Double.isNaN(leastSquaresSlope)) {
-            leastSquaresSlope = 0.0000000001;
-        }
-        BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
-        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
-        crypto.setSlope(slope);
-        crypto.setPriceCount(priceCount);
-        crypto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
-        return crypto;
-    }
 }

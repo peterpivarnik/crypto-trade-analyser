@@ -17,7 +17,6 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.utils.CryptoUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +25,12 @@ import java.util.stream.Collectors;
 
 public class DiversifyService {
 
+    private final InitialTradingService initialTradingService;
     private final BinanceApiService binanceApiService;
     private final LambdaLogger logger;
 
-    public DiversifyService(BinanceApiService binanceApiService, LambdaLogger logger) {
+    public DiversifyService(InitialTradingService initialTradingService, BinanceApiService binanceApiService, LambdaLogger logger) {
+        this.initialTradingService = initialTradingService;
         this.binanceApiService = binanceApiService;
         this.logger = logger;
     }
@@ -66,7 +67,7 @@ public class DiversifyService {
 
         return cryptos.stream()
                       .filter(crypto -> !bigOrderKeys.contains(crypto.getSymbolInfo().getSymbol()))
-                      .map(CryptoUtils::updateCryptoWithSlopeData)
+                      .map(initialTradingService::updateCryptoWithSlopeData)
                       .filter(crypto -> crypto.getSlope().compareTo(BigDecimal.ZERO) < 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope))
                       .collect(Collectors.toList());

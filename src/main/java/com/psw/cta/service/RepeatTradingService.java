@@ -20,8 +20,6 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.utils.CommonUtils;
-import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.util.List;

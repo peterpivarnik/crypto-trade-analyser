@@ -1,26 +1,18 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.MAX_NUM_ORDERS;
-import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MAX_ORDER_BTC_AMOUNT;
-import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
-import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
-import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
-import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
-import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.util.Collections.emptyList;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.utils.OrderUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -36,36 +28,6 @@ public class RepeatTradingService {
         this.diversifyService = diversifyService;
         this.binanceApiService = binanceApiService;
         this.logger = logger;
-    }
-
-    public OrderWrapper createOrderWrapper(Order order) {
-        BigDecimal orderPrice = calculateOrderPrice(order);
-        BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
-        OrderWrapper orderWrapper = new OrderWrapper(order);
-        orderWrapper.setOrderPrice(orderPrice);
-        orderWrapper.setOrderBtcAmount(orderBtcAmount);
-        return orderWrapper;
-    }
-
-    public OrderWrapper updateOrderWrapperWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
-        BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()), orderWrapper.getOrderBtcAmount());
-        BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
-        orderWrapper.setMinWaitingTime(minWaitingTime);
-        orderWrapper.setActualWaitingTime(actualWaitingTime);
-        return orderWrapper;
-    }
-
-    public OrderWrapper updateOrderWrapperWithPrices(OrderWrapper orderWrapper) {
-        BigDecimal orderPrice = orderWrapper.getOrderPrice();
-        BigDecimal currentPrice = calculateCurrentPrice(binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()));
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount());
-        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(currentPrice, priceToSell);
-        BigDecimal orderPricePercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
-        orderWrapper.setCurrentPrice(currentPrice);
-        orderWrapper.setPriceToSell(priceToSell);
-        orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
-        orderWrapper.setOrderPricePercentage(orderPricePercentage);
-        return orderWrapper;
     }
 
     public synchronized List<Crypto> repeatTrade(SymbolInfo symbolInfo,

@@ -10,6 +10,8 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
+import static com.psw.cta.utils.OrderWrapperBuilder.updateOrderWrapperWithPrices;
+import static com.psw.cta.utils.OrderWrapperBuilder.updateOrderWrapperWithWaitingTimes;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -22,6 +24,7 @@ import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.CryptoBuilder;
+import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -138,11 +141,12 @@ public class TradingService {
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(getOrderComparator()))
                          .map(Optional::orElseThrow)
-                         .map(repeatTradingService::createOrderWrapper)
+                         .map(OrderWrapperBuilder::createOrderWrapper)
                          .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .map(orderWrapper -> repeatTradingService.updateOrderWrapperWithWaitingTimes(totalAmounts, orderWrapper))
+                         .map(orderWrapper -> updateOrderWrapperWithWaitingTimes(totalAmounts, orderWrapper))
                          .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
-                         .map(repeatTradingService::updateOrderWrapperWithPrices)
+                         .map(orderWrapper -> updateOrderWrapperWithPrices(orderWrapper,
+                                                                            binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol())))
                          .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                          .peek(orderWrapper -> logger.log(orderWrapper.toString()))
                          .map(orderWrapper -> repeatTradingService.repeatTrade(symbolFunction.apply(orderWrapper),

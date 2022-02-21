@@ -4,7 +4,7 @@ import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundDown;
+import static com.psw.cta.utils.CommonUtils.round;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.math.RoundingMode.CEILING;
@@ -104,7 +104,7 @@ public class DiversifyService {
         logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
         BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-        BigDecimal roundedPriceToSell = roundDown(symbolInfo, finalPriceWithProfit, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedPriceToSell = round(symbolInfo, finalPriceWithProfit, PRICE_FILTER, SymbolFilter::getTickSize);
         logger.log("roundedPriceToSell: " + roundedPriceToSell);
         roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
         logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);

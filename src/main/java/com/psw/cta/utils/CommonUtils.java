@@ -68,19 +68,11 @@ public class CommonUtils {
                          .orElseThrow(RuntimeException::new);
     }
 
-
-    public static BigDecimal roundDown(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+    public static BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);
         return amountToRound.subtract(remainder);
     }
-
-    public static BigDecimal roundUp(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
-        BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
-        BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-        return amountToRound.subtract(remainder).add(valueFromFilter);
-    }
-
 
     public static List<BigDecimal> getAveragePrices(Crypto crypto) {
         Candlestick candlestick = crypto.getThreeMonthsCandleStickData()

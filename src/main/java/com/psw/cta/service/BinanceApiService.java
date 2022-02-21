@@ -9,8 +9,7 @@ import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundDown;
-import static com.psw.cta.utils.CommonUtils.roundUp;
+import static com.psw.cta.utils.CommonUtils.round;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
@@ -136,7 +135,7 @@ public class BinanceApiService {
         BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
-        BigDecimal roundedQuantity = roundDown(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
         createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
         return roundedQuantity;
     }
@@ -145,7 +144,7 @@ public class BinanceApiService {
         logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = roundDown(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
         createNewOrder(symbolInfo.getSymbol(), SELL, roundedBidQuantity);
     }
 
@@ -153,8 +152,8 @@ public class BinanceApiService {
         logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal balance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = roundDown(symbolInfo, balance, LOT_SIZE, SymbolFilter::getMinQty);
-        BigDecimal roundedPriceToSell = roundUp(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedBidQuantity = round(symbolInfo, balance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         createNewOrder(sellOrder);
     }

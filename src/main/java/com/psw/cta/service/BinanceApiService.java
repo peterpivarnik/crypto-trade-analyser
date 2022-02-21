@@ -136,7 +136,7 @@ public class BinanceApiService {
         BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
-        BigDecimal roundedQuantity = roundUp(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedQuantity = roundDown(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
         createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
         return roundedQuantity;
     }

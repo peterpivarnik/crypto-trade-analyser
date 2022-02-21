@@ -1,5 +1,6 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.psw.cta.utils.Constants.ASSET_BNB;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -30,7 +31,7 @@ public class BnbService {
         BigDecimal myBnbBalance = binanceApiService.getMyBalance(ASSET_BNB);
         if (myBnbBalance.compareTo(MIN_BNB_BALANCE) < 0) {
             BigDecimal quantityToBuy = getBnbQuantityToBuy();
-            binanceApiService.createNewOrder(SYMBOL_BNB_BTC, SELL, quantityToBuy);
+            binanceApiService.createNewOrder(SYMBOL_BNB_BTC, BUY, quantityToBuy);
             return binanceApiService.getMyBalance(ASSET_BNB);
         }
         return myBnbBalance;

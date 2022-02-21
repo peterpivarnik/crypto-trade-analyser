@@ -34,7 +34,7 @@ public class CommonUtils {
         BinanceApiService binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
         BnbService bnbService = new BnbService(binanceApiService, logger);
         InitialTradingService initialTradingService = new InitialTradingService(binanceApiService, logger);
-        DiversifyService diversifyService = new DiversifyService(initialTradingService, binanceApiService, logger);
+        DiversifyService diversifyService = new DiversifyService(binanceApiService, logger);
         RepeatTradingService repeatTradingService = new RepeatTradingService(diversifyService, binanceApiService, logger);
         return new TradingService(initialTradingService, repeatTradingService, bnbService, binanceApiService, logger);
     }
@@ -68,7 +68,8 @@ public class CommonUtils {
                          .orElseThrow(RuntimeException::new);
     }
 
-    public static BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType, Function<SymbolFilter, String> symbolFilterFunction) {
+    public static BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType,
+                                   Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);
         return amountToRound.subtract(remainder);
@@ -121,5 +122,9 @@ public class CommonUtils {
                         .map(BigDecimal::new)
                         .min(Comparator.naturalOrder())
                         .orElseThrow(() -> new CryptoTraderException("No price found!"));
+    }
+
+    public static boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
+        return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 }

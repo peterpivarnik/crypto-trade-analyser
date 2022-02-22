@@ -1,6 +1,7 @@
 package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 public class OrderWrapperBuilder {
 
-    public static OrderWrapper createOrderWrapper(Order order) {
+    public static OrderWrapper build(Order order) {
         BigDecimal orderPrice = calculateOrderPrice(order);
         BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
         OrderWrapper orderWrapper = new OrderWrapper(order);
@@ -24,7 +25,7 @@ public class OrderWrapperBuilder {
         return orderWrapper;
     }
 
-    public static OrderWrapper updateOrderWrapperWithWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
+    public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
         BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()), orderWrapper.getOrderBtcAmount());
         BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
         orderWrapper.setMinWaitingTime(minWaitingTime);
@@ -32,12 +33,12 @@ public class OrderWrapperBuilder {
         return orderWrapper;
     }
 
-    public static OrderWrapper updateOrderWrapperWithPrices(OrderWrapper orderWrapper, OrderBook orderBook) {
+    public static OrderWrapper withPrices(OrderWrapper orderWrapper, OrderBook orderBook) {
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
         BigDecimal currentPrice = calculateCurrentPrice(orderBook);
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount());
-        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(currentPrice, priceToSell);
-        BigDecimal orderPricePercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
+        BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
+        BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
         orderWrapper.setCurrentPrice(currentPrice);
         orderWrapper.setPriceToSell(priceToSell);
         orderWrapper.setPriceToSellPercentage(priceToSellPercentage);

@@ -1,9 +1,11 @@
 package com.psw.cta.utils;
 
+import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.binance.api.client.domain.account.Order;
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,5 +82,13 @@ class CommonUtilsTest {
         return order;
     }
 
+    @Test
+    void shouldCalculatePriceToSellPercentage() {
+        BigDecimal orderPrice = new BigDecimal("50");
+        BigDecimal priceToSell = new BigDecimal("40");
 
+        BigDecimal priceToSellPercentage = calculatePricePercentage(priceToSell, orderPrice);
+
+        assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
+    }
 }

@@ -55,26 +55,6 @@ class OrderUtilsTest {
     }
 
     @Test
-    void shouldCalculatePriceToSellPercentage() {
-        BigDecimal orderPrice = new BigDecimal("50");
-        BigDecimal priceToSell = new BigDecimal("40");
-
-        BigDecimal priceToSellPercentage = OrderUtils.calculatePriceToSellPercentage(priceToSell, orderPrice);
-
-        assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
-    }
-
-    @Test
-    void shouldCalculateOrderPricePercentage() {
-        BigDecimal orderPrice = new BigDecimal("50");
-        BigDecimal currentPrice = new BigDecimal("40");
-
-        BigDecimal priceToSellPercentage = OrderUtils.calculateOrderPricePercentage(currentPrice, orderPrice);
-
-        assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
-    }
-
-    @Test
     void shouldCalculateMinWaitingTime() {
         BigDecimal totalSymbolAmount = new BigDecimal("0.11");
         BigDecimal orderBtcAmount = new BigDecimal("0.22");

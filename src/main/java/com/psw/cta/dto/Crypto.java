@@ -3,7 +3,6 @@ package com.psw.cta.dto;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.TickerStatistics;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -20,8 +19,8 @@ public class Crypto {
 
     private BigDecimal currentPrice;
     private BigDecimal volume;
-    private BigDecimal sumDiffsPerc;
-    private BigDecimal sumDiffsPerc10h;
+    private BigDecimal sumPercentageDifferences1h;
+    private BigDecimal sumPercentageDifferences10h;
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
     private BigDecimal weight;
@@ -101,20 +100,20 @@ public class Crypto {
         this.volume = volume;
     }
 
-    public BigDecimal getSumDiffsPerc() {
-        return sumDiffsPerc;
+    public BigDecimal getSumPercentageDifferences1h() {
+        return sumPercentageDifferences1h;
     }
 
-    public void setSumDiffsPerc(BigDecimal sumDiffsPerc) {
-        this.sumDiffsPerc = sumDiffsPerc;
+    public void setSumPercentageDifferences1h(BigDecimal sumPercentageDifferences1h) {
+        this.sumPercentageDifferences1h = sumPercentageDifferences1h;
     }
 
-    public BigDecimal getSumDiffsPerc10h() {
-        return sumDiffsPerc10h;
+    public BigDecimal getSumPercentageDifferences10h() {
+        return sumPercentageDifferences10h;
     }
 
-    public void setSumDiffsPerc10h(BigDecimal sumDiffsPerc10h) {
-        this.sumDiffsPerc10h = sumDiffsPerc10h;
+    public void setSumPercentageDifferences10h(BigDecimal sumPercentageDifferences10h) {
+        this.sumPercentageDifferences10h = sumPercentageDifferences10h;
     }
 
     public BigDecimal getPriceToSell() {
@@ -162,8 +161,8 @@ public class Crypto {
                ", symbolInfo=" + symbolInfo +
                ", currentPrice=" + currentPrice +
                ", volume=" + volume +
-               ", sumDiffsPerc=" + sumDiffsPerc +
-               ", sumDiffsPerc10h=" + sumDiffsPerc10h +
+               ", sumPercentageDifferences1h=" + sumPercentageDifferences1h +
+               ", sumPercentageDifferences10h=" + sumPercentageDifferences10h +
                ", priceToSell=" + priceToSell +
                ", priceToSellPercentage=" + priceToSellPercentage +
                ", weight=" + weight +

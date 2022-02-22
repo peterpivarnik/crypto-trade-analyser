@@ -10,8 +10,8 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
-import static com.psw.cta.utils.OrderWrapperBuilder.updateOrderWrapperWithPrices;
-import static com.psw.cta.utils.OrderWrapperBuilder.updateOrderWrapperWithWaitingTimes;
+import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
+import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -141,12 +141,11 @@ public class TradingService {
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(getOrderComparator()))
                          .map(Optional::orElseThrow)
-                         .map(OrderWrapperBuilder::createOrderWrapper)
+                         .map(OrderWrapperBuilder::build)
                          .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
-                         .map(orderWrapper -> updateOrderWrapperWithWaitingTimes(totalAmounts, orderWrapper))
+                         .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                          .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
-                         .map(orderWrapper -> updateOrderWrapperWithPrices(orderWrapper,
-                                                                            binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol())))
+                         .map(orderWrapper -> withPrices(orderWrapper, binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol())))
                          .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                          .peek(orderWrapper -> logger.log(orderWrapper.toString()))
                          .map(orderWrapper -> repeatTradingService.repeatTrade(symbolFunction.apply(orderWrapper),
@@ -170,8 +169,8 @@ public class TradingService {
                        .map(CryptoBuilder::withPrices)
                        .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                        .map(CryptoBuilder::withSumDiffPerc)
-                       .filter(crypto -> crypto.getSumDiffsPerc().compareTo(new BigDecimal("4")) < 0)
-                       .filter(crypto -> crypto.getSumDiffsPerc10h().compareTo(new BigDecimal("400")) < 0)
+                       .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
+                       .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
                        .forEach(initialTradingService::buyCrypto);
     }
 }

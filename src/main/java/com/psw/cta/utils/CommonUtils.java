@@ -1,6 +1,8 @@
 package com.psw.cta.utils;
 
+import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 
@@ -87,7 +89,7 @@ public class CommonUtils {
                      .collect(Collectors.toList());
     }
 
-    private static BigDecimal getAveragePrice(Candlestick candle) {
+    public static BigDecimal getAveragePrice(Candlestick candle) {
         BigDecimal open = new BigDecimal(candle.getOpen());
         BigDecimal close = new BigDecimal(candle.getClose());
         BigDecimal high = new BigDecimal(candle.getHigh());
@@ -126,5 +128,12 @@ public class CommonUtils {
 
     public static boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
         return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
+    }
+
+
+    public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice, BigDecimal highestPrice) {
+        BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT)
+                                           .divide(highestPrice, 8, UP);
+        return HUNDRED_PERCENT.subtract(percentage);
     }
 }

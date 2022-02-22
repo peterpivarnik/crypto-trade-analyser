@@ -1,13 +1,13 @@
 package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.getAveragePrices;
-import static com.psw.cta.utils.CryptoUtils.calculateLastThreeMaxAverage;
-import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeMaxAverage;
+import static com.psw.cta.utils.CryptoUtils.calculateLastThreeHighAverage;
+import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeHighAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
-import static com.psw.cta.utils.CryptoUtils.calculatePriceToSellPercentage;
-import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent;
-import static com.psw.cta.utils.CryptoUtils.calculateSumDiffsPercent10h;
+import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences10h;
+import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences1h;
 import static com.psw.cta.utils.CryptoUtils.getVolume;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
@@ -42,8 +42,8 @@ public class CryptoBuilder {
     }
 
     public static Crypto withLeastMaxAverage(Crypto crypto, List<Candlestick> candleStickData) {
-        BigDecimal lastThreeMaxAverage = calculateLastThreeMaxAverage(candleStickData);
-        BigDecimal previousThreeMaxAverage = calculatePreviousThreeMaxAverage(candleStickData);
+        BigDecimal lastThreeMaxAverage = calculateLastThreeHighAverage(candleStickData);
+        BigDecimal previousThreeMaxAverage = calculatePreviousThreeHighAverage(candleStickData);
         crypto.setFifteenMinutesCandleStickData(candleStickData);
         crypto.setLastThreeMaxAverage(lastThreeMaxAverage);
         crypto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
@@ -54,7 +54,7 @@ public class CryptoBuilder {
         List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = crypto.getCurrentPrice();
         BigDecimal priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal priceToSellPercentage = calculatePriceToSellPercentage(priceToSell, currentPrice);
+        BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
         crypto.setPriceToSell(priceToSell);
         crypto.setPriceToSellPercentage(priceToSellPercentage);
         return crypto;
@@ -63,10 +63,10 @@ public class CryptoBuilder {
     public static Crypto withSumDiffPerc(Crypto crypto) {
         List<Candlestick> fifteenMinutesCandleStickData = crypto.getFifteenMinutesCandleStickData();
         BigDecimal currentPrice = crypto.getCurrentPrice();
-        BigDecimal sumDiffsPerc = calculateSumDiffsPercent(fifteenMinutesCandleStickData, currentPrice);
-        BigDecimal sumDiffsPerc10h = calculateSumDiffsPercent10h(fifteenMinutesCandleStickData, currentPrice);
-        crypto.setSumDiffsPerc(sumDiffsPerc);
-        crypto.setSumDiffsPerc10h(sumDiffsPerc10h);
+        BigDecimal sumPercentageDifferences1h = calculateSumPercentageDifferences1h(fifteenMinutesCandleStickData, currentPrice);
+        BigDecimal calculateSumPercentageDifferences10h = calculateSumPercentageDifferences10h(fifteenMinutesCandleStickData, currentPrice);
+        crypto.setSumPercentageDifferences1h(sumPercentageDifferences1h);
+        crypto.setSumPercentageDifferences10h(calculateSumPercentageDifferences10h);
         return crypto;
     }
 

@@ -21,8 +21,8 @@ public class CryptoTraderApplication {
             @Override public void log(byte[] bytes) {
                 try {
                     System.out.write(bytes);
-                } catch (IOException var3) {
-                    var3.printStackTrace();
+                } catch (IOException exception) {
+                    exception.printStackTrace();
                 }
             }
         };

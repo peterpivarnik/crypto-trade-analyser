@@ -1,5 +1,7 @@
 package com.psw.cta.utils;
 
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
@@ -67,10 +69,20 @@ public class CommonUtils {
                          .map(symbolFilterFunction)
                          .map(BigDecimal::new)
                          .findAny()
-                         .orElseThrow(RuntimeException::new);
+                         .orElseThrow(() -> new CryptoTraderException("Value from filter " + filterType + " not found"));
     }
 
-    public static BigDecimal round(SymbolInfo symbolInfo, BigDecimal amountToRound, FilterType filterType,
+    public static BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
+        return round(symbolInfo, amount, LOT_SIZE, SymbolFilter::getMinQty);
+    }
+
+    public static BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
+        return round(symbolInfo, price,  PRICE_FILTER, SymbolFilter::getTickSize);
+    }
+
+    private static BigDecimal round(SymbolInfo symbolInfo,
+                                   BigDecimal amountToRound,
+                                   FilterType filterType,
                                    Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);

@@ -5,12 +5,12 @@ import static com.binance.api.client.domain.OrderSide.SELL;
 import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.round;
+import static com.psw.cta.utils.CommonUtils.roundAmount;
+import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
@@ -84,9 +84,9 @@ public class BinanceApiService {
                                    .getBalances()
                                    .parallelStream()
                                    .map(this::mapToAssetAndBalance)
-                                   .filter(pair -> pair.getLeft().compareTo(BigDecimal.ZERO) > 0)
+                                   .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
                                    .map(this::mapToBtcBalance)
-                                   .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                   .reduce(ZERO, BigDecimal::add);
     }
 
     private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
@@ -104,10 +104,10 @@ public class BinanceApiService {
                     .map(OrderBookEntry::getPrice)
                     .map(BigDecimal::new)
                     .max(BigDecimal::compareTo)
-                    .orElse(BigDecimal.ZERO);
+                    .orElse(ZERO);
                 return price.multiply(pair.getLeft());
             } catch (BinanceApiException e) {
-                return BigDecimal.ZERO;
+                return ZERO;
             }
         }
     }
@@ -120,7 +120,7 @@ public class BinanceApiService {
                                       .map(AssetBalance::getFree)
                                       .map(BigDecimal::new)
                                       .findFirst()
-                                      .orElse(BigDecimal.ZERO);
+                                      .orElse(ZERO);
         logger.log("My balance in currency: " + asset + ", is: " + myBalance);
         return myBalance;
     }
@@ -135,7 +135,7 @@ public class BinanceApiService {
         BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
         BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
-        BigDecimal roundedQuantity = round(symbolInfo, myQuantityToBuy, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
         createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
         return roundedQuantity;
     }
@@ -144,7 +144,7 @@ public class BinanceApiService {
         logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = round(symbolInfo, myBalance, LOT_SIZE, SymbolFilter::getMinQty);
+        BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
         createNewOrder(symbolInfo.getSymbol(), SELL, roundedBidQuantity);
     }
 
@@ -152,8 +152,8 @@ public class BinanceApiService {
         logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal balance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = round(symbolInfo, balance, LOT_SIZE, SymbolFilter::getMinQty);
-        BigDecimal roundedPriceToSell = round(symbolInfo, priceToSell, PRICE_FILTER, SymbolFilter::getTickSize);
+        BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
+        BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
         NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
         createNewOrder(sellOrder);
     }

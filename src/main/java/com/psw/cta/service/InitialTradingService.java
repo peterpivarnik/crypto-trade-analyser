@@ -1,11 +1,10 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
-import static com.psw.cta.utils.CommonUtils.round;
+import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.RoundingMode.CEILING;
@@ -52,7 +51,7 @@ public class InitialTradingService {
         BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
         BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
         BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
-        return round(crypto.getSymbolInfo(), min, LOT_SIZE, SymbolFilter::getMinQty);
+        return roundAmount(crypto.getSymbolInfo(), min);
     }
 
     private boolean shouldBuyAndSell(Crypto crypto,

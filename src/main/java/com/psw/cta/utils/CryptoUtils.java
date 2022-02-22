@@ -10,7 +10,6 @@ import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
-import java.util.Comparator;
 import java.util.List;
 
 public class CryptoUtils {

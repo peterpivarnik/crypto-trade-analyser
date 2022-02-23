@@ -33,7 +33,7 @@ public class DiversifyService {
         this.logger = logger;
     }
 
-    public List<Crypto> diversify(OrderWrapper orderToCancel,
+    public void diversify(OrderWrapper orderToCancel,
                                   Supplier<List<Crypto>> cryptosSupplier,
                                   Map<String, BigDecimal> totalAmounts,
                                   ExchangeInfo exchangeInfo) {
@@ -53,7 +53,6 @@ public class DiversifyService {
         BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
         List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
         buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 1);
-        return cryptos;
     }
 
     private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {

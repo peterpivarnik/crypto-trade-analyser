@@ -38,11 +38,11 @@ public class CommonUtils {
 
     public static TradingService initializeTradingService(String apiKey, String apiSecret, LambdaLogger logger) {
         BinanceApiService binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-        BnbService bnbService = new BnbService(binanceApiService, logger);
         InitialTradingService initialTradingService = new InitialTradingService(binanceApiService, logger);
+        RepeatTradingService repeatTradingService = new RepeatTradingService(binanceApiService, logger);
         DiversifyService diversifyService = new DiversifyService(binanceApiService, logger);
-        RepeatTradingService repeatTradingService = new RepeatTradingService(diversifyService, binanceApiService, logger);
-        return new TradingService(initialTradingService, repeatTradingService, bnbService, binanceApiService, logger);
+        BnbService bnbService = new BnbService(binanceApiService, logger);
+        return new TradingService(initialTradingService, repeatTradingService, diversifyService, bnbService, binanceApiService, logger);
     }
 
     public static Comparator<Order> getOrderComparator() {

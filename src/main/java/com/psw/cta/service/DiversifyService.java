@@ -111,10 +111,10 @@ public class DiversifyService {
         binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
     }
 
-    private BigDecimal getBtcAmount(BigDecimal btcAmountToSpend, BigDecimal minValueFromLotSizeFilter, BigDecimal minValueFromMinNotionalFilter) {
-        if (btcAmountToSpend.compareTo(minValueFromLotSizeFilter) < 0) {
-            return getBtcAmount(btcAmountToSpend.add(minValueFromMinNotionalFilter), minValueFromLotSizeFilter, minValueFromMinNotionalFilter);
+    private BigDecimal getBtcAmount(BigDecimal btcAmountToSpend, BigDecimal minAddition, BigDecimal minValueFromMinNotionalFilter) {
+        if (btcAmountToSpend.compareTo(minValueFromMinNotionalFilter) < 0) {
+            return getBtcAmount(btcAmountToSpend.add(minAddition), minAddition, minValueFromMinNotionalFilter);
         }
-        return btcAmountToSpend;
+        return btcAmountToSpend.add(minAddition);
     }
 }

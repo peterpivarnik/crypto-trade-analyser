@@ -90,15 +90,13 @@ public class OrderWrapper {
 
     @Override public String toString() {
         return "OrderWrapper{" +
-               "order=" + order +
+               "symbol=" + order.getSymbol() +
                ", orderBtcAmount=" + orderBtcAmount +
                ", orderPrice=" + orderPrice +
                ", currentPrice=" + currentPrice +
                ", priceToSell=" + priceToSell +
                ", priceToSellPercentage=" + priceToSellPercentage +
                ", orderPricePercentage=" + orderPricePercentage +
-               ", minWaitingTime=" + minWaitingTime +
-               ", actualWaitingTime=" + actualWaitingTime +
                ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
                '}';
     }

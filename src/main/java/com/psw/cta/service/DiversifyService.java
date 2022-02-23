@@ -34,9 +34,9 @@ public class DiversifyService {
     }
 
     public void diversify(OrderWrapper orderToCancel,
-                                  Supplier<List<Crypto>> cryptosSupplier,
-                                  Map<String, BigDecimal> totalAmounts,
-                                  ExchangeInfo exchangeInfo) {
+                          Supplier<List<Crypto>> cryptosSupplier,
+                          Map<String, BigDecimal> totalAmounts,
+                          ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Diversifying amounts ***** *****");
 
         // 1. cancel existing order
@@ -88,7 +88,13 @@ public class DiversifyService {
         SymbolInfo symbolInfo = crypto.getSymbolInfo();
         BigDecimal cryptoToBuyCurrentPrice = crypto.getCurrentPrice();
         logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-        BigDecimal boughtQuantity = binanceApiService.buy(symbolInfo, btcAmountToSpend, cryptoToBuyCurrentPrice);
+        BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+        logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+        BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
+        logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+        BigDecimal btcAmount = getBtcAmount(btcAmountToSpend, minValueFromLotSizeFilter, minValueFromMinNotionalFilter);
+        logger.log("btcAmount: " + btcAmount);
+        BigDecimal boughtQuantity = binanceApiService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
         logger.log("boughtQuantity: " + boughtQuantity);
 
         // 4. place sell order
@@ -96,14 +102,17 @@ public class DiversifyService {
                                                                  .multiply(new BigDecimal("1.01"))
                                                                  .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
         logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-        BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
-        logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-        BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
-        logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
         BigDecimal roundedPriceToSell = roundPrice(symbolInfo, finalPriceWithProfit);
         logger.log("roundedPriceToSell: " + roundedPriceToSell);
         roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
         logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
         binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
+    }
+
+    private BigDecimal getBtcAmount(BigDecimal btcAmountToSpend, BigDecimal minValueFromLotSizeFilter, BigDecimal minValueFromMinNotionalFilter) {
+        if (btcAmountToSpend.compareTo(minValueFromLotSizeFilter) < 0) {
+            return getBtcAmount(btcAmountToSpend.add(minValueFromMinNotionalFilter), minValueFromLotSizeFilter, minValueFromMinNotionalFilter);
+        }
+        return btcAmountToSpend;
     }
 }

@@ -92,7 +92,9 @@ public class DiversifyService {
         logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
         BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
         logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-        BigDecimal btcAmount = getBtcAmount(btcAmountToSpend, minValueFromLotSizeFilter, minValueFromMinNotionalFilter);
+        BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
+        logger.log("minAddition: " + minAddition);
+        BigDecimal btcAmount = getBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
         logger.log("btcAmount: " + btcAmount);
         BigDecimal boughtQuantity = binanceApiService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
         logger.log("boughtQuantity: " + boughtQuantity);

@@ -1,16 +1,14 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
-import static com.psw.cta.utils.CommonUtils.getAveragePrices;
+import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
 import static com.psw.cta.utils.CryptoUtils.calculateLastThreeHighAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeHighAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
 import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences10h;
 import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences1h;
 import static com.psw.cta.utils.CryptoUtils.getVolume;
-import static com.psw.cta.utils.LeastSquares.getSlope;
-import static java.math.RoundingMode.CEILING;
 
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
@@ -18,7 +16,6 @@ import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.List;
 
 public class CryptoBuilder {
@@ -28,25 +25,17 @@ public class CryptoBuilder {
     }
 
     public static Crypto withSlopeData(Crypto crypto) {
-        List<BigDecimal> averagePrices = getAveragePrices(crypto);
-        double leastSquaresSlope = getSlope(averagePrices);
-        if (Double.isNaN(leastSquaresSlope)) {
-            leastSquaresSlope = 0.0000000001;
-        }
-        BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
-        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
-        crypto.setSlope(slope);
-        crypto.setPriceCount(priceCount);
-        crypto.setPriceCountToSlope(priceCount.divide(slope, 8, CEILING));
+        BigDecimal priceCountToSlope = getPriceCountToSlope(crypto);
+        crypto.setPriceCountToSlope(priceCountToSlope);
         return crypto;
     }
 
     public static Crypto withLeastMaxAverage(Crypto crypto, List<Candlestick> candleStickData) {
-        BigDecimal lastThreeMaxAverage = calculateLastThreeHighAverage(candleStickData);
-        BigDecimal previousThreeMaxAverage = calculatePreviousThreeHighAverage(candleStickData);
+        BigDecimal lastThreeHighAverage = calculateLastThreeHighAverage(candleStickData);
+        BigDecimal previousThreeHighAverage = calculatePreviousThreeHighAverage(candleStickData);
         crypto.setFifteenMinutesCandleStickData(candleStickData);
-        crypto.setLastThreeMaxAverage(lastThreeMaxAverage);
-        crypto.setPreviousThreeMaxAverage(previousThreeMaxAverage);
+        crypto.setLastThreeHighAverage(lastThreeHighAverage);
+        crypto.setPreviousThreeHighAverage(previousThreeHighAverage);
         return crypto;
     }
 
@@ -77,7 +66,7 @@ public class CryptoBuilder {
     }
 
     public static Crypto withCurrentPrice(Crypto crypto, OrderBook orderBook) {
-        BigDecimal currentPrice = calculateCurrentPrice(orderBook);
+        BigDecimal currentPrice = getCurrentPrice(orderBook);
         crypto.setOrderBook(orderBook);
         crypto.setCurrentPrice(currentPrice);
         return crypto;

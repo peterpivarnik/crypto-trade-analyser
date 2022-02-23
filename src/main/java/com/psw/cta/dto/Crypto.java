@@ -23,21 +23,9 @@ public class Crypto {
     private BigDecimal sumPercentageDifferences10h;
     private BigDecimal priceToSell;
     private BigDecimal priceToSellPercentage;
-    private BigDecimal weight;
-    private BigDecimal lastThreeMaxAverage;
-    private BigDecimal previousThreeMaxAverage;
-
-    private BigDecimal slope;
-    private BigDecimal priceCount;
+    private BigDecimal lastThreeHighAverage;
+    private BigDecimal previousThreeHighAverage;
     private BigDecimal priceCountToSlope;
-
-    public BigDecimal getPriceCount() {
-        return priceCount;
-    }
-
-    public void setPriceCount(BigDecimal priceCount) {
-        this.priceCount = priceCount;
-    }
 
     public BigDecimal getPriceCountToSlope() {
         return priceCountToSlope;
@@ -45,14 +33,6 @@ public class Crypto {
 
     public void setPriceCountToSlope(BigDecimal priceCountToSlope) {
         this.priceCountToSlope = priceCountToSlope;
-    }
-
-    public BigDecimal getSlope() {
-        return slope;
-    }
-
-    public void setSlope(BigDecimal slope) {
-        this.slope = slope;
     }
 
     public List<Candlestick> getFifteenMinutesCandleStickData() {
@@ -132,45 +112,34 @@ public class Crypto {
         this.priceToSellPercentage = priceToSellPercentage;
     }
 
-    public BigDecimal getWeight() {
-        return weight;
+    public BigDecimal getLastThreeHighAverage() {
+        return lastThreeHighAverage;
     }
 
-    public void setWeight(BigDecimal weight) {
-        this.weight = weight;
+    public void setLastThreeHighAverage(BigDecimal lastThreeHighAverage) {
+        this.lastThreeHighAverage = lastThreeHighAverage;
     }
 
-    public BigDecimal getLastThreeMaxAverage() {
-        return lastThreeMaxAverage;
+    public BigDecimal getPreviousThreeHighAverage() {
+        return previousThreeHighAverage;
     }
 
-    public void setLastThreeMaxAverage(BigDecimal lastThreeMaxAverage) {
-        this.lastThreeMaxAverage = lastThreeMaxAverage;
-    }
-
-    public BigDecimal getPreviousThreeMaxAverage() {
-        return previousThreeMaxAverage;
-    }
-
-    public void setPreviousThreeMaxAverage(BigDecimal previousThreeMaxAverage) {
-        this.previousThreeMaxAverage = previousThreeMaxAverage;
+    public void setPreviousThreeHighAverage(BigDecimal previousThreeHighAverage) {
+        this.previousThreeHighAverage = previousThreeHighAverage;
     }
 
     @Override public String toString() {
         return "Crypto{" +
-               ", symbolInfo=" + symbolInfo +
+               "symbol=" + symbolInfo.getSymbol() +
                ", currentPrice=" + currentPrice +
                ", volume=" + volume +
                ", sumPercentageDifferences1h=" + sumPercentageDifferences1h +
                ", sumPercentageDifferences10h=" + sumPercentageDifferences10h +
                ", priceToSell=" + priceToSell +
                ", priceToSellPercentage=" + priceToSellPercentage +
-               ", weight=" + weight +
-               ", lastThreeMaxAverage=" + lastThreeMaxAverage +
-               ", previousThreeMaxAverage=" + previousThreeMaxAverage +
-               ", slope=" + (slope != null ? slope.toPlainString() : slope) +
-               ", priceCount=" + (priceCount != null ? priceCount.toPlainString() : priceCount) +
-               ", priceCountToSlope=" + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : priceCountToSlope) +
+               ", lastThreeHighAverage=" + lastThreeHighAverage +
+               ", previousThreeHighAverage=" + previousThreeHighAverage +
+               ", priceCountToSlope=" + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : null) +
                '}';
     }
 }

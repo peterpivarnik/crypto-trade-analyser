@@ -3,6 +3,7 @@ package com.psw.cta.utils;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
+import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
@@ -25,6 +26,7 @@ import com.psw.cta.service.InitialTradingService;
 import com.psw.cta.service.RepeatTradingService;
 import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,9 +46,8 @@ public class CommonUtils {
     }
 
     public static Comparator<Order> getOrderComparator() {
-        Function<Order, BigDecimal> quantityFunction = order -> new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
-        Function<Order, BigDecimal> btcAmountFunction =
-            order -> (new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()))).multiply(new BigDecimal(order.getPrice()));
+        Function<Order, BigDecimal> quantityFunction = CommonUtils::getQuantity;
+        Function<Order, BigDecimal> btcAmountFunction = order -> (getQuantity(order)).multiply(new BigDecimal(order.getPrice()));
         Function<Order, BigDecimal> timeFunction = order -> new BigDecimal(order.getTime());
         return comparing(quantityFunction)
             .reversed()
@@ -77,19 +78,30 @@ public class CommonUtils {
     }
 
     public static BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
-        return round(symbolInfo, price,  PRICE_FILTER, SymbolFilter::getTickSize);
+        return round(symbolInfo, price, PRICE_FILTER, SymbolFilter::getTickSize);
     }
 
     private static BigDecimal round(SymbolInfo symbolInfo,
-                                   BigDecimal amountToRound,
-                                   FilterType filterType,
-                                   Function<SymbolFilter, String> symbolFilterFunction) {
+                                    BigDecimal amountToRound,
+                                    FilterType filterType,
+                                    Function<SymbolFilter, String> symbolFilterFunction) {
         BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
         BigDecimal remainder = amountToRound.remainder(valueFromFilter);
         return amountToRound.subtract(remainder);
     }
 
-    public static List<BigDecimal> getAveragePrices(Crypto crypto) {
+    public static BigDecimal getPriceCountToSlope(Crypto crypto) {
+        List<BigDecimal> averagePrices = getAveragePrices(crypto);
+        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
+        double leastSquaresSlope = getSlope(averagePrices);
+        if (Double.isNaN(leastSquaresSlope)) {
+            leastSquaresSlope = 0.0000000001;
+        }
+        BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
+        return priceCount.divide(slope, 8, CEILING);
+    }
+
+    private static List<BigDecimal> getAveragePrices(Crypto crypto) {
         Candlestick candlestick = crypto.getThreeMonthsCandleStickData()
                                         .stream()
                                         .max(comparing(candle -> new BigDecimal(candle.getHigh())))
@@ -115,12 +127,16 @@ public class CommonUtils {
     public static Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
         return openOrders.stream()
                          .collect(toMap(Order::getSymbol,
-                                        order -> new BigDecimal(order.getPrice()).multiply(new BigDecimal(order.getOrigQty())),
+                                        order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order)),
                                         BigDecimal::add))
                          .entrySet()
                          .stream()
                          .sorted(Map.Entry.comparingByValue())
                          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+
+    public static BigDecimal getQuantity(Order order) {
+        return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
     }
 
     public static int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance, BigDecimal myBtcBalance) {
@@ -129,7 +145,7 @@ public class CommonUtils {
         return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
     }
 
-    public static BigDecimal calculateCurrentPrice(OrderBook orderBook) {
+    public static BigDecimal getCurrentPrice(OrderBook orderBook) {
         return orderBook.getAsks()
                         .parallelStream()
                         .map(OrderBookEntry::getPrice)
@@ -138,14 +154,13 @@ public class CommonUtils {
                         .orElseThrow(() -> new CryptoTraderException("No price found!"));
     }
 
-    public static boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
-    }
-
-
     public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice, BigDecimal highestPrice) {
         BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT)
                                            .divide(highestPrice, 8, UP);
         return HUNDRED_PERCENT.subtract(percentage);
+    }
+
+    public static boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
+        return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
 }

@@ -1,10 +1,10 @@
 package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.MAX_NUM_ORDERS;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MAX_ORDER_BTC_AMOUNT;
-import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.util.Collections.emptyList;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -62,7 +62,7 @@ public class RepeatTradingService {
         binanceApiService.buy(symbolInfo, orderBtcAmount, orderPrice);
 
         // 3. create new order
-        BigDecimal quantityToSell = getQuantityFromOrder(orderWrapper.getOrder());
+        BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
         BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
         binanceApiService.placeSellOrder(symbolInfo, orderWrapper.getPriceToSell(), completeQuantityToSell);
     }

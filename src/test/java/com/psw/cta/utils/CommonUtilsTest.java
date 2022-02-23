@@ -3,9 +3,16 @@ package com.psw.cta.utils;
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
+import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
+import static com.psw.cta.utils.CommonUtils.getAveragePrice;
+import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
+import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.initializeTradingService;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
@@ -19,12 +26,17 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.FilterType;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.binance.api.client.domain.market.Candlestick;
+import com.binance.api.client.domain.market.OrderBook;
+import com.binance.api.client.domain.market.OrderBookEntry;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -201,6 +213,152 @@ class CommonUtilsTest {
     }
 
     @Test
+    void shouldReturnValidCountToSlope() {
+        Crypto crypto = getCrypto();
+
+        BigDecimal priceCountToSlope = getPriceCountToSlope(crypto);
+
+        assertThat(priceCountToSlope.stripTrailingZeros()).isEqualTo("99");
+    }
+
+    private Crypto getCrypto() {
+        Crypto crypto = new Crypto(getSymbolInfo(MIN_NOTIONAL, "4"));
+        crypto.setThreeMonthsCandleStickData(createThreeMonthsCandleStickData());
+        return crypto;
+    }
+
+    private List<Candlestick> createThreeMonthsCandleStickData() {
+        List<Candlestick> candlesticks = new ArrayList<>();
+        int size = 100;
+        for (int i = 0; i < size; i++) {
+            candlesticks.add(createCandleStick(i, size));
+        }
+        return candlesticks;
+    }
+
+    @Test
+    void shouldGetAveragePrice() {
+        Candlestick candlestick = new Candlestick();
+        candlestick.setOpen("1");
+        candlestick.setClose("2");
+        candlestick.setHigh("3");
+        candlestick.setLow("4");
+
+        BigDecimal averagePrice = getAveragePrice(candlestick);
+
+        assertThat(averagePrice.stripTrailingZeros()).isEqualTo("2.5");
+    }
+
+    private Candlestick createCandleStick(int filterValue, int size) {
+        Candlestick candlestick = new Candlestick();
+        candlestick.setOpen("" + filterValue);
+        candlestick.setClose("" + filterValue);
+        candlestick.setHigh("" + filterValue);
+        candlestick.setLow("" + filterValue);
+        candlestick.setOpenTime((long) size - (long) filterValue);
+        return candlestick;
+    }
+
+    @Test
+    void shouldCreateTotalAmounts() {
+        String symbol1 = "symbol1";
+        String symbol2 = "symbol2";
+        Order order1 = getOrder(symbol1, 1);
+        Order order2 = getOrder(symbol1, 2);
+        Order order3 = getOrder(symbol2, 5);
+        List<Order> openOrders = new ArrayList<>();
+        openOrders.add(order1);
+        openOrders.add(order2);
+        openOrders.add(order3);
+
+        Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
+
+        assertThat(totalAmounts).hasSize(2);
+        assertThat(totalAmounts).containsKey(symbol1);
+        assertThat(totalAmounts.get(symbol1).compareTo(new BigDecimal("30"))).isEqualTo(0);
+        assertThat(totalAmounts).containsKey(symbol2);
+        assertThat(totalAmounts.get(symbol2).compareTo(new BigDecimal("50"))).isEqualTo(0);
+    }
+
+    private Order getOrder(String symbol, int index) {
+        Order order = new Order();
+        order.setSymbol(symbol);
+        order.setPrice("10");
+        order.setOrigQty("" + index);
+        order.setExecutedQty("0");
+        return order;
+    }
+
+    @Test
+    void shouldReturnQuantityFromOrder() {
+        Order order = new Order();
+        order.setOrigQty("25");
+        order.setExecutedQty("10");
+
+        BigDecimal quantityFromOrder = getQuantity(order);
+
+        assertThat(quantityFromOrder.stripTrailingZeros().toPlainString()).isEqualTo("15");
+    }
+
+    @Test
+    void shouldCalculateMinNumberOfOrdersFromMyBtcBalance() {
+        BigDecimal totalPossibleBalance = new BigDecimal("20");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+
+        int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
+
+        assertThat(minNumberOfOrders).isEqualTo(200);
+    }
+
+    @Test
+    void shouldCalculateMinNumberOfOrdersFromTotalPossibleBalance() {
+        BigDecimal totalPossibleBalance = new BigDecimal("4");
+        BigDecimal myBtcBalance = new BigDecimal("20");
+
+        int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
+
+        assertThat(minNumberOfOrders).isEqualTo(1000);
+    }
+
+    @Test
+    void shouldCalculateCurrentPrice() {
+        OrderBook orderBook = createOrderBook(20);
+
+        BigDecimal currentPrice = getCurrentPrice(orderBook);
+
+        assertThat(currentPrice.stripTrailingZeros()).isEqualTo("5");
+    }
+
+    @Test
+    void shouldThrowCryptoTraderExceptionWhenNoOrderBookEntryExist() {
+        OrderBook orderBook = createOrderBook(0);
+
+        CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class, () -> getCurrentPrice(orderBook));
+
+        assertThat(cryptoTraderException.getMessage()).isEqualTo("No price found!");
+    }
+
+    private OrderBook createOrderBook(int size) {
+        OrderBook orderBook = new OrderBook();
+        orderBook.setAsks(createAsks(size));
+        return orderBook;
+    }
+
+    private List<OrderBookEntry> createAsks(int size) {
+        List<OrderBookEntry> orderBookEntries = new ArrayList<>();
+        for (int i = 5; i < size; i++) {
+            orderBookEntries.add(createOrderBookEntries("" + i));
+        }
+        return orderBookEntries;
+    }
+
+    private OrderBookEntry createOrderBookEntries(String price) {
+        OrderBookEntry orderBookEntry = new OrderBookEntry();
+        orderBookEntry.setPrice(price);
+        return orderBookEntry;
+    }
+
+    @Test
     void shouldCalculatePriceToSellPercentage() {
         BigDecimal orderPrice = new BigDecimal("50");
         BigDecimal priceToSell = new BigDecimal("40");
@@ -208,5 +366,23 @@ class CommonUtilsTest {
         BigDecimal priceToSellPercentage = calculatePricePercentage(priceToSell, orderPrice);
 
         assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
+    }
+
+    @Test
+    void shouldHaveBalanceForInitialTrading() {
+        BigDecimal myBtcBalance = new BigDecimal("1");
+
+        boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
+
+        assertThat(haveBalance).isTrue();
+    }
+
+    @Test
+    void shouldNotHaveBalanceForInitialTrading() {
+        BigDecimal myBtcBalance = new BigDecimal("0.0001");
+
+        boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
+
+        assertThat(haveBalance).isFalse();
     }
 }

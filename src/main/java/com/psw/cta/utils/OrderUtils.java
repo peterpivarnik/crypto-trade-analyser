@@ -1,7 +1,7 @@
 package com.psw.cta.utils;
 
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.Constants.HALF_OF_MAX_ORDER_BTC_AMOUNT;
-import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.Constants.TIME_CONSTANT;
 import static com.psw.cta.utils.Constants.TWO;
 import static java.lang.Math.sqrt;
@@ -27,7 +27,7 @@ public class OrderUtils {
     }
 
     public static BigDecimal calculateOrderBtcAmount(Order order, BigDecimal orderPrice) {
-        BigDecimal orderAltAmount = getQuantityFromOrder(order);
+        BigDecimal orderAltAmount = getQuantity(order);
         return orderAltAmount.multiply(orderPrice);
     }
 
@@ -66,12 +66,6 @@ public class OrderUtils {
         Duration duration = between(date, now);
         double actualWaitingTimeDouble = (double) duration.get(SECONDS) / (double) 3600;
         return new BigDecimal(actualWaitingTimeDouble, new MathContext(5));
-    }
-
-    public static BigDecimal getQuantityFromOrder(Order order) {
-        BigDecimal originalQuantity = new BigDecimal(order.getOrigQty());
-        BigDecimal executedQuantity = new BigDecimal(order.getExecutedQty());
-        return originalQuantity.subtract(executedQuantity);
     }
 
     private OrderUtils() {

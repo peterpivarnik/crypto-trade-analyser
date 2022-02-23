@@ -1,6 +1,6 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.calculateCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
@@ -35,7 +35,7 @@ public class OrderWrapperBuilder {
 
     public static OrderWrapper withPrices(OrderWrapper orderWrapper, OrderBook orderBook) {
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
-        BigDecimal currentPrice = calculateCurrentPrice(orderBook);
+        BigDecimal currentPrice = getCurrentPrice(orderBook);
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount());
         BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
         BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);

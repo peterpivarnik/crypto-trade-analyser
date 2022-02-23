@@ -73,15 +73,4 @@ class OrderUtilsTest {
 
         assertThat(actualWaitingTime.stripTrailingZeros().toPlainString()).isEqualTo("1");
     }
-
-    @Test
-    void shouldReturnQuantityFromOrder() {
-        Order order = new Order();
-        order.setOrigQty("25");
-        order.setExecutedQty("10");
-
-        BigDecimal quantityFromOrder = OrderUtils.getQuantityFromOrder(order);
-
-        assertThat(quantityFromOrder.stripTrailingZeros().toPlainString()).isEqualTo("15");
-    }
 }

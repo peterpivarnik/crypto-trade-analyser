@@ -2,10 +2,10 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
-import static com.psw.cta.utils.OrderUtils.getQuantityFromOrder;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
 import static java.util.Comparator.comparing;
@@ -44,7 +44,7 @@ public class DiversifyService {
         binanceApiService.cancelRequest(orderToCancel);
 
         // 2. sell cancelled order
-        BigDecimal currentQuantity = getQuantityFromOrder(orderToCancel.getOrder());
+        BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
         logger.log("currentQuantity: " + currentQuantity);
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
         binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
@@ -65,7 +65,7 @@ public class DiversifyService {
         return cryptos.stream()
                       .filter(crypto -> !bigOrderKeys.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(CryptoBuilder::withSlopeData)
-                      .filter(crypto -> crypto.getSlope().compareTo(BigDecimal.ZERO) < 0)
+                      .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope))
                       .collect(Collectors.toList());
     }

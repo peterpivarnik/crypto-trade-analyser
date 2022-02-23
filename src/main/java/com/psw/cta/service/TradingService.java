@@ -5,13 +5,16 @@ import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_M
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
+import static java.math.BigDecimal.ZERO;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -22,6 +25,7 @@ import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
@@ -59,12 +63,10 @@ public class TradingService {
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
         BigDecimal sumFromOrders = openOrders.parallelStream()
-                                             .map(order -> new BigDecimal(order.getPrice())
-                                                 .multiply(new BigDecimal(order.getOrigQty())
-                                                               .subtract(new BigDecimal(order.getExecutedQty()))))
-                                             .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                             .map(order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order)))
+                                             .reduce(ZERO, BigDecimal::add);
         logger.log("Number of open orders: " + openOrders.size());
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance(Constants.ASSET_BTC);
+        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
         BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
         BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance).add(bnbAmount);
         logger.log("My possible balance: " + myTotalPossibleBalance);
@@ -82,7 +84,7 @@ public class TradingService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        if (haveBalanceForInitialTrading(binanceApiService.getMyBalance(Constants.ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
+        if (haveBalanceForInitialTrading(binanceApiService.getMyBalance(ASSET_BTC)) && uniqueOpenOrdersSize <= minOpenOrders) {
             initTrading(() -> getCryptos(cryptos, exchangeInfo));
         }
     }
@@ -103,7 +105,7 @@ public class TradingService {
         List<Crypto> cryptos = exchangeInfo.getSymbols()
                                            .parallelStream()
                                            .map(CryptoBuilder::build)
-                                           .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(Constants.ASSET_BTC))
+                                           .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
                                            .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(Constants.SYMBOL_BNB_BTC))
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == SymbolStatus.TRADING)
                                            .map(crypto -> withVolume(crypto, tickers))
@@ -165,7 +167,7 @@ public class TradingService {
         cryptosSupplier.get()
                        .stream()
                        .map(crypto -> withLeastMaxAverage(crypto, binanceApiService.getCandleStickData(crypto, FIFTEEN_MINUTES, 96)))
-                       .filter(crypto -> crypto.getLastThreeMaxAverage().compareTo(crypto.getPreviousThreeMaxAverage()) > 0)
+                       .filter(crypto -> crypto.getLastThreeHighAverage().compareTo(crypto.getPreviousThreeHighAverage()) > 0)
                        .map(CryptoBuilder::withPrices)
                        .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(Constants.MIN_PROFIT_PERCENT) > 0)
                        .map(CryptoBuilder::withSumDiffPerc)

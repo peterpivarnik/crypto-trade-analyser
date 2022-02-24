@@ -163,4 +163,11 @@ public class CommonUtils {
     public static boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
         return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
     }
+
+    public static BigDecimal getMinBtcAmount(BigDecimal btcAmountToSpend, BigDecimal minAddition, BigDecimal minValueFromMinNotionalFilter) {
+        if (btcAmountToSpend.compareTo(minValueFromMinNotionalFilter) < 0) {
+            return getMinBtcAmount(btcAmountToSpend.add(minAddition), minAddition, minValueFromMinNotionalFilter);
+        }
+        return btcAmountToSpend.add(minAddition);
+    }
 }

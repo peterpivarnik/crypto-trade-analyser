@@ -1,9 +1,14 @@
 package com.psw.cta.service;
 
+import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
+import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
+import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
@@ -30,8 +35,15 @@ public class RepeatTradingService {
         binanceApiService.cancelRequest(orderWrapper);
         // 2. buy
         BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
+        BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+        logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+        BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
+        logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
-        binanceApiService.buy(symbolInfo, orderBtcAmount, orderPrice);
+        BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);
+        logger.log("minAddition: " + minAddition);
+        BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
+        binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
 
         // 3. create new order
         BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());

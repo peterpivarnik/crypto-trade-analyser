@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
@@ -94,7 +95,7 @@ public class DiversifyService {
         logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
         BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
         logger.log("minAddition: " + minAddition);
-        BigDecimal btcAmount = getBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
+        BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
         logger.log("btcAmount: " + btcAmount);
         BigDecimal boughtQuantity = binanceApiService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
         logger.log("boughtQuantity: " + boughtQuantity);
@@ -109,12 +110,5 @@ public class DiversifyService {
         roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
         logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
         binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
-    }
-
-    private BigDecimal getBtcAmount(BigDecimal btcAmountToSpend, BigDecimal minAddition, BigDecimal minValueFromMinNotionalFilter) {
-        if (btcAmountToSpend.compareTo(minValueFromMinNotionalFilter) < 0) {
-            return getBtcAmount(btcAmountToSpend.add(minAddition), minAddition, minValueFromMinNotionalFilter);
-        }
-        return btcAmountToSpend.add(minAddition);
     }
 }

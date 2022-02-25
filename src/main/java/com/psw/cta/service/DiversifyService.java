@@ -21,6 +21,7 @@ import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -57,13 +58,9 @@ public class DiversifyService {
     }
 
     private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
-        List<String> bigOrderKeys = totalAmounts.entrySet()
-                                                .parallelStream()
-                                                .filter(entry -> entry.getValue().compareTo(new BigDecimal("0.005")) > 0)
-                                                .map(Map.Entry::getKey)
-                                                .collect(Collectors.toList());
+        Set<String> existingSymbols = totalAmounts.keySet();
         return cryptos.stream()
-                      .filter(crypto -> !bigOrderKeys.contains(crypto.getSymbolInfo().getSymbol()))
+                      .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(CryptoBuilder::withSlopeData)
                       .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope))

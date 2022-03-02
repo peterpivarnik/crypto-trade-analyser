@@ -79,7 +79,7 @@ public class BinanceApiService {
                                    .orElseThrow(RuntimeException::new);
     }
 
-    public BigDecimal getMyTotalBalance() {
+    public BigDecimal getMyActualBalance() {
         return binanceApiRestClient.getAccount()
                                    .getBalances()
                                    .parallelStream()

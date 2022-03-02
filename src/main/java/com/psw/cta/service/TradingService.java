@@ -5,7 +5,6 @@ import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_M
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
-import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -65,20 +64,21 @@ public class TradingService {
         logger.log("***** ***** Start of trading ***** *****");
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
-        BigDecimal sumFromOrders = openOrders.parallelStream()
-                                             .map(order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order)))
-                                             .reduce(ZERO, BigDecimal::add);
         logger.log("Number of open orders: " + openOrders.size());
-        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
-        BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
-        BigDecimal myTotalPossibleBalance = sumFromOrders.add(myBtcBalance).add(bnbAmount);
-        logger.log("My possible balance: " + myTotalPossibleBalance);
-        BigDecimal myTotalBalance = binanceApiService.getMyTotalBalance();
-        logger.log("My actual balance: " + myTotalBalance);
-        int minOpenOrders = calculateMinNumberOfOrders(myTotalPossibleBalance, myBtcBalance);
-        logger.log("Min open orders: " + minOpenOrders);
         Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
         logger.log("totalAmounts: " + totalAmounts);
+        BigDecimal ordersAmount = totalAmounts.values()
+                                               .stream()
+                                               .reduce(ZERO, BigDecimal::add);
+        logger.log("ordersAmount: " + ordersAmount);
+        BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+        BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
+        logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount);
+        BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
+        BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
+        logger.log("totalAmount: " + totalAmount);
+        int minOpenOrders = calculateMinNumberOfOrders(totalAmount, myBtcBalance);
+        logger.log("Min open orders: " + minOpenOrders);
 
         ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
         int uniqueOpenOrdersSize = openOrders.parallelStream()
@@ -90,8 +90,10 @@ public class TradingService {
             expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
         } else {
             repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
-
         }
+        logger.log("Get actual balance");
+        BigDecimal actualBalance = binanceApiService.getMyActualBalance();
+        logger.log("actualBalance: " + actualBalance);
     }
 
     private void repeatTrading(List<Order> openOrders,

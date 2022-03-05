@@ -1,10 +1,16 @@
 package com.psw.cta.utils;
 
+import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.general.SymbolFilter;
+import com.binance.api.client.domain.general.SymbolInfo;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OrderUtilsTest {
@@ -33,25 +39,63 @@ class OrderUtilsTest {
     }
 
     @Test
-    void shouldReturnPriceToSellHigherBy5PercentWhenOrderBtcAmountMoreThanHalfOfMaxOrderBtcAmount() {
+    void shouldReturnCurrentPriceWhenOrderPriceEqualCurrentPrice(){
         BigDecimal orderBtcAmount = new BigDecimal("1");
-        BigDecimal currentPrice = new BigDecimal("1");
-        BigDecimal orderPrice = new BigDecimal("2");
+        BigDecimal currentPrice = new BigDecimal("0.00000140");
+        BigDecimal orderPrice = new BigDecimal("0.00000140");
+        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
 
-        BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("1.5075");
+        assertThat(priceToSell).isEqualTo("0.00000140");
     }
 
     @Test
-    void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountLessThanHalfOfMaxOrderBtcAmount() {
-        BigDecimal orderBtcAmount = new BigDecimal("0.005");
-        BigDecimal currentPrice = new BigDecimal("0.4");
-        BigDecimal orderPrice = new BigDecimal("0.8");
+    void shouldReturnCurrentPriceWhenOrderPriceEqualCurrentPriceWithTickSize(){
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00000139");
+        BigDecimal orderPrice = new BigDecimal("0.00000140");
+        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
 
-        BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.7");
+        assertThat(priceToSell).isEqualTo("0.00000139");
+    }
+
+    @Test
+    void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountLessThan0point001() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0002016000000000");
+        BigDecimal currentPrice = new BigDecimal("0.00001382");
+        BigDecimal orderPrice = new BigDecimal("0.00001400");
+        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+
+        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.00001396");
+    }
+
+    @Test
+    void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountMoreThan0point001ButLessThan0point002() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0108599400000000");
+        BigDecimal currentPrice = new BigDecimal("0.00000177");
+        BigDecimal orderPrice = new BigDecimal("0.00000189");
+        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+
+        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.00000185");
+    }
+
+    @Test
+    void shouldReturnPriceToSellHigherBy5PercentWhenOrderBtcAmountMoreThan0point002() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0209677000000000");
+        BigDecimal currentPrice = new BigDecimal("0.00000239");
+        BigDecimal orderPrice = new BigDecimal("0.00000254");
+        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+
+        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.0000024");
     }
 
     @Test
@@ -59,10 +103,30 @@ class OrderUtilsTest {
         BigDecimal orderBtcAmount = new BigDecimal("0.005");
         BigDecimal currentPrice = new BigDecimal("0.8");
         BigDecimal orderPrice = new BigDecimal("0.8");
+        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
 
-        BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
 
         assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.8");
+    }
+
+    private SymbolInfo createSymbolInfo(String tickSize) {
+        SymbolInfo symbolInfo = new SymbolInfo();
+        symbolInfo.setFilters(createFilters(tickSize));
+        return symbolInfo;
+    }
+
+    private List<SymbolFilter> createFilters(String tickSize) {
+        List<SymbolFilter> filters = new ArrayList<>();
+        filters.add(createFilter(tickSize));
+        return filters;
+    }
+
+    private SymbolFilter createFilter(String tickSize) {
+        SymbolFilter symbolFilter = new SymbolFilter();
+        symbolFilter.setTickSize(tickSize);
+        symbolFilter.setFilterType(PRICE_FILTER);
+        return symbolFilter;
     }
 
     @Test

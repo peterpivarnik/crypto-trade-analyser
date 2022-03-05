@@ -1,7 +1,7 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
+import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
@@ -9,6 +9,7 @@ import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 
 import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.OrderBook;
 import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
@@ -33,10 +34,10 @@ public class OrderWrapperBuilder {
         return orderWrapper;
     }
 
-    public static OrderWrapper withPrices(OrderWrapper orderWrapper, OrderBook orderBook) {
+    public static OrderWrapper withPrices(OrderWrapper orderWrapper, OrderBook orderBook, SymbolInfo symbolInfo) {
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
         BigDecimal currentPrice = getCurrentPrice(orderBook);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount());
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount(), symbolInfo);
         BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
         BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
         orderWrapper.setCurrentPrice(currentPrice);

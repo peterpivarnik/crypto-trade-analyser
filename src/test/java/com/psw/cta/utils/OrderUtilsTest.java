@@ -55,7 +55,7 @@ class OrderUtilsTest {
     }
 
     @Test
-    void shouldReturnOrderPriceWhenPriceToSellHigherThanCurrentPrice() {
+    void shouldReturnCurrentPriceWhenPriceToSellHigherThanOrderPrice() {
         BigDecimal orderBtcAmount = new BigDecimal("0.005");
         BigDecimal currentPrice = new BigDecimal("0.8");
         BigDecimal orderPrice = new BigDecimal("0.8");

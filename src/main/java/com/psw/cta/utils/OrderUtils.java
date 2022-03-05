@@ -41,7 +41,11 @@ public class OrderUtils {
         } else {
             priceToSell = priceToSellWithoutProfit.multiply(new BigDecimal("1.005")).divide(ONE, 8, UP);
         }
-        return priceToSell.min(orderPrice);
+        if (priceToSell.compareTo(orderPrice) >= 0) {
+            return currentPrice;
+        } else {
+            return priceToSell;
+        }
     }
 
     private static BigDecimal calculatePriceToSellWithoutProfit(BigDecimal orderPrice, BigDecimal currentPrice) {

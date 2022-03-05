@@ -36,22 +36,33 @@ class OrderUtilsTest {
     void shouldReturnPriceToSellHigherBy5PercentWhenOrderBtcAmountMoreThanHalfOfMaxOrderBtcAmount() {
         BigDecimal orderBtcAmount = new BigDecimal("1");
         BigDecimal currentPrice = new BigDecimal("1");
-        BigDecimal orderPrice = new BigDecimal("1");
+        BigDecimal orderPrice = new BigDecimal("2");
 
         BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("1.005");
+        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("1.5075");
     }
 
     @Test
     void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountLessThanHalfOfMaxOrderBtcAmount() {
         BigDecimal orderBtcAmount = new BigDecimal("0.005");
-        BigDecimal currentPrice = new BigDecimal("0.1");
-        BigDecimal orderPrice = new BigDecimal("0.9");
+        BigDecimal currentPrice = new BigDecimal("0.4");
+        BigDecimal orderPrice = new BigDecimal("0.8");
 
         BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
 
         assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.7");
+    }
+
+    @Test
+    void shouldReturnOrderPriceWhenPriceToSellHigherThanCurrentPrice() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.005");
+        BigDecimal currentPrice = new BigDecimal("0.8");
+        BigDecimal orderPrice = new BigDecimal("0.8");
+
+        BigDecimal priceToSell = OrderUtils.calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount);
+
+        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.8");
     }
 
     @Test

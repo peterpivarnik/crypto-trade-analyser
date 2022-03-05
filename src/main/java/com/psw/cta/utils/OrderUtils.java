@@ -33,13 +33,15 @@ public class OrderUtils {
 
     public static BigDecimal calculatePriceToSell(BigDecimal orderPrice, BigDecimal currentPrice, BigDecimal orderBtcAmount) {
         BigDecimal priceToSellWithoutProfit = calculatePriceToSellWithoutProfit(orderPrice, currentPrice);
+        BigDecimal priceToSell;
         if (orderBtcAmount.compareTo(HALF_OF_MAX_ORDER_BTC_AMOUNT) < 0) {
             BigDecimal profit = orderPrice.subtract(priceToSellWithoutProfit);
             BigDecimal realProfit = profit.divide(TWO, 8, UP);
-            return priceToSellWithoutProfit.add(realProfit);
+            priceToSell = priceToSellWithoutProfit.add(realProfit);
         } else {
-            return priceToSellWithoutProfit.multiply(new BigDecimal("1.005")).divide(ONE, 8, UP);
+            priceToSell = priceToSellWithoutProfit.multiply(new BigDecimal("1.005")).divide(ONE, 8, UP);
         }
+        return priceToSell.min(orderPrice);
     }
 
     private static BigDecimal calculatePriceToSellWithoutProfit(BigDecimal orderPrice, BigDecimal currentPrice) {

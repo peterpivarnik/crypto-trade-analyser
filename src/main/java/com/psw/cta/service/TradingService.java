@@ -62,6 +62,8 @@ public class TradingService {
 
     public void startTrading() {
         logger.log("***** ***** Start of trading ***** *****");
+        String version = getClass().getPackage().getImplementationVersion();
+        logger.log("Crypto trader with version " + version + " started.");
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
         logger.log("Number of open orders: " + openOrders.size());

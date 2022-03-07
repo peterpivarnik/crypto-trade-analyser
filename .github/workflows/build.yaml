@@ -14,7 +14,7 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots verify
+      - run: mvn --batch-mode --update-snapshots verify
       - run: git config --global user.email "peter.pivarnik@gmail.com"
       - run: git config --global user.name "peterpivarnik"
       - run: mvn -B release:prepare
@@ -23,5 +23,5 @@ jobs:
         with:
           name: Package
           path: staging
-        run: mkdir staging && cp target/*.jar staging
+      - run: mkdir staging && cp target/*.jar staging
 

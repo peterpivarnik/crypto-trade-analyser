@@ -23,7 +23,7 @@ jobs:
       - name: Release new version
         run: |
           git config --global user.email "${{ secrets.USER_EMAIL }}"
-          git config --global user.name "peterpivarnik"
+          git config --global user.name "${{ secrets.USER_NAME }}"
           mvn -B release:prepare
           mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
       - run: mkdir staging && cp target/uber*.jar staging

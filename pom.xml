@@ -4,7 +4,7 @@
 
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Crypto trader</name>
@@ -134,7 +134,7 @@
      </build>
     <scm>
         <developerConnection>scm:git:https://github.com/peterpivarnik/crypto-trade-analyser/</developerConnection>
-    <tag>crypto-trader-1.0.6-SNAPSHOT</tag>
+    <tag>HEAD</tag>
   </scm>
     <organization>
         <name>PSoftware, s.r.o.</name>

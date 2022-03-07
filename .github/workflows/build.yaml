@@ -21,10 +21,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - run: git config --global user.email "peter.pivarnik@gmail.com"
-      - run: git config --global user.name "peterpivarnik"
-      - run: mvn -B release:prepare
-      - run: mvn release:perform
+      - run: |
+        git config --global user.email "peter.pivarnik@gmail.com"
+        git config --global user.name "peterpivarnik"
+        mvn -B release:prepare
+        mvn release:perform
 
   install:
     runs-on: ubuntu-latest

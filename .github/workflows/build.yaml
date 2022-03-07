@@ -20,6 +20,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Release new version
         run: |
           git config --global user.email "peter.pivarnik@gmail.com"
           git config --global user.name "peterpivarnik"

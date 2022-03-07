@@ -24,6 +24,7 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.TickerStatistics;
+import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.Constants;
@@ -62,7 +63,7 @@ public class TradingService {
 
     public void startTrading() {
         logger.log("***** ***** Start of trading ***** *****");
-        String version = getClass().getPackage().getImplementationVersion();
+        String version = Manifests.read("Implementation-Version");
         logger.log("Crypto trader with version " + version + " started.");
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();

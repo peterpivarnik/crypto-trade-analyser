@@ -20,8 +20,8 @@ jobs:
       - run: mvn -B release:prepare
       - run: mvn release:perform
       - uses: actions/upload-artifact@v3
-      - run: mkdir staging && cp target/*.jar staging
         with:
           name: Package
           path: staging
+        run: mkdir staging && cp target/*.jar staging
 

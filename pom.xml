@@ -136,6 +136,13 @@
         <developerConnection>scm:git:https://github.com/peterpivarnik/crypto-trade-analyser/</developerConnection>
         <tag>crypto-trader</tag>
     </scm>
+    <distributionManagement>
+        <repository>
+            <id>internal.repo</id>
+            <name>Internal repo</name>
+            <url>file:///home/test/testesb/in</url>
+        </repository>
+    </distributionManagement>
     <organization>
         <name>PSoftware, s.r.o.</name>
     </organization>

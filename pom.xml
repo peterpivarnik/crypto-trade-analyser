@@ -136,6 +136,7 @@
     </build>
     <scm>
         <developerConnection>scm:git:https://github.com/peterpivarnik/crypto-trade-analyser/</developerConnection>
+        <tag>crypto-trader</tag>
     </scm>
     <organization>
         <name>PSoftware, s.r.o.</name>

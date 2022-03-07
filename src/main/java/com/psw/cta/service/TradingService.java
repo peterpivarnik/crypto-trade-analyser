@@ -130,7 +130,6 @@ public class TradingService {
                          .map(orderWrapper -> withPrices(orderWrapper,
                                                          binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()),
                                                          exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol())))
-
                          .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
                          .peek(orderWrapper -> logger.log(orderWrapper.toString()))
                          .collect(Collectors.toList());

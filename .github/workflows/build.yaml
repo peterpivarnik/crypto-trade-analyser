@@ -25,7 +25,7 @@ jobs:
           git config --global user.email "peter.pivarnik@gmail.com"
           git config --global user.name "peterpivarnik"
           mvn -B release:prepare
-          mvn release:perform
+          mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
       - uses: actions/upload-artifact@v3
         with:
           name: Package

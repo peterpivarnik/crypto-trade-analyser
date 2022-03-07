@@ -151,6 +151,7 @@ public class TradingService {
         }
     }
 
+
     private void diversify(Map<String, BigDecimal> totalAmounts, ExchangeInfo exchangeInfo, List<OrderWrapper> orderWrappers) {
         orderWrappers.stream()
                      .max(comparing(OrderWrapper::getOrderBtcAmount))

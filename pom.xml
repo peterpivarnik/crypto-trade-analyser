@@ -4,7 +4,7 @@
 
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Crypto trader</name>
@@ -127,7 +127,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>3.0.0-M5</version>
                 <configuration>
-                    <tagNameFormat>crypto-trader</tagNameFormat>
+                    <tagNameFormat>crypto-trader-${project.version}</tagNameFormat>
                 </configuration>
             </plugin>
         </plugins>

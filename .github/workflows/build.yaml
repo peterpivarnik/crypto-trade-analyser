@@ -26,4 +26,9 @@ jobs:
           git config --global user.name "peterpivarnik"
           mvn -B release:prepare
           mvn release:perform
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Package
+          path: staging
+        run: mkdir staging && cp target/*.jar staging
 

@@ -30,5 +30,6 @@ jobs:
         with:
           name: Package
           path: staging
+      - name: Upload jar
         run: mkdir staging && cp target/*.jar staging
 

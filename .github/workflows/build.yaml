@@ -20,3 +20,5 @@ jobs:
         with:
           name: Package
           path: staging
+      - run: mvn -B release:prepare
+      - run: mvn release:perform

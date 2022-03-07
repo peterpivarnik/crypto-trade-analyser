@@ -15,12 +15,12 @@ jobs:
           distribution: 'adopt'
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
-      - run: mkdir staging && cp target/*.jar staging
       - run: git config --global user.email "peter.pivarnik@gmail.com"
       - run: git config --global user.name "peterpivarnik"
       - run: mvn -B release:prepare
       - run: mvn release:perform
       - uses: actions/upload-artifact@v3
+      - run: mkdir staging && cp target/*.jar staging
         with:
           name: Package
           path: staging

@@ -15,5 +15,14 @@ jobs:
           distribution: 'adopt'
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
+  release:
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v2
+        run: |
+          git config --global user.email "peter.pivarnik@gmail.com"
+          git config --global user.name "peterpivarnik"
+          mvn -B release:prepare
+          mvn release:perform
 

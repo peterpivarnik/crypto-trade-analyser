@@ -30,7 +30,7 @@ jobs:
           aws s3 cp target/${{ secrets.TARGET_FILE_NAME }} s3://${{ secrets.S3_BUCKET }}
           aws lambda update-function-code \
           --function-name ${{ secrets.AWS_LAMBDA_FUNCTION_NAME }} \
-          --s3-bucket ${{ secrets.S3_BUCKET }}
+          --s3-bucket ${{ secrets.S3_BUCKET }} \
           --s3-key ${{ secrets.TARGET_FILE_NAME }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

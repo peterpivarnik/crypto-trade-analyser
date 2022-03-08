@@ -24,6 +24,7 @@ jobs:
           name: Package
           path: staging
       - uses: actions/checkout@master
+      - run: mvn --batch-mode verify
       - name: Upload to S3
         run: |
           aws s3 cp target/uber*.jar s3://${{ secrets.S3_BUCKET }}

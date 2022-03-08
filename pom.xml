@@ -116,7 +116,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <finalName>uber-${project.artifactId}-${project.version}</finalName>
+                    <finalName>uber-${project.artifactId}</finalName>
                 </configuration>
             </plugin>
             <plugin>

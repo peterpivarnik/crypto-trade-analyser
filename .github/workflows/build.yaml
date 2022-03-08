@@ -17,14 +17,13 @@ jobs:
         run: |
           git config --global user.email "${{ secrets.USER_EMAIL }}"
           git config --global user.name "${{ secrets.USER_NAME }}"
-          mvn -B release:prepare
+          mvn -B release:prepare verify
       - run: mkdir staging && cp target/uber*.jar staging
       - uses: actions/upload-artifact@v3
         with:
           name: Package
           path: staging
       - uses: actions/checkout@master
-      - run: mvn --batch-mode verify
       - name: Upload to S3
         run: |
           aws s3 cp target/uber*.jar s3://${{ secrets.S3_BUCKET }}

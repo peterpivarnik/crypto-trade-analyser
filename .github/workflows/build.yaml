@@ -17,7 +17,7 @@ jobs:
         run: |
           git config --global user.email "${{ secrets.USER_EMAIL }}"
           git config --global user.name "${{ secrets.USER_NAME }}"
-          mvn -B release:prepare verify
+          mvn -B release:prepare
       - run: mkdir staging && cp target/uber*.jar staging
       - uses: actions/upload-artifact@v3
         with:

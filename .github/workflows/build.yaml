@@ -11,20 +11,20 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - run: mvn --batch-mode --update-snapshots verify
-
+      - name: Build woth tests
+        run: mvn --batch-mode --update-snapshots verify
       - uses: actions/checkout@v2
-      - name: Release prepare dry and build
+      - name: Release prepare
         run: |
           git config --global user.email "${{ secrets.USER_EMAIL }}"
           git config --global user.name "${{ secrets.USER_NAME }}"
           mvn -B release:prepare
-
       - uses: actions/upload-artifact@v3
         with:
           name: Package
           path: staging
-      - run: mkdir staging && cp target/uber*.jar staging
+      - name: Copy target files
+        run: mkdir staging && cp target/uber*.jar staging
       - name: Upload to S3
         run: |
           aws s3 cp target/uber*.jar s3://${{ secrets.S3_BUCKET }}
@@ -32,8 +32,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.S3_BUCKET_REGION }}
-
-      - name: Release prepare and perform
+      - name: Release perform
         run: |
           mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
-

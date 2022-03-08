@@ -19,6 +19,7 @@ jobs:
           git config --global user.name "${{ secrets.USER_NAME }}"
           mvn -B release:prepare
       - uses: actions/checkout@master
+      - run: mkdir staging && cp target/uber*.jar staging
       - name: Upload to S3
         run: |
           aws s3 cp target/uber*.jar s3://${{ secrets.S3_BUCKET }}
@@ -26,7 +27,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.S3_BUCKET_REGION }}
-      - run: mkdir staging && cp target/uber*.jar staging
       - uses: actions/upload-artifact@v3
         with:
           name: Package

@@ -28,6 +28,11 @@ jobs:
           path: staging
 
       - uses: actions/checkout@master
+      - uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+      - run: mvn --batch-mode --update-snapshots verify
       - name: Upload to S3
         run: |
           aws s3 cp target/uber*.jar s3://${{ secrets.S3_BUCKET }}

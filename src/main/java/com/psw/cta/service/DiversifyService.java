@@ -54,7 +54,7 @@ public class DiversifyService {
         List<Crypto> cryptos = cryptosSupplier.get();
         BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
         List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
-        buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 1);
+        buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 2);
     }
 
     private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {

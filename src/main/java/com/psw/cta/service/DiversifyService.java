@@ -63,7 +63,7 @@ public class DiversifyService {
                       .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(CryptoBuilder::withSlopeData)
                       .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
-                      .sorted(comparing(Crypto::getPriceCountToSlope))
+                      .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
                       .collect(Collectors.toList());
     }
 

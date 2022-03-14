@@ -24,25 +24,18 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.general.SymbolStatus;
 import com.binance.api.client.domain.market.TickerStatistics;
+import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 public class TradingService {
@@ -70,7 +63,7 @@ public class TradingService {
 
     public void startTrading() {
         logger.log("***** ***** Start of trading ***** *****");
-        String implementationVersion = getImplementationVersion();
+        String implementationVersion = Manifests.read("Implementation-Version");
         logger.log("Crypto trader with version " + implementationVersion + " started.");
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
@@ -104,26 +97,6 @@ public class TradingService {
         logger.log("Get actual balance");
         BigDecimal actualBalance = binanceApiService.getMyActualBalance();
         logger.log("actualBalance: " + actualBalance);
-    }
-
-    private String getImplementationVersion() {
-        try {
-            Enumeration<URL> resources = Thread.currentThread()
-                                               .getContextClassLoader()
-                                               .getResources("META-INF/MANIFEST.MF");
-            if (resources.hasMoreElements()) {
-                URI uri = resources.nextElement().toURI();
-                InputStream inputStream = uri.toURL().openStream();
-
-                final Manifest manifest = new Manifest(inputStream);
-                final Attributes attrs = manifest.getMainAttributes();
-                return attrs.getValue("Implementation-Version");
-            }
-            return "Version not found!";
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-            return "Version not found due to exception!";
-        }
     }
 
     private void repeatTrading(List<Order> openOrders,

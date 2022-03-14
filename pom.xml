@@ -51,6 +51,11 @@
             <artifactId>commons-math3</artifactId>
             <version>${org.apache.commons.commons-math3.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.jcabi</groupId>
+            <artifactId>jcabi-manifests</artifactId>
+            <version>${com.jcabi.jcabi-manifests.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>

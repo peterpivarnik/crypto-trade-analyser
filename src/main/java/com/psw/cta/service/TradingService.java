@@ -30,7 +30,10 @@ import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.List;
@@ -105,18 +108,21 @@ public class TradingService {
 
     private String getImplementationVersion() {
         try {
-            Enumeration<URL> resources = getClass().getClassLoader()
-                                                   .getResources("META-INF/MANIFEST.MF");
+            Enumeration<URL> resources = Thread.currentThread()
+                                               .getContextClassLoader()
+                                               .getResources("META-INF/MANIFEST.MF");
             if (resources.hasMoreElements()) {
-                Manifest manifest = new Manifest(resources.nextElement().openStream());
-                Attributes attributes = manifest.getMainAttributes();
-                return attributes.getValue("Implementation-Version");
+                URI uri = resources.nextElement().toURI();
+                InputStream inputStream = uri.toURL().openStream();
+
+                final Manifest manifest = new Manifest(inputStream);
+                final Attributes attrs = manifest.getMainAttributes();
+                return attrs.getValue("Implementation-Version");
             }
             return "Version not found!";
-        } catch (IOException e) {
-            String message = "Version not found due to exception!";
-            logger.log(message);
-            return message;
+        } catch (IOException | URISyntaxException e) {
+            e.printStackTrace();
+            return "Version not found due to exception!";
         }
     }
 

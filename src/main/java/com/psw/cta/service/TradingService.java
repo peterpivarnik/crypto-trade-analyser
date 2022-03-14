@@ -29,12 +29,17 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.Constants;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 public class TradingService {
@@ -62,7 +67,7 @@ public class TradingService {
 
     public void startTrading() {
         logger.log("***** ***** Start of trading ***** *****");
-        String implementationVersion = getClass().getPackage().getImplementationVersion();
+        String implementationVersion = getImplementationVersion();
         logger.log("Crypto trader with version " + implementationVersion + " started.");
         BigDecimal bnbBalance = bnbService.buyBnB();
         List<Order> openOrders = binanceApiService.getOpenOrders();
@@ -96,6 +101,23 @@ public class TradingService {
         logger.log("Get actual balance");
         BigDecimal actualBalance = binanceApiService.getMyActualBalance();
         logger.log("actualBalance: " + actualBalance);
+    }
+
+    private String getImplementationVersion() {
+        try {
+            Enumeration<URL> resources = getClass().getClassLoader()
+                                                   .getResources("META-INF/MANIFEST.MF");
+            if (resources.hasMoreElements()) {
+                Manifest manifest = new Manifest(resources.nextElement().openStream());
+                Attributes attributes = manifest.getMainAttributes();
+                return attributes.getValue("Implementation-Version");
+            }
+            return "Version not found!";
+        } catch (IOException e) {
+            String message = "Version not found due to exception!";
+            logger.log(message);
+            return message;
+        }
     }
 
     private void repeatTrading(List<Order> openOrders,

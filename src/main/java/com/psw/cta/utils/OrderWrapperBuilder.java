@@ -34,10 +34,13 @@ public class OrderWrapperBuilder {
         return orderWrapper;
     }
 
-    public static OrderWrapper withPrices(OrderWrapper orderWrapper, OrderBook orderBook, SymbolInfo symbolInfo) {
+    public static OrderWrapper withPrices(OrderWrapper orderWrapper,
+                                          OrderBook orderBook,
+                                          SymbolInfo symbolInfo,
+                                          BigDecimal btcBalanceToTotalBalanceRatio) {
         BigDecimal orderPrice = orderWrapper.getOrderPrice();
         BigDecimal currentPrice = getCurrentPrice(orderBook);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount(), symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount(), symbolInfo, btcBalanceToTotalBalanceRatio);
         BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
         BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
         orderWrapper.setCurrentPrice(currentPrice);

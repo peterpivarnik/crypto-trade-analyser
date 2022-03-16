@@ -15,6 +15,7 @@ import static com.psw.cta.utils.CryptoBuilder.withVolume;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 
@@ -89,20 +90,21 @@ public class TradingService {
                                              .values()
                                              .size();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
-            expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
-        } else {
-            repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
-        }
-        logger.log("Get actual balance");
         BigDecimal actualBalance = binanceApiService.getMyActualBalance();
         logger.log("actualBalance: " + actualBalance);
+        BigDecimal btcBalanceToTotalBalanceRatio = myBtcBalance.divide(actualBalance, 8, CEILING);
+        if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
+            expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, btcBalanceToTotalBalanceRatio);
+        } else {
+            repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, btcBalanceToTotalBalanceRatio);
+        }
     }
 
     private void repeatTrading(List<Order> openOrders,
                                BigDecimal myBtcBalance,
                                Map<String, BigDecimal> totalAmounts,
-                               ExchangeInfo exchangeInfo) {
+                               ExchangeInfo exchangeInfo,
+                               BigDecimal btcBalanceToTotalBalanceRatio) {
         Function<OrderWrapper, SymbolInfo> symbolFunction = orderWrapper -> exchangeInfo.getSymbols()
                                                                                         .parallelStream()
                                                                                         .filter(symbolInfo -> symbolInfo.getSymbol()
@@ -110,7 +112,7 @@ public class TradingService {
                                                                                                                                             .getSymbol()))
                                                                                         .findAny()
                                                                                         .orElseThrow();
-        List<OrderWrapper> wrappers = getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
+        List<OrderWrapper> wrappers = getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, btcBalanceToTotalBalanceRatio);
         wrappers.stream()
                 .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
                 .forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper), orderWrapper));
@@ -119,7 +121,8 @@ public class TradingService {
     private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,
                                                 BigDecimal myBtcBalance,
                                                 Map<String, BigDecimal> totalAmounts,
-                                                ExchangeInfo exchangeInfo) {
+                                                ExchangeInfo exchangeInfo,
+                                                BigDecimal btcBalanceToTotalBalanceRatio) {
         return openOrders.stream()
                          .map(Order::getSymbol)
                          .distinct()
@@ -132,7 +135,8 @@ public class TradingService {
                          .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                          .map(orderWrapper -> withPrices(orderWrapper,
                                                          binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()),
-                                                         exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol())))
+                                                         exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
+                                                         btcBalanceToTotalBalanceRatio))
                          .filter(orderWrapper -> orderWrapper.getPriceToSellPercentage().compareTo(MIN_PROFIT_PERCENT) > 0)
                          .peek(orderWrapper -> logger.log(orderWrapper.toString()))
                          .collect(Collectors.toList());
@@ -145,8 +149,9 @@ public class TradingService {
     private void expandOrders(List<Order> openOrders,
                               BigDecimal myBtcBalance,
                               Map<String, BigDecimal> totalAmounts,
-                              ExchangeInfo exchangeInfo) {
-        List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo);
+                              ExchangeInfo exchangeInfo,
+                              BigDecimal btcBalanceToTotalBalanceRatio) {
+        List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, btcBalanceToTotalBalanceRatio);
         diversify(totalAmounts, exchangeInfo, orderWrappers);
         BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
         if (haveBalanceForInitialTrading(myBalance)) {

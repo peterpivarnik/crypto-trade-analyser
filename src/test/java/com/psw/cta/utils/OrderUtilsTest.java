@@ -39,92 +39,203 @@ class OrderUtilsTest {
     }
 
     @Test
-    void shouldReturnCurrentPriceWhenOrderPriceEqualCurrentPrice(){
+    void shouldCalculateMinPriceToSellWhenBtcAmountHighAndRatioHigh() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.15");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.75");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
+    }
+
+    @Test
+    void shouldCalculateMaxPriceToSellWhenBtcAmountLowAndRatioLow() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0001");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.50");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.00474"));
+    }
+
+    @Test
+    void shouldCalculateMediumPriceToSellWhenBtcAmountHighAndRatioLow() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.15");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.50");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
+    }
+
+    @Test
+    void shouldCalculateMediumPriceToSellWhenBtcAmountLowAndRatioHigh() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0001");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.75");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
+    }
+
+    @Test
+    void shouldCalculateMinPriceToSellWhenBtcAmountAndRatioExtremelHigh() {
         BigDecimal orderBtcAmount = new BigDecimal("1");
-        BigDecimal currentPrice = new BigDecimal("0.00000140");
-        BigDecimal orderPrice = new BigDecimal("0.00000140");
-        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell).isEqualTo("0.00000140");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
     }
 
     @Test
-    void shouldReturnCurrentPriceWhenOrderPriceEqualCurrentPriceWithTickSize(){
+    void shouldCalculateMaxPriceToSellWhenBtcAmountAndRatioExtremelyLow() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0001");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.01");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004739"));
+    }
+
+    @Test
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyLowAndPricesAreTheSame() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0001");
+        BigDecimal currentPrice = new BigDecimal("0.00654300");
+        BigDecimal orderPrice = new BigDecimal("0.00654300");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.01");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+    }
+
+    @Test
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyHighAndPricesAreTheSame() {
         BigDecimal orderBtcAmount = new BigDecimal("1");
-        BigDecimal currentPrice = new BigDecimal("0.00000139");
-        BigDecimal orderPrice = new BigDecimal("0.00000140");
-        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
+        BigDecimal currentPrice = new BigDecimal("0.00654300");
+        BigDecimal orderPrice = new BigDecimal("0.00654300");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell).isEqualTo("0.00000139");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
 
     @Test
-    void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountLessThan0point001() {
-        BigDecimal orderBtcAmount = new BigDecimal("0.0002016000000000");
-        BigDecimal currentPrice = new BigDecimal("0.00001382");
-        BigDecimal orderPrice = new BigDecimal("0.00001400");
-        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyLowAndPricesDifferByOne() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654300");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.00001396");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
     }
 
     @Test
-    void shouldReturnPriceToSellLowerByQuarterWhenOrderBtcAmountMoreThan0point001ButLessThan0point002() {
-        BigDecimal orderBtcAmount = new BigDecimal("0.0108599400000000");
-        BigDecimal currentPrice = new BigDecimal("0.00000177");
-        BigDecimal orderPrice = new BigDecimal("0.00000189");
-        SymbolInfo symbolInfo = createSymbolInfo("0.00000001");
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyHighAndPricesDifferByOne() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654300");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.00000185");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
+    }
+
+
+    @Test
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyLowAndPricesDifferByTwo() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654400");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
 
     @Test
-    void shouldReturnPriceToSellHigherBy5PercentWhenOrderBtcAmountMoreThan0point002() {
-        BigDecimal orderBtcAmount = new BigDecimal("0.0209677000000000");
-        BigDecimal currentPrice = new BigDecimal("0.00000239");
-        BigDecimal orderPrice = new BigDecimal("0.00000254");
-        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyHighAndPricesDifferByTwo() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654400");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.0000024");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
 
     @Test
-    void shouldReturnCurrentPriceWhenPriceToSellHigherThanOrderPrice() {
-        BigDecimal orderBtcAmount = new BigDecimal("0.005");
-        BigDecimal currentPrice = new BigDecimal("0.8");
-        BigDecimal orderPrice = new BigDecimal("0.8");
-        SymbolInfo symbolInfo = createSymbolInfo("0.0000001");
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyLowAndPricesDifferByThree() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654500");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
 
-        assertThat(priceToSell.stripTrailingZeros()).isEqualTo("0.8");
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
 
-    private SymbolInfo createSymbolInfo(String tickSize) {
+    @Test
+    void shouldCalculatePriceToSellWhenBtcAmountAndRatioExtremelyHighAndPricesDifferByThree() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00654200");
+        BigDecimal orderPrice = new BigDecimal("0.00654500");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+    }
+
+    private SymbolInfo createSymbolInfo() {
         SymbolInfo symbolInfo = new SymbolInfo();
-        symbolInfo.setFilters(createFilters(tickSize));
+        symbolInfo.setFilters(createFilters());
         return symbolInfo;
     }
 
-    private List<SymbolFilter> createFilters(String tickSize) {
+    private List<SymbolFilter> createFilters() {
         List<SymbolFilter> filters = new ArrayList<>();
-        filters.add(createFilter(tickSize));
+        filters.add(createFilter());
         return filters;
     }
 
-    private SymbolFilter createFilter(String tickSize) {
+    private SymbolFilter createFilter() {
         SymbolFilter symbolFilter = new SymbolFilter();
-        symbolFilter.setTickSize(tickSize);
+        symbolFilter.setTickSize("0.000001");
         symbolFilter.setFilterType(PRICE_FILTER);
         return symbolFilter;
     }

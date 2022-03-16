@@ -16,4 +16,15 @@ public class LeastSquares {
         simpleRegression.addData(regressionData);
         return simpleRegression.getSlope();
     }
+
+    public static SimpleRegression getRegression(double x1, double y1, double x2, double y2) {
+        SimpleRegression simpleRegression = new SimpleRegression(true);
+        double[][] regressionData = new double[2][2];
+            regressionData[0][0] = x1;
+            regressionData[0][1] = y1;
+            regressionData[1][0] = x2;
+            regressionData[1][1] = y2;
+        simpleRegression.addData(regressionData);
+        return simpleRegression;
+    }
 }

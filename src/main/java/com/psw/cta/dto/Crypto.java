@@ -26,6 +26,16 @@ public class Crypto {
     private BigDecimal lastThreeHighAverage;
     private BigDecimal previousThreeHighAverage;
     private BigDecimal priceCountToSlope;
+    private BigDecimal numberOfCandles;
+
+
+    public BigDecimal getNumberOfCandles() {
+        return numberOfCandles;
+    }
+
+    public void setNumberOfCandles(BigDecimal numberOfCandles) {
+        this.numberOfCandles = numberOfCandles;
+    }
 
     public BigDecimal getPriceCountToSlope() {
         return priceCountToSlope;
@@ -140,6 +150,7 @@ public class Crypto {
                ", lastThreeHighAverage=" + lastThreeHighAverage +
                ", previousThreeHighAverage=" + previousThreeHighAverage +
                ", priceCountToSlope=" + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : null) +
+               ", numberOfCandles=" + numberOfCandles +
                '}';
     }
 }

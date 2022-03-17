@@ -7,6 +7,7 @@ import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.CommonUtils.getAveragePrice;
+import static com.psw.cta.utils.CommonUtils.getAveragePrices;
 import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
@@ -29,7 +30,6 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
-import com.psw.cta.dto.Crypto;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
@@ -214,17 +214,26 @@ class CommonUtilsTest {
 
     @Test
     void shouldReturnValidCountToSlope() {
-        Crypto crypto = getCrypto();
+        List<BigDecimal> averagePrices = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            averagePrices.add(new BigDecimal("" + i));
+        }
 
-        BigDecimal priceCountToSlope = getPriceCountToSlope(crypto);
+        BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
 
-        assertThat(priceCountToSlope.stripTrailingZeros()).isEqualTo("99");
+        assertThat(priceCountToSlope.stripTrailingZeros().toPlainString()).isEqualTo("100");
     }
 
-    private Crypto getCrypto() {
-        Crypto crypto = new Crypto(getSymbolInfo(MIN_NOTIONAL, "4"));
-        crypto.setThreeMonthsCandleStickData(createThreeMonthsCandleStickData());
-        return crypto;
+    @Test
+    void shouldReturnAveragePrices() {
+        List<Candlestick> threeMonthsCandleStickData = createThreeMonthsCandleStickData();
+
+        List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
+
+        assertThat(averagePrices).hasSize(99);
+        for (int i = 0; i < 99; i++) {
+            assertThat(averagePrices.get(i).compareTo(new BigDecimal(i))).isEqualTo(0);
+        }
     }
 
     private List<Candlestick> createThreeMonthsCandleStickData() {

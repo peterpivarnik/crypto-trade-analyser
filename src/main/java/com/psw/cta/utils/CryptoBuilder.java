@@ -1,7 +1,8 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
+import static com.psw.cta.utils.CommonUtils.getAveragePrices;
+import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
 import static com.psw.cta.utils.CryptoUtils.calculateLastThreeHighAverage;
 import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeHighAverage;
@@ -25,8 +26,10 @@ public class CryptoBuilder {
     }
 
     public static Crypto withSlopeData(Crypto crypto) {
-        BigDecimal priceCountToSlope = getPriceCountToSlope(crypto);
+        List<BigDecimal> averagePrices = getAveragePrices(crypto.getThreeMonthsCandleStickData());
+        BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
         crypto.setPriceCountToSlope(priceCountToSlope);
+        crypto.setNumberOfCandles(new BigDecimal(averagePrices.size()));
         return crypto;
     }
 

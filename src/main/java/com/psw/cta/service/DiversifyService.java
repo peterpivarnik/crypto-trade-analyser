@@ -60,10 +60,11 @@ public class DiversifyService {
     private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
         Set<String> existingSymbols = totalAmounts.keySet();
         return cryptos.stream()
-                      .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
-                      .map(CryptoBuilder::withSlopeData)
-                      .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
-                      .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
+               .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
+               .map(CryptoBuilder::withSlopeData)
+               .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
+               .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
+               .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
                       .collect(Collectors.toList());
     }
 

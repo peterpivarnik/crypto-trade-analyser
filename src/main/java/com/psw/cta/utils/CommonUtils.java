@@ -17,7 +17,6 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
-import com.psw.cta.dto.Crypto;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.service.BnbService;
@@ -90,8 +89,7 @@ public class CommonUtils {
         return amountToRound.subtract(remainder);
     }
 
-    public static BigDecimal getPriceCountToSlope(Crypto crypto) {
-        List<BigDecimal> averagePrices = getAveragePrices(crypto);
+    public static BigDecimal getPriceCountToSlope(List<BigDecimal> averagePrices) {
         BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
         double leastSquaresSlope = getSlope(averagePrices);
         if (Double.isNaN(leastSquaresSlope)) {
@@ -101,16 +99,14 @@ public class CommonUtils {
         return priceCount.divide(slope, 8, CEILING);
     }
 
-    private static List<BigDecimal> getAveragePrices(Crypto crypto) {
-        Candlestick candlestick = crypto.getThreeMonthsCandleStickData()
-                                        .stream()
-                                        .max(comparing(candle -> new BigDecimal(candle.getHigh())))
-                                        .orElseThrow();
-        return crypto.getThreeMonthsCandleStickData()
-                     .parallelStream()
-                     .filter(candle -> candle.getOpenTime() > candlestick.getOpenTime())
-                     .map(CommonUtils::getAveragePrice)
-                     .collect(Collectors.toList());
+    public static List<BigDecimal> getAveragePrices(List<Candlestick> threeMonthsCandleStickData) {
+        Candlestick maxHighCandlestick = threeMonthsCandleStickData.stream()
+                                                            .max(comparing(candle -> new BigDecimal(candle.getHigh())))
+                                                            .orElseThrow();
+        return threeMonthsCandleStickData.parallelStream()
+                                         .filter(candle -> candle.getOpenTime() > maxHighCandlestick.getOpenTime())
+                                         .map(CommonUtils::getAveragePrice)
+                                         .collect(Collectors.toList());
     }
 
     public static BigDecimal getAveragePrice(Candlestick candle) {

@@ -42,13 +42,15 @@ public class OrderUtils {
                                                   BigDecimal currentPrice,
                                                   BigDecimal orderBtcAmount,
                                                   SymbolInfo symbolInfo,
-                                                  BigDecimal btcBalanceToTotalBalanceRatio) {
-        BigDecimal profitCoefficient = getProfitCoefficient(orderBtcAmount, btcBalanceToTotalBalanceRatio);
+                                                  BigDecimal myBtcBalance,
+                                                  BigDecimal actualBalance) {
+        BigDecimal profitCoefficient = getProfitCoefficient(orderBtcAmount, myBtcBalance, actualBalance);
         return getNewPriceToSell(orderPrice, currentPrice, symbolInfo, profitCoefficient);
     }
 
-    private static BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount, BigDecimal btcBalanceToTotalBalanceRatio) {
-        BigDecimal maxBtcAmountToReduceProfit = btcBalanceToTotalBalanceRatio.divide(new BigDecimal("5"), 8, CEILING);
+    private static BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount, BigDecimal myBtcBalance, BigDecimal actualBalance) {
+        BigDecimal btcBalanceToTotalBalanceRatio = myBtcBalance.divide(actualBalance, 8, CEILING);
+        BigDecimal maxBtcAmountToReduceProfit = myBtcBalance.divide(new BigDecimal("2"), 8, CEILING);
         SimpleRegression regression =
             getRegression(0.0001, HALF_OF_MAX_PROFIT.doubleValue(), maxBtcAmountToReduceProfit.doubleValue(), HALF_OF_MIN_PROFIT.doubleValue());
         BigDecimal btcAmountProfitPart = calculateProfitPart(orderBtcAmount, valueOf(regression.getSlope()), valueOf(regression.getIntercept()));

@@ -44,9 +44,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.75");
+        BigDecimal myBtcBalance = new BigDecimal("0.075");
+        BigDecimal actualBalance = new BigDecimal("0.1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
     }
@@ -57,9 +58,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.50");
+        BigDecimal myBtcBalance = new BigDecimal("1");
+        BigDecimal actualBalance = new BigDecimal("2");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.00474"));
     }
@@ -70,9 +72,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.50");
+        BigDecimal myBtcBalance = new BigDecimal("0.25");
+        BigDecimal actualBalance = new BigDecimal("0.5");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
     }
@@ -83,22 +86,24 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.75");
+        BigDecimal myBtcBalance = new BigDecimal("3");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
     }
 
     @Test
-    void shouldCalculateMinPriceToSellWhenBtcAmountAndRatioExtremelHigh() {
+    void shouldCalculateMinPriceToSellWhenBtcAmountAndRatioExtremelyHigh() {
         BigDecimal orderBtcAmount = new BigDecimal("1");
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("1");
+        BigDecimal actualBalance = new BigDecimal("1");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
     }
@@ -109,9 +114,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.01");
+        BigDecimal myBtcBalance = new BigDecimal("0.04");
+        BigDecimal actualBalance = new BigDecimal("0.4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004739"));
     }
@@ -122,9 +128,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654300");
         BigDecimal orderPrice = new BigDecimal("0.00654300");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("0.01");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("40");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
@@ -135,9 +142,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654300");
         BigDecimal orderPrice = new BigDecimal("0.00654300");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
@@ -148,9 +156,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654300");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
     }
@@ -161,9 +170,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654300");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
     }
@@ -175,9 +185,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654400");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
@@ -188,9 +199,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654400");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
@@ -201,9 +213,10 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654500");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
     }
@@ -214,11 +227,26 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00654200");
         BigDecimal orderPrice = new BigDecimal("0.00654500");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal totalBalanceToBtcBalanceRatio = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("4");
+        BigDecimal actualBalance = new BigDecimal("4");
 
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, totalBalanceToBtcBalanceRatio);
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+    }
+
+    @Test
+    void shouldCalculatePriceToSellWhenBtcAmountExtremelyHigh() {
+        BigDecimal orderBtcAmount = new BigDecimal("1");
+        BigDecimal currentPrice = new BigDecimal("0.00240000");
+        BigDecimal orderPrice = new BigDecimal("0.00600000");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal myBtcBalance = new BigDecimal("100");
+        BigDecimal actualBalance = new BigDecimal("200");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004734"));
     }
 
     private SymbolInfo createSymbolInfo() {

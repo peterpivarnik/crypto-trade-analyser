@@ -2,6 +2,8 @@ package com.psw.cta.utils;
 
 import java.math.BigDecimal;
 
+import static java.math.RoundingMode.CEILING;
+
 public class Constants {
 
     public static final BigDecimal TWO = new BigDecimal("2");
@@ -13,9 +15,8 @@ public class Constants {
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
 
-    public static final BigDecimal MIN_PROFIT_PERCENT = new BigDecimal("0.5");
-    public static final BigDecimal MAX_BTC_FOR_QUARTER_PRICE_TO_SELL = new BigDecimal("0.01");
-    public static final BigDecimal MAX_BTC_FOR_EIGHTH_PRICE_TO_SELL = new BigDecimal("0.02");
+    public static final BigDecimal MIN_PRICE_TO_SELL_PERCENTAGE = new BigDecimal("0.5");
+    public static final BigDecimal MIN_PROFIT_PERCENTAGE = MIN_PRICE_TO_SELL_PERCENTAGE.divide(TWO, 8, CEILING);
 
     public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[]{new BigDecimal("1"),
                                                                            new BigDecimal("1"),

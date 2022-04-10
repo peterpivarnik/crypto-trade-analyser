@@ -93,7 +93,7 @@ public class CommonUtils {
         BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
         double leastSquaresSlope = getSlope(averagePrices);
         if (Double.isNaN(leastSquaresSlope)) {
-            leastSquaresSlope = 0.0000000001;
+            leastSquaresSlope = 0.00000001;
         }
         BigDecimal slope = new BigDecimal(leastSquaresSlope, new MathContext(8));
         return priceCount.divide(slope, 8, CEILING);

@@ -54,7 +54,7 @@ public class OrderUtils {
         SimpleRegression regression =
             getRegression(0.0001, HALF_OF_MAX_PROFIT.doubleValue(), maxBtcAmountToReduceProfit.doubleValue(), HALF_OF_MIN_PROFIT.doubleValue());
         BigDecimal btcAmountProfitPart = calculateProfitPart(orderBtcAmount, valueOf(regression.getSlope()), valueOf(regression.getIntercept()));
-        BigDecimal ratioProfitPart = calculateProfitPart(btcBalanceToTotalBalanceRatio, new BigDecimal("-0.59"), new BigDecimal("0.445"));
+        BigDecimal ratioProfitPart = calculateProfitPart(btcBalanceToTotalBalanceRatio, new BigDecimal("0.1638"), new BigDecimal("-0.0138"));
         BigDecimal profitPercentage = btcAmountProfitPart.add(ratioProfitPart);
         return profitPercentage.max(new BigDecimal("0.005"));
     }
@@ -97,7 +97,7 @@ public class OrderUtils {
 
     private static BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
         double totalTime = 100 * sqrt(totalAmount.doubleValue());
-        return new BigDecimal(totalTime, new MathContext(3));
+        return new BigDecimal(String.valueOf(totalTime), new MathContext(3));
     }
 
     public static BigDecimal calculateActualWaitingTime(Order order) {
@@ -105,7 +105,7 @@ public class OrderUtils {
         LocalDateTime now = now();
         Duration duration = between(date, now);
         double actualWaitingTimeDouble = (double) duration.get(SECONDS) / (double) 3600;
-        return new BigDecimal(actualWaitingTimeDouble, new MathContext(5));
+        return new BigDecimal(String.valueOf(actualWaitingTimeDouble), new MathContext(5));
     }
 
     private OrderUtils() {

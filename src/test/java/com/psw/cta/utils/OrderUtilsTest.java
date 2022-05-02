@@ -44,12 +44,14 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal myBtcBalance = new BigDecimal("0.075");
-        BigDecimal actualBalance = new BigDecimal("0.1");
+        BigDecimal myBtcBalance = new BigDecimal("0.1");
+        BigDecimal actualBalance = new BigDecimal("1");
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -59,11 +61,13 @@ class OrderUtilsTest {
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
         BigDecimal myBtcBalance = new BigDecimal("1");
-        BigDecimal actualBalance = new BigDecimal("2");
+        BigDecimal actualBalance = new BigDecimal("1");
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.00474"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -77,7 +81,25 @@ class OrderUtilsTest {
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
-        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004327"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
+    }
+
+    @Test
+    void shouldCalculateMediumPriceToSellFromRealData() {
+        BigDecimal orderBtcAmount = new BigDecimal("0.0813726500000000");
+        BigDecimal currentPrice = new BigDecimal("0.00081200");
+        BigDecimal orderPrice = new BigDecimal("0.00106300");
+        SymbolInfo symbolInfo = createSymbolInfo();
+        BigDecimal myBtcBalance = new BigDecimal("0.19862673");
+        BigDecimal actualBalance = new BigDecimal("0.6740922083444");
+
+        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
+
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.000945"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -91,7 +113,9 @@ class OrderUtilsTest {
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
-        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004474"));
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004666"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -100,12 +124,14 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal myBtcBalance = new BigDecimal("1");
+        BigDecimal myBtcBalance = new BigDecimal("0.1");
         BigDecimal actualBalance = new BigDecimal("1");
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004209"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -114,12 +140,14 @@ class OrderUtilsTest {
         BigDecimal currentPrice = new BigDecimal("0.00240000");
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
-        BigDecimal myBtcBalance = new BigDecimal("0.04");
-        BigDecimal actualBalance = new BigDecimal("0.4");
+        BigDecimal myBtcBalance = new BigDecimal("1");
+        BigDecimal actualBalance = new BigDecimal("1");
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
-        assertThat(priceToSell).isEqualTo(new BigDecimal("0.004739"));
+        assertThat(priceToSell).isEqualTo(new BigDecimal("0.00474"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -134,6 +162,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -148,6 +178,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -162,6 +194,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -176,6 +210,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006542"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
 
@@ -191,6 +227,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -205,6 +243,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -219,6 +259,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -233,6 +275,8 @@ class OrderUtilsTest {
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.006543"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     @Test
@@ -242,11 +286,13 @@ class OrderUtilsTest {
         BigDecimal orderPrice = new BigDecimal("0.00600000");
         SymbolInfo symbolInfo = createSymbolInfo();
         BigDecimal myBtcBalance = new BigDecimal("100");
-        BigDecimal actualBalance = new BigDecimal("200");
+        BigDecimal actualBalance = new BigDecimal("100");
 
         BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
 
         assertThat(priceToSell).isEqualTo(new BigDecimal("0.004734"));
+        assertThat(orderPrice).isGreaterThanOrEqualTo(priceToSell);
+        assertThat(currentPrice).isLessThanOrEqualTo(priceToSell);
     }
 
     private SymbolInfo createSymbolInfo() {

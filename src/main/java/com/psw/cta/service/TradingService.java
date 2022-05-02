@@ -23,9 +23,17 @@ import java.util.stream.Collectors;
 
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.utils.CommonUtils.*;
-import static com.psw.cta.utils.Constants.*;
-import static com.psw.cta.utils.CryptoBuilder.*;
+import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
+import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
+import static com.psw.cta.utils.CommonUtils.getOrderComparator;
+import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
+import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
+import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
+import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
+import static com.psw.cta.utils.CryptoBuilder.withVolume;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
@@ -100,15 +108,14 @@ public class TradingService {
                                BigDecimal actualBalance) {
         Function<OrderWrapper, SymbolInfo> symbolFunction = orderWrapper -> exchangeInfo.getSymbols()
                 .parallelStream()
-                .filter(symbolInfo -> symbolInfo.getSymbol()
-                        .equals(orderWrapper.getOrder()
-                                .getSymbol()))
+                .filter(symbolInfo -> symbolInfo.getSymbol().equals(orderWrapper.getOrder().getSymbol()))
                 .findAny()
                 .orElseThrow();
         List<OrderWrapper> wrappers = getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+        wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
         wrappers.stream()
-                .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
-                .forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper), orderWrapper));
+            .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
+            .forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper), orderWrapper));
     }
 
     private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,
@@ -134,7 +141,7 @@ public class TradingService {
                 .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
                         .subtract(orderWrapper.getPriceToSellPercentage())
                         .compareTo(MIN_PROFIT_PERCENTAGE) > 0)
-                .peek(orderWrapper -> logger.log(orderWrapper.toString()))
+                .sorted(comparing(OrderWrapper::getOrderBtcAmount))
                 .collect(Collectors.toList());
     }
 
@@ -159,7 +166,7 @@ public class TradingService {
     private void diversify(Map<String, BigDecimal> totalAmounts, ExchangeInfo exchangeInfo, List<OrderWrapper> orderWrappers) {
         orderWrappers.stream()
                 .max(comparing(OrderWrapper::getOrderBtcAmount))
-                .ifPresent((orderWrapper) -> diversifyService.diversify(orderWrapper,
+                .ifPresent(orderWrapper -> diversifyService.diversify(orderWrapper,
                         () -> getCryptos(exchangeInfo),
                         totalAmounts,
                         exchangeInfo));

@@ -88,16 +88,17 @@ public class OrderWrapper {
         this.orderPricePercentage = orderPricePercentage;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "OrderWrapper{" +
-               "symbol=" + order.getSymbol() +
-               ", orderBtcAmount=" + orderBtcAmount +
-               ", orderPrice=" + orderPrice +
-               ", currentPrice=" + currentPrice +
-               ", priceToSell=" + priceToSell +
-               ", priceToSellPercentage=" + priceToSellPercentage +
-               ", orderPricePercentage=" + orderPricePercentage +
-               ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
-               '}';
+            "symbol=" + order.getSymbol() +
+            ", orderBtcAmount=" + orderBtcAmount +
+            ", currentPrice=" + currentPrice +
+            ", orderPrice=" + orderPrice +
+            ", priceToSell=" + priceToSell +
+            ", orderPricePercentage=" + orderPricePercentage +
+            ", priceToSellPercentage=" + priceToSellPercentage +
+            ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString() +
+            '}';
     }
 }

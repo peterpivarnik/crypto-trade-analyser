@@ -126,18 +126,31 @@ public class Candlestick {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("openTime", openTime)
-        .append("open", open)
-        .append("high", high)
-        .append("low", low)
-        .append("close", close)
-        .append("volume", volume)
-        .append("closeTime", closeTime)
-        .append("quoteAssetVolume", quoteAssetVolume)
-        .append("numberOfTrades", numberOfTrades)
-        .append("takerBuyBaseAssetVolume", takerBuyBaseAssetVolume)
-        .append("takerBuyQuoteAssetVolume", takerBuyQuoteAssetVolume)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("openTime",
+                                                                                         openTime)
+                                                                                 .append("open",
+                                                                                         open)
+                                                                                 .append("high",
+                                                                                         high)
+                                                                                 .append("low", low)
+                                                                                 .append("close",
+                                                                                         close)
+                                                                                 .append("volume",
+                                                                                         volume)
+                                                                                 .append("closeTime",
+                                                                                         closeTime)
+                                                                                 .append(
+                                                                                     "quoteAssetVolume",
+                                                                                     quoteAssetVolume)
+                                                                                 .append(
+                                                                                     "numberOfTrades",
+                                                                                     numberOfTrades)
+                                                                                 .append(
+                                                                                     "takerBuyBaseAssetVolume",
+                                                                                     takerBuyBaseAssetVolume)
+                                                                                 .append(
+                                                                                     "takerBuyQuoteAssetVolume",
+                                                                                     takerBuyQuoteAssetVolume)
+                                                                                 .toString();
   }
 }

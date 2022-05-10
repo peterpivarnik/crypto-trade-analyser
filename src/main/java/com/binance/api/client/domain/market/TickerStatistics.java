@@ -222,35 +222,55 @@ public class TickerStatistics {
   public void setCount(long count) {
     this.count = count;
   }
-  
+
   public String getSymbol() {
-	return symbol;
+    return symbol;
   }
 
   public void setSymbol(String symbol) {
-	this.symbol = symbol;
+    this.symbol = symbol;
   }
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("symbol", symbol)
-        .append("priceChange", priceChange)
-        .append("priceChangePercent", priceChangePercent)
-        .append("weightedAvgPrice", weightedAvgPrice)
-        .append("prevClosePrice", prevClosePrice)
-        .append("lastPrice", lastPrice)
-        .append("bidPrice", bidPrice)
-        .append("askPrice", askPrice)
-        .append("openPrice", openPrice)
-        .append("highPrice", highPrice)
-        .append("lowPrice", lowPrice)
-        .append("volume", volume)
-        .append("openTime", openTime)
-        .append("closeTime", closeTime)
-        .append("firstId", firstId)
-        .append("lastId", lastId)
-        .append("count", count)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("symbol",
+                                                                                         symbol)
+                                                                                 .append(
+                                                                                     "priceChange",
+                                                                                     priceChange)
+                                                                                 .append(
+                                                                                     "priceChangePercent",
+                                                                                     priceChangePercent)
+                                                                                 .append(
+                                                                                     "weightedAvgPrice",
+                                                                                     weightedAvgPrice)
+                                                                                 .append(
+                                                                                     "prevClosePrice",
+                                                                                     prevClosePrice)
+                                                                                 .append("lastPrice",
+                                                                                         lastPrice)
+                                                                                 .append("bidPrice",
+                                                                                         bidPrice)
+                                                                                 .append("askPrice",
+                                                                                         askPrice)
+                                                                                 .append("openPrice",
+                                                                                         openPrice)
+                                                                                 .append("highPrice",
+                                                                                         highPrice)
+                                                                                 .append("lowPrice",
+                                                                                         lowPrice)
+                                                                                 .append("volume",
+                                                                                         volume)
+                                                                                 .append("openTime",
+                                                                                         openTime)
+                                                                                 .append("closeTime",
+                                                                                         closeTime)
+                                                                                 .append("firstId",
+                                                                                         firstId)
+                                                                                 .append("lastId",
+                                                                                         lastId)
+                                                                                 .append("count",
+                                                                                         count)
+                                                                                 .toString();
   }
 }

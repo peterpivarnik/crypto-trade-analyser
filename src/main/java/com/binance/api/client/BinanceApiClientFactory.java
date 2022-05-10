@@ -1,10 +1,10 @@
 package com.binance.api.client;
 
+import static com.binance.api.client.impl.BinanceApiServiceGenerator.getSharedClient;
+
 import com.binance.api.client.impl.BinanceApiAsyncRestClientImpl;
 import com.binance.api.client.impl.BinanceApiRestClientImpl;
 import com.binance.api.client.impl.BinanceApiWebSocketClientImpl;
-
-import static com.binance.api.client.impl.BinanceApiServiceGenerator.getSharedClient;
 
 /**
  * A factory for creating BinanceApi client objects.
@@ -12,14 +12,14 @@ import static com.binance.api.client.impl.BinanceApiServiceGenerator.getSharedCl
 public class BinanceApiClientFactory {
 
   /**
-   * API Key
+   * API Key.
    */
-  private String apiKey;
+  private final String apiKey;
 
   /**
    * Secret.
    */
-  private String secret;
+  private final String secret;
 
   /**
    * Instantiates a new binance api client factory.
@@ -37,7 +37,6 @@ public class BinanceApiClientFactory {
    *
    * @param apiKey the API key
    * @param secret the Secret
-   *
    * @return the binance api client factory
    */
   public static BinanceApiClientFactory newInstance(String apiKey, String secret) {
@@ -63,7 +62,8 @@ public class BinanceApiClientFactory {
   /**
    * Creates a new asynchronous/non-blocking REST client.
    */
-  public BinanceApiAsyncRestClient newAsyncRestClient() {return new BinanceApiAsyncRestClientImpl(apiKey, secret);
+  public BinanceApiAsyncRestClient newAsyncRestClient() {
+    return new BinanceApiAsyncRestClientImpl(apiKey, secret);
   }
 
   /**

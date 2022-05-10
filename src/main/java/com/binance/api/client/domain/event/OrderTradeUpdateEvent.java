@@ -13,7 +13,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Order or trade report update event.
- *
  * This event is embedded as part of a user data update event.
  *
  * @see UserDataUpdateEvent
@@ -112,7 +111,7 @@ public class OrderTradeUpdateEvent {
   private String commission;
 
   /**
-   * Asset on which commission is taken
+   * Asset on which commission is taken.
    */
   @JsonProperty("N")
   private String commissionAsset;
@@ -292,27 +291,49 @@ public class OrderTradeUpdateEvent {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("eventType", eventType)
-        .append("eventTime", eventTime)
-        .append("symbol", symbol)
-        .append("newClientOrderId", newClientOrderId)
-        .append("side", side)
-        .append("type", type)
-        .append("timeInForce", timeInForce)
-        .append("originalQuantity", originalQuantity)
-        .append("price", price)
-        .append("executionType", executionType)
-        .append("orderStatus", orderStatus)
-        .append("orderRejectReason", orderRejectReason)
-        .append("orderId", orderId)
-        .append("quantityLastFilledTrade", quantityLastFilledTrade)
-        .append("accumulatedQuantity", accumulatedQuantity)
-        .append("priceOfLastFilledTrade", priceOfLastFilledTrade)
-        .append("commission", commission)
-        .append("commissionAsset", commissionAsset)
-        .append("orderTradeTime", orderTradeTime)
-        .append("tradeId", tradeId)
-        .toString();
+    return new ToStringBuilder(this,
+                               BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("eventType",
+                                                                                   eventType)
+                                                                           .append("eventTime",
+                                                                                   eventTime)
+                                                                           .append("symbol", symbol)
+                                                                           .append(
+                                                                               "newClientOrderId",
+                                                                               newClientOrderId)
+                                                                           .append("side", side)
+                                                                           .append("type", type)
+                                                                           .append("timeInForce",
+                                                                                   timeInForce)
+                                                                           .append(
+                                                                               "originalQuantity",
+                                                                               originalQuantity)
+                                                                           .append("price", price)
+                                                                           .append("executionType",
+                                                                                   executionType)
+                                                                           .append("orderStatus",
+                                                                                   orderStatus)
+                                                                           .append(
+                                                                               "orderRejectReason",
+                                                                               orderRejectReason)
+                                                                           .append("orderId",
+                                                                                   orderId)
+                                                                           .append(
+                                                                               "quantityLastFilledTrade",
+                                                                               quantityLastFilledTrade)
+                                                                           .append(
+                                                                               "accumulatedQuantity",
+                                                                               accumulatedQuantity)
+                                                                           .append(
+                                                                               "priceOfLastFilledTrade",
+                                                                               priceOfLastFilledTrade)
+                                                                           .append("commission",
+                                                                                   commission)
+                                                                           .append("commissionAsset",
+                                                                                   commissionAsset)
+                                                                           .append("orderTradeTime",
+                                                                                   orderTradeTime)
+                                                                           .append("tradeId",
+                                                                                   tradeId)
+                                                                           .toString();
   }
 }

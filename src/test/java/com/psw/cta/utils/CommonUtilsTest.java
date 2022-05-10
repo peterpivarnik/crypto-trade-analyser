@@ -44,354 +44,360 @@ import org.junit.jupiter.api.Test;
 
 class CommonUtilsTest {
 
-    @Test
-    void shouldInitializeTradingService() {
-        String apiKey = "apiKey";
-        String apiSecret = "apiSecret";
-        LambdaLogger logger = createLogger();
+  @Test
+  void shouldInitializeTradingService() {
+    String apiKey = "apiKey";
+    String apiSecret = "apiSecret";
+    LambdaLogger logger = createLogger();
 
-        TradingService tradingService = initializeTradingService(apiKey, apiSecret, logger);
+    TradingService tradingService = initializeTradingService(apiKey, apiSecret, logger);
 
-        assertThat(tradingService).isNotNull();
+    assertThat(tradingService).isNotNull();
+  }
+
+  private LambdaLogger createLogger() {
+    return new LambdaLogger() {
+      @Override
+      public void log(String s) {
+
+      }
+
+      @Override
+      public void log(byte[] bytes) {
+
+      }
+    };
+  }
+
+
+  @Test
+  void shouldOrderByOriginalQuantity() {
+    Order order1 = createOrder("10", "0", "10", 10L);
+    Order order2 = createOrder("20", "0", "10", 10L);
+    Order order3 = createOrder("50", "0", "10", 10L);
+
+    Comparator<Order> orderComparator = getOrderComparator();
+
+    List<Order> sortedOrders = Stream.of(order1, order2, order3)
+                                     .sorted(orderComparator)
+                                     .collect(Collectors.toList());
+    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
+  }
+
+  @Test
+  void shouldOrderByExecutedQuantityMinusExecutedQuantity() {
+    Order order1 = createOrder("10", "0", "10", 10L);
+    Order order2 = createOrder("20", "0", "10", 10L);
+    Order order3 = createOrder("50", "45", "10", 10L);
+
+    Comparator<Order> orderComparator = getOrderComparator();
+
+    List<Order> sortedOrders = Stream.of(order1, order2, order3)
+                                     .sorted(orderComparator)
+                                     .collect(Collectors.toList());
+    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
+  }
+
+  @Test
+  void shouldOrderByBtcAmount() {
+    Order order1 = createOrder("10", "0", "10", 10L);
+    Order order2 = createOrder("20", "0", "20", 10L);
+    Order order3 = createOrder("50", "30", "10", 10L);
+
+    Comparator<Order> orderComparator = getOrderComparator();
+
+    List<Order> sortedOrders = Stream.of(order1, order2, order3)
+                                     .sorted(orderComparator)
+                                     .collect(Collectors.toList());
+    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
+  }
+
+  @Test
+  void shouldOrderByTime() {
+    Order order1 = createOrder("10", "0", "10", 10L);
+    Order order2 = createOrder("20", "0", "10", 11L);
+    Order order3 = createOrder("50", "30", "10", 10L);
+
+    Comparator<Order> orderComparator = getOrderComparator();
+
+    List<Order> sortedOrders = Stream.of(order1, order2, order3)
+                                     .sorted(orderComparator)
+                                     .collect(Collectors.toList());
+    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
+  }
+
+  private Order createOrder(String origQty, String executedQty, String price, long time) {
+    Order order = new Order();
+    order.setOrigQty(origQty);
+    order.setExecutedQty(executedQty);
+    order.setPrice(price);
+    order.setTime(time);
+    return order;
+  }
+
+  @Test
+  void shouldSleep() {
+    int millis = 1000;
+    LambdaLogger logger = createLogger();
+
+    long start = currentTimeMillis();
+    sleep(millis, logger);
+    long end = currentTimeMillis();
+
+    assertThat(end - start).isGreaterThanOrEqualTo(millis);
+  }
+
+  @Test
+  void shouldReturnCorrectValueFromFilter() {
+    FilterType filterType = MIN_NOTIONAL;
+    String minNotional = "2";
+    SymbolInfo symbolInfo = getSymbolInfo(filterType, minNotional);
+    Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
+
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
+
+    assertThat(valueFromFilter).isEqualTo(minNotional);
+  }
+
+  @Test
+  void shouldThrowCryptoTraderExceptionWhenFilterDoNotExist() {
+    String minNotional = "2";
+    SymbolInfo symbolInfo = getSymbolInfo(MIN_NOTIONAL, minNotional);
+    Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
+
+    CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class,
+                                                               () -> getValueFromFilter(symbolInfo,
+                                                                                        PRICE_FILTER,
+                                                                                        symbolFilterFunction));
+
+    assertThat(cryptoTraderException.getMessage()).isEqualTo(
+        "Value from filter PRICE_FILTER not found");
+  }
+
+  private SymbolInfo getSymbolInfo(FilterType filterType, String filterValue) {
+    SymbolInfo symbolInfo = new SymbolInfo();
+    symbolInfo.setFilters(getSymbolFilters(filterType, filterValue));
+    return symbolInfo;
+  }
+
+  private List<SymbolFilter> getSymbolFilters(FilterType filterType, String filterValue) {
+    List<SymbolFilter> filters = new ArrayList<>();
+    filters.add(getSymbolFilter(filterType, filterValue));
+    return filters;
+  }
+
+  private SymbolFilter getSymbolFilter(FilterType filterType, String filterValue) {
+    SymbolFilter symbolFilter = new SymbolFilter();
+    symbolFilter.setFilterType(filterType);
+    symbolFilter.setMinNotional(filterValue);
+    symbolFilter.setMinQty(filterValue);
+    symbolFilter.setTickSize(filterValue);
+    return symbolFilter;
+  }
+
+  @Test
+  void shouldRoundAmount() {
+    String filterValue = "0.00002";
+    SymbolInfo symbolInfo = getSymbolInfo(LOT_SIZE, filterValue);
+    BigDecimal amount = new BigDecimal("0.00005");
+
+    BigDecimal roundedAmount = roundAmount(symbolInfo, amount);
+
+    assertThat(roundedAmount).isEqualTo("0.00004");
+  }
+
+  @Test
+  void shouldRoundPrice() {
+    String filterValue = "0.00002";
+    SymbolInfo symbolInfo = getSymbolInfo(PRICE_FILTER, filterValue);
+    BigDecimal amount = new BigDecimal("0.00005");
+
+    BigDecimal roundedAmount = roundPrice(symbolInfo, amount);
+
+    assertThat(roundedAmount).isEqualTo("0.00004");
+  }
+
+  @Test
+  void shouldReturnValidCountToSlope() {
+    List<BigDecimal> averagePrices = new ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      averagePrices.add(new BigDecimal("" + i));
     }
 
-    private LambdaLogger createLogger() {
-        return new LambdaLogger() {
-            @Override public void log(String s) {
+    BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
 
-            }
+    assertThat(priceCountToSlope.stripTrailingZeros().toPlainString()).isEqualTo("100");
+  }
 
-            @Override public void log(byte[] bytes) {
+  @Test
+  void shouldReturnAveragePrices() {
+    List<Candlestick> threeMonthsCandleStickData = createThreeMonthsCandleStickData();
 
-            }
-        };
+    List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
+
+    assertThat(averagePrices).hasSize(99);
+    for (int i = 0; i < 99; i++) {
+      assertThat(averagePrices.get(i).compareTo(new BigDecimal(i))).isEqualTo(0);
     }
+  }
 
-
-    @Test
-    void shouldOrderByOriginalQuantity() {
-        Order order1 = createOrder("10", "0", "10", 10L);
-        Order order2 = createOrder("20", "0", "10", 10L);
-        Order order3 = createOrder("50", "0", "10", 10L);
-
-        Comparator<Order> orderComparator = getOrderComparator();
-
-        List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                         .sorted(orderComparator)
-                                         .collect(Collectors.toList());
-        assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
+  private List<Candlestick> createThreeMonthsCandleStickData() {
+    List<Candlestick> candlesticks = new ArrayList<>();
+    int size = 100;
+    for (int i = 0; i < size; i++) {
+      candlesticks.add(createCandleStick(i, size));
     }
+    return candlesticks;
+  }
 
-    @Test
-    void shouldOrderByExecutedQuantityMinusExecutedQuantity() {
-        Order order1 = createOrder("10", "0", "10", 10L);
-        Order order2 = createOrder("20", "0", "10", 10L);
-        Order order3 = createOrder("50", "45", "10", 10L);
+  @Test
+  void shouldGetAveragePrice() {
+    Candlestick candlestick = new Candlestick();
+    candlestick.setOpen("1");
+    candlestick.setClose("2");
+    candlestick.setHigh("3");
+    candlestick.setLow("4");
 
-        Comparator<Order> orderComparator = getOrderComparator();
+    BigDecimal averagePrice = getAveragePrice(candlestick);
 
-        List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                         .sorted(orderComparator)
-                                         .collect(Collectors.toList());
-        assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
+    assertThat(averagePrice.stripTrailingZeros()).isEqualTo("2.5");
+  }
+
+  private Candlestick createCandleStick(int filterValue, int size) {
+    Candlestick candlestick = new Candlestick();
+    candlestick.setOpen("" + filterValue);
+    candlestick.setClose("" + filterValue);
+    candlestick.setHigh("" + filterValue);
+    candlestick.setLow("" + filterValue);
+    candlestick.setOpenTime((long) size - (long) filterValue);
+    return candlestick;
+  }
+
+  @Test
+  void shouldCreateTotalAmounts() {
+    String symbol1 = "symbol1";
+    String symbol2 = "symbol2";
+    Order order1 = getOrder(symbol1, 1);
+    Order order2 = getOrder(symbol1, 2);
+    Order order3 = getOrder(symbol2, 5);
+    List<Order> openOrders = new ArrayList<>();
+    openOrders.add(order1);
+    openOrders.add(order2);
+    openOrders.add(order3);
+
+    Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
+
+    assertThat(totalAmounts).hasSize(2);
+    assertThat(totalAmounts).containsKey(symbol1);
+    assertThat(totalAmounts.get(symbol1).compareTo(new BigDecimal("30"))).isEqualTo(0);
+    assertThat(totalAmounts).containsKey(symbol2);
+    assertThat(totalAmounts.get(symbol2).compareTo(new BigDecimal("50"))).isEqualTo(0);
+  }
+
+  private Order getOrder(String symbol, int index) {
+    Order order = new Order();
+    order.setSymbol(symbol);
+    order.setPrice("10");
+    order.setOrigQty("" + index);
+    order.setExecutedQty("0");
+    return order;
+  }
+
+  @Test
+  void shouldReturnQuantityFromOrder() {
+    Order order = new Order();
+    order.setOrigQty("25");
+    order.setExecutedQty("10");
+
+    BigDecimal quantityFromOrder = getQuantity(order);
+
+    assertThat(quantityFromOrder.stripTrailingZeros().toPlainString()).isEqualTo("15");
+  }
+
+  @Test
+  void shouldCalculateMinNumberOfOrdersFromMyBtcBalance() {
+    BigDecimal totalPossibleBalance = new BigDecimal("20");
+    BigDecimal myBtcBalance = new BigDecimal("4");
+
+    int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
+
+    assertThat(minNumberOfOrders).isEqualTo(200);
+  }
+
+  @Test
+  void shouldCalculateMinNumberOfOrdersFromTotalPossibleBalance() {
+    BigDecimal totalPossibleBalance = new BigDecimal("4");
+    BigDecimal myBtcBalance = new BigDecimal("20");
+
+    int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
+
+    assertThat(minNumberOfOrders).isEqualTo(1000);
+  }
+
+  @Test
+  void shouldCalculateCurrentPrice() {
+    OrderBook orderBook = createOrderBook(20);
+
+    BigDecimal currentPrice = getCurrentPrice(orderBook);
+
+    assertThat(currentPrice.stripTrailingZeros()).isEqualTo("5");
+  }
+
+  @Test
+  void shouldThrowCryptoTraderExceptionWhenNoOrderBookEntryExist() {
+    OrderBook orderBook = createOrderBook(0);
+
+    CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class,
+                                                               () -> getCurrentPrice(orderBook));
+
+    assertThat(cryptoTraderException.getMessage()).isEqualTo("No price found!");
+  }
+
+  private OrderBook createOrderBook(int size) {
+    OrderBook orderBook = new OrderBook();
+    orderBook.setAsks(createAsks(size));
+    return orderBook;
+  }
+
+  private List<OrderBookEntry> createAsks(int size) {
+    List<OrderBookEntry> orderBookEntries = new ArrayList<>();
+    for (int i = 5; i < size; i++) {
+      orderBookEntries.add(createOrderBookEntries("" + i));
     }
+    return orderBookEntries;
+  }
 
-    @Test
-    void shouldOrderByBtcAmount() {
-        Order order1 = createOrder("10", "0", "10", 10L);
-        Order order2 = createOrder("20", "0", "20", 10L);
-        Order order3 = createOrder("50", "30", "10", 10L);
+  private OrderBookEntry createOrderBookEntries(String price) {
+    OrderBookEntry orderBookEntry = new OrderBookEntry();
+    orderBookEntry.setPrice(price);
+    return orderBookEntry;
+  }
 
-        Comparator<Order> orderComparator = getOrderComparator();
+  @Test
+  void shouldCalculatePriceToSellPercentage() {
+    BigDecimal orderPrice = new BigDecimal("50");
+    BigDecimal priceToSell = new BigDecimal("40");
 
-        List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                         .sorted(orderComparator)
-                                         .collect(Collectors.toList());
-        assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
-    }
+    BigDecimal priceToSellPercentage = calculatePricePercentage(priceToSell, orderPrice);
 
-    @Test
-    void shouldOrderByTime() {
-        Order order1 = createOrder("10", "0", "10", 10L);
-        Order order2 = createOrder("20", "0", "10", 11L);
-        Order order3 = createOrder("50", "30", "10", 10L);
+    assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
+  }
 
-        Comparator<Order> orderComparator = getOrderComparator();
+  @Test
+  void shouldHaveBalanceForInitialTrading() {
+    BigDecimal myBtcBalance = new BigDecimal("1");
 
-        List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                         .sorted(orderComparator)
-                                         .collect(Collectors.toList());
-        assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
-    }
+    boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
 
-    private Order createOrder(String origQty, String executedQty, String price, long time) {
-        Order order = new Order();
-        order.setOrigQty(origQty);
-        order.setExecutedQty(executedQty);
-        order.setPrice(price);
-        order.setTime(time);
-        return order;
-    }
+    assertThat(haveBalance).isTrue();
+  }
 
-    @Test
-    void shouldSleep() {
-        int millis = 1000;
-        LambdaLogger logger = createLogger();
+  @Test
+  void shouldNotHaveBalanceForInitialTrading() {
+    BigDecimal myBtcBalance = new BigDecimal("0.0001");
 
-        long start = currentTimeMillis();
-        sleep(millis, logger);
-        long end = currentTimeMillis();
+    boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
 
-        assertThat(end - start).isGreaterThanOrEqualTo(millis);
-    }
-
-    @Test
-    void shouldReturnCorrectValueFromFilter() {
-        FilterType filterType = MIN_NOTIONAL;
-        String minNotional = "2";
-        SymbolInfo symbolInfo = getSymbolInfo(filterType, minNotional);
-        Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
-
-        BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
-
-        assertThat(valueFromFilter).isEqualTo(minNotional);
-    }
-
-    @Test
-    void shouldThrowCryptoTraderExceptionWhenFilterDoNotExist() {
-        String minNotional = "2";
-        SymbolInfo symbolInfo = getSymbolInfo(MIN_NOTIONAL, minNotional);
-        Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
-
-        CryptoTraderException cryptoTraderException =
-            assertThrows(CryptoTraderException.class, () -> getValueFromFilter(symbolInfo, PRICE_FILTER, symbolFilterFunction));
-
-        assertThat(cryptoTraderException.getMessage()).isEqualTo("Value from filter PRICE_FILTER not found");
-    }
-
-    private SymbolInfo getSymbolInfo(FilterType filterType, String filterValue) {
-        SymbolInfo symbolInfo = new SymbolInfo();
-        symbolInfo.setFilters(getSymbolFilters(filterType, filterValue));
-        return symbolInfo;
-    }
-
-    private List<SymbolFilter> getSymbolFilters(FilterType filterType, String filterValue) {
-        List<SymbolFilter> filters = new ArrayList<>();
-        filters.add(getSymbolFilter(filterType, filterValue));
-        return filters;
-    }
-
-    private SymbolFilter getSymbolFilter(FilterType filterType, String filterValue) {
-        SymbolFilter symbolFilter = new SymbolFilter();
-        symbolFilter.setFilterType(filterType);
-        symbolFilter.setMinNotional(filterValue);
-        symbolFilter.setMinQty(filterValue);
-        symbolFilter.setTickSize(filterValue);
-        return symbolFilter;
-    }
-
-    @Test
-    void shouldRoundAmount() {
-        String filterValue = "0.00002";
-        SymbolInfo symbolInfo = getSymbolInfo(LOT_SIZE, filterValue);
-        BigDecimal amount = new BigDecimal("0.00005");
-
-        BigDecimal roundedAmount = roundAmount(symbolInfo, amount);
-
-        assertThat(roundedAmount).isEqualTo("0.00004");
-    }
-
-    @Test
-    void shouldRoundPrice() {
-        String filterValue = "0.00002";
-        SymbolInfo symbolInfo = getSymbolInfo(PRICE_FILTER, filterValue);
-        BigDecimal amount = new BigDecimal("0.00005");
-
-        BigDecimal roundedAmount = roundPrice(symbolInfo, amount);
-
-        assertThat(roundedAmount).isEqualTo("0.00004");
-    }
-
-    @Test
-    void shouldReturnValidCountToSlope() {
-        List<BigDecimal> averagePrices = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            averagePrices.add(new BigDecimal("" + i));
-        }
-
-        BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
-
-        assertThat(priceCountToSlope.stripTrailingZeros().toPlainString()).isEqualTo("100");
-    }
-
-    @Test
-    void shouldReturnAveragePrices() {
-        List<Candlestick> threeMonthsCandleStickData = createThreeMonthsCandleStickData();
-
-        List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
-
-        assertThat(averagePrices).hasSize(99);
-        for (int i = 0; i < 99; i++) {
-            assertThat(averagePrices.get(i).compareTo(new BigDecimal(i))).isEqualTo(0);
-        }
-    }
-
-    private List<Candlestick> createThreeMonthsCandleStickData() {
-        List<Candlestick> candlesticks = new ArrayList<>();
-        int size = 100;
-        for (int i = 0; i < size; i++) {
-            candlesticks.add(createCandleStick(i, size));
-        }
-        return candlesticks;
-    }
-
-    @Test
-    void shouldGetAveragePrice() {
-        Candlestick candlestick = new Candlestick();
-        candlestick.setOpen("1");
-        candlestick.setClose("2");
-        candlestick.setHigh("3");
-        candlestick.setLow("4");
-
-        BigDecimal averagePrice = getAveragePrice(candlestick);
-
-        assertThat(averagePrice.stripTrailingZeros()).isEqualTo("2.5");
-    }
-
-    private Candlestick createCandleStick(int filterValue, int size) {
-        Candlestick candlestick = new Candlestick();
-        candlestick.setOpen("" + filterValue);
-        candlestick.setClose("" + filterValue);
-        candlestick.setHigh("" + filterValue);
-        candlestick.setLow("" + filterValue);
-        candlestick.setOpenTime((long) size - (long) filterValue);
-        return candlestick;
-    }
-
-    @Test
-    void shouldCreateTotalAmounts() {
-        String symbol1 = "symbol1";
-        String symbol2 = "symbol2";
-        Order order1 = getOrder(symbol1, 1);
-        Order order2 = getOrder(symbol1, 2);
-        Order order3 = getOrder(symbol2, 5);
-        List<Order> openOrders = new ArrayList<>();
-        openOrders.add(order1);
-        openOrders.add(order2);
-        openOrders.add(order3);
-
-        Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
-
-        assertThat(totalAmounts).hasSize(2);
-        assertThat(totalAmounts).containsKey(symbol1);
-        assertThat(totalAmounts.get(symbol1).compareTo(new BigDecimal("30"))).isEqualTo(0);
-        assertThat(totalAmounts).containsKey(symbol2);
-        assertThat(totalAmounts.get(symbol2).compareTo(new BigDecimal("50"))).isEqualTo(0);
-    }
-
-    private Order getOrder(String symbol, int index) {
-        Order order = new Order();
-        order.setSymbol(symbol);
-        order.setPrice("10");
-        order.setOrigQty("" + index);
-        order.setExecutedQty("0");
-        return order;
-    }
-
-    @Test
-    void shouldReturnQuantityFromOrder() {
-        Order order = new Order();
-        order.setOrigQty("25");
-        order.setExecutedQty("10");
-
-        BigDecimal quantityFromOrder = getQuantity(order);
-
-        assertThat(quantityFromOrder.stripTrailingZeros().toPlainString()).isEqualTo("15");
-    }
-
-    @Test
-    void shouldCalculateMinNumberOfOrdersFromMyBtcBalance() {
-        BigDecimal totalPossibleBalance = new BigDecimal("20");
-        BigDecimal myBtcBalance = new BigDecimal("4");
-
-        int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
-
-        assertThat(minNumberOfOrders).isEqualTo(200);
-    }
-
-    @Test
-    void shouldCalculateMinNumberOfOrdersFromTotalPossibleBalance() {
-        BigDecimal totalPossibleBalance = new BigDecimal("4");
-        BigDecimal myBtcBalance = new BigDecimal("20");
-
-        int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
-
-        assertThat(minNumberOfOrders).isEqualTo(1000);
-    }
-
-    @Test
-    void shouldCalculateCurrentPrice() {
-        OrderBook orderBook = createOrderBook(20);
-
-        BigDecimal currentPrice = getCurrentPrice(orderBook);
-
-        assertThat(currentPrice.stripTrailingZeros()).isEqualTo("5");
-    }
-
-    @Test
-    void shouldThrowCryptoTraderExceptionWhenNoOrderBookEntryExist() {
-        OrderBook orderBook = createOrderBook(0);
-
-        CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class, () -> getCurrentPrice(orderBook));
-
-        assertThat(cryptoTraderException.getMessage()).isEqualTo("No price found!");
-    }
-
-    private OrderBook createOrderBook(int size) {
-        OrderBook orderBook = new OrderBook();
-        orderBook.setAsks(createAsks(size));
-        return orderBook;
-    }
-
-    private List<OrderBookEntry> createAsks(int size) {
-        List<OrderBookEntry> orderBookEntries = new ArrayList<>();
-        for (int i = 5; i < size; i++) {
-            orderBookEntries.add(createOrderBookEntries("" + i));
-        }
-        return orderBookEntries;
-    }
-
-    private OrderBookEntry createOrderBookEntries(String price) {
-        OrderBookEntry orderBookEntry = new OrderBookEntry();
-        orderBookEntry.setPrice(price);
-        return orderBookEntry;
-    }
-
-    @Test
-    void shouldCalculatePriceToSellPercentage() {
-        BigDecimal orderPrice = new BigDecimal("50");
-        BigDecimal priceToSell = new BigDecimal("40");
-
-        BigDecimal priceToSellPercentage = calculatePricePercentage(priceToSell, orderPrice);
-
-        assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
-    }
-
-    @Test
-    void shouldHaveBalanceForInitialTrading() {
-        BigDecimal myBtcBalance = new BigDecimal("1");
-
-        boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
-
-        assertThat(haveBalance).isTrue();
-    }
-
-    @Test
-    void shouldNotHaveBalanceForInitialTrading() {
-        BigDecimal myBtcBalance = new BigDecimal("0.0001");
-
-        boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
-
-        assertThat(haveBalance).isFalse();
-    }
+    assertThat(haveBalance).isFalse();
+  }
 }

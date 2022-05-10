@@ -44,6 +44,7 @@ public class CancelOrderResponse {
   public String getStatus() {
     return status;
   }
+
   public String getExecutedQty() {
     return executedQty;
   }
@@ -51,6 +52,7 @@ public class CancelOrderResponse {
   public String getOrderId() {
     return orderId;
   }
+
   public CancelOrderResponse setOrderId(String orderId) {
     this.orderId = orderId;
     return this;
@@ -67,11 +69,16 @@ public class CancelOrderResponse {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("symbol", symbol)
-        .append("origClientOrderId", origClientOrderId)
-        .append("orderId", orderId)
-        .append("clientOrderId", clientOrderId)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("symbol",
+                                                                                         symbol)
+                                                                                 .append(
+                                                                                     "origClientOrderId",
+                                                                                     origClientOrderId)
+                                                                                 .append("orderId",
+                                                                                         orderId)
+                                                                                 .append(
+                                                                                     "clientOrderId",
+                                                                                     clientOrderId)
+                                                                                 .toString();
   }
 }

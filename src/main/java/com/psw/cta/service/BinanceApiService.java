@@ -15,6 +15,7 @@ import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.OrderSide;
 import com.binance.api.client.domain.account.Account;
@@ -32,153 +33,256 @@ import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.binance.api.client.domain.market.TickerStatistics;
 import com.binance.api.client.exception.BinanceApiException;
-import com.binance.api.client.impl.BinanceApiRestClientImpl;
-import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
+/**
+ * Service providing functionality for Binance API.
+ */
 public class BinanceApiService {
 
-    private final BinanceApiRestClient binanceApiRestClient;
-    private final LambdaLogger logger;
+  private final BinanceApiRestClient binanceApiRestClient;
+  private final LambdaLogger logger;
 
-    public BinanceApiService(String apiKey, String apiSecret, LambdaLogger logger) {
-        this.binanceApiRestClient = new BinanceApiRestClientImpl(apiKey, apiSecret);
-        this.logger = logger;
-    }
+  /**
+   * Default constructor for {@link BinanceApiService}.
+   *
+   * @param apiKey    API key
+   * @param apiSecret API secret
+   * @param logger    logger
+   */
+  public BinanceApiService(String apiKey, String apiSecret, LambdaLogger logger) {
+    this.binanceApiRestClient = BinanceApiClientFactory.newInstance(apiKey, apiSecret)
+                                                       .newRestClient();
+    this.logger = logger;
+  }
 
-    public List<Order> getOpenOrders() {
-        return binanceApiRestClient.getOpenOrders(new OrderRequest(null));
-    }
+  /**
+   * Returns all open orders.
+   *
+   * @return Open orders
+   */
+  public List<Order> getOpenOrders() {
+    return binanceApiRestClient.getOpenOrders(new OrderRequest(null));
+  }
 
-    public ExchangeInfo getExchangeInfo() {
-        return binanceApiRestClient.getExchangeInfo();
-    }
+  /**
+   * Returns current exchange trading rules and symbol information.
+   *
+   * @return Exchange info
+   */
+  public ExchangeInfo getExchangeInfo() {
+    return binanceApiRestClient.getExchangeInfo();
+  }
 
-    public List<TickerStatistics> getAll24hTickers() {
-        return binanceApiRestClient.getAll24HrPriceStatistics();
-    }
+  /**
+   * Returns 24 hour price change statistics for all symbols.
+   *
+   * @return Statistics
+   */
+  public List<TickerStatistics> getAll24hTickers() {
+    return binanceApiRestClient.getAll24HrPriceStatistics();
+  }
 
-    public OrderBook getOrderBook(String symbol) {
-        return binanceApiRestClient.getOrderBook(symbol, 20);
-    }
+  /**
+   * Returns order book of a symbol in Binance.
+   *
+   * @param symbol Order symbol
+   * @return Order book
+   */
+  public OrderBook getOrderBook(String symbol) {
+    return binanceApiRestClient.getOrderBook(symbol, 20);
+  }
 
-    public List<Candlestick> getCandleStickData(Crypto crypto, CandlestickInterval interval, Integer limit) {
-        final String symbol = crypto.getSymbolInfo().getSymbol();
-        return binanceApiRestClient.getCandlestickBars(symbol, interval, limit, null, null);
-    }
+  /**
+   * Returns Kline/Candlestick bars for a symbol.
+   *
+   * @param symbol   Order symbol
+   * @param interval Interval for Candlestick
+   * @param limit    Limit for candlestick
+   * @return List of candlestick data
+   */
+  public List<Candlestick> getCandleStickData(String symbol,
+                                              CandlestickInterval interval,
+                                              Integer limit) {
+    return binanceApiRestClient.getCandlestickBars(symbol, interval, limit, null, null);
+  }
 
-    public OrderBookEntry getMinOrderBookEntry(String symbol) {
-        return binanceApiRestClient.getOrderBook(symbol, 20)
-                                   .getAsks()
-                                   .parallelStream()
-                                   .min(comparing(OrderBookEntry::getPrice))
-                                   .orElseThrow(RuntimeException::new);
-    }
+  /**
+   * Returns order book entry with min price.
+   *
+   * @param symbol Order symbol
+   * @return OrderBookEntry with min price
+   */
+  public OrderBookEntry getMinOrderBookEntry(String symbol) {
+    return binanceApiRestClient.getOrderBook(symbol, 20)
+                               .getAsks()
+                               .parallelStream()
+                               .min(comparing(OrderBookEntry::getPrice))
+                               .orElseThrow(RuntimeException::new);
+  }
 
-    public BigDecimal getMyActualBalance() {
-        return binanceApiRestClient.getAccount()
-                                   .getBalances()
-                                   .parallelStream()
-                                   .map(this::mapToAssetAndBalance)
-                                   .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
-                                   .map(this::mapToBtcBalance)
-                                   .reduce(ZERO, BigDecimal::add);
-    }
+  /**
+   * Returns actual balance.
+   *
+   * @return Actual balance
+   */
+  public BigDecimal getMyActualBalance() {
+    return binanceApiRestClient.getAccount()
+                               .getBalances()
+                               .parallelStream()
+                               .map(this::mapToAssetAndBalance)
+                               .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
+                               .map(this::mapToBtcBalance)
+                               .reduce(ZERO, BigDecimal::add);
+  }
 
-    private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
-        return Pair.of(new BigDecimal(assetBalance.getFree()).add(new BigDecimal(assetBalance.getLocked())), assetBalance.getAsset());
-    }
+  private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
+    return Pair.of(new BigDecimal(assetBalance.getFree()).add(new BigDecimal(assetBalance.getLocked())),
+                   assetBalance.getAsset());
+  }
 
-    private BigDecimal mapToBtcBalance(Pair<BigDecimal, String> pair) {
-        if (pair.getRight().equals(ASSET_BTC)) {
-            return pair.getLeft();
-        } else {
-            try {
-                BigDecimal price = getOrderBook(pair.getRight() + ASSET_BTC)
-                    .getBids()
-                    .parallelStream()
-                    .map(OrderBookEntry::getPrice)
-                    .map(BigDecimal::new)
-                    .max(BigDecimal::compareTo)
-                    .orElse(ZERO);
-                return price.multiply(pair.getLeft());
-            } catch (BinanceApiException e) {
-                return ZERO;
-            }
-        }
+  private BigDecimal mapToBtcBalance(Pair<BigDecimal, String> pair) {
+    if (pair.getRight().equals(ASSET_BTC)) {
+      return pair.getLeft();
+    } else {
+      try {
+        BigDecimal price = getOrderBook(pair.getRight() + ASSET_BTC).getBids()
+                                                                    .parallelStream()
+                                                                    .map(OrderBookEntry::getPrice)
+                                                                    .map(BigDecimal::new)
+                                                                    .max(BigDecimal::compareTo)
+                                                                    .orElse(ZERO);
+        return price.multiply(pair.getLeft());
+      } catch (BinanceApiException e) {
+        return ZERO;
+      }
     }
+  }
 
-    public BigDecimal getMyBalance(String asset) {
-        Account account = binanceApiRestClient.getAccount();
-        BigDecimal myBalance = account.getBalances()
-                                      .parallelStream()
-                                      .filter(balance -> balance.getAsset().equals(asset))
-                                      .map(AssetBalance::getFree)
-                                      .map(BigDecimal::new)
-                                      .findFirst()
-                                      .orElse(ZERO);
-        logger.log("My balance in currency: " + asset + ", is: " + myBalance);
-        return myBalance;
-    }
+  /**
+   * Returns actual balance per asset.
+   *
+   * @param asset Asset of the crypto
+   * @return Actual balance
+   */
+  public BigDecimal getMyBalance(String asset) {
+    Account account = binanceApiRestClient.getAccount();
+    BigDecimal myBalance = account.getBalances()
+                                  .parallelStream()
+                                  .filter(balance -> balance.getAsset().equals(asset))
+                                  .map(AssetBalance::getFree)
+                                  .map(BigDecimal::new)
+                                  .findFirst()
+                                  .orElse(ZERO);
+    logger.log("My balance in currency: " + asset + ", is: " + myBalance);
+    return myBalance;
+  }
 
-    public void cancelRequest(OrderWrapper orderToCancel) {
-        CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderToCancel.getOrder().getSymbol(), orderToCancel.getOrder().getClientOrderId());
-        logger.log("New cancelOrderRequest: " + cancelOrderRequest);
-        binanceApiRestClient.cancelOrder(cancelOrderRequest);
-    }
+  /**
+   * Cancel actual order.
+   *
+   * @param orderToCancel Order to cancel
+   */
+  public void cancelRequest(OrderWrapper orderToCancel) {
+    CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderToCancel.getOrder()
+                                                                                .getSymbol(),
+                                                                   orderToCancel.getOrder()
+                                                                                .getClientOrderId());
+    logger.log("New cancelOrderRequest: " + cancelOrderRequest);
+    binanceApiRestClient.cancelOrder(cancelOrderRequest);
+  }
 
-    public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
-        BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
-        BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo, MIN_NOTIONAL, SymbolFilter::getMinNotional);
-        BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
-        BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-        createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
-        return roundedQuantity;
-    }
+  /**
+   * Buy order.
+   *
+   * @param symbolInfo Symbol information
+   * @param btcAmount  BTC amount
+   * @param price      price of new order
+   * @return bought quantity
+   */
+  public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+    BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
+    BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                     MIN_NOTIONAL,
+                                                                     SymbolFilter::getMinNotional);
+    BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
+    BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
+    createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
+    return roundedQuantity;
+  }
 
-    public void sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
-        logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
-        String asset = getAssetFromSymbolInfo(symbolInfo);
-        BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
-        createNewOrder(symbolInfo.getSymbol(), SELL, roundedBidQuantity);
-    }
+  /**
+   * Sell available balance.
+   *
+   * @param symbolInfo Symbol information
+   * @param quantity   Quantity to sell
+   */
+  public void sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
+    logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
+    String asset = getAssetFromSymbolInfo(symbolInfo);
+    BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
+    createNewOrder(symbolInfo.getSymbol(), SELL, roundedBidQuantity);
+  }
 
-    public void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
-        logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
-        String asset = getAssetFromSymbolInfo(symbolInfo);
-        BigDecimal balance = waitUntilHaveBalance(asset, quantity);
-        BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
-        BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
-        NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
-        createNewOrder(sellOrder);
-    }
+  /**
+   * Place sell order with new price.
+   *
+   * @param symbolInfo  Symbol information
+   * @param priceToSell Price of new sell order
+   * @param quantity    Quantity of new sell order
+   */
+  public void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
+    logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
+    String asset = getAssetFromSymbolInfo(symbolInfo);
+    BigDecimal balance = waitUntilHaveBalance(asset, quantity);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
+    BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
+    NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(),
+                                      SELL,
+                                      LIMIT,
+                                      GTC,
+                                      roundedBidQuantity.toPlainString(),
+                                      roundedPriceToSell.toPlainString());
+    createNewOrder(sellOrder);
+  }
 
-    public void createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
-        NewOrder buyOrder = new NewOrder(symbol, orderSide, MARKET, null, roundedMyQuatity.toPlainString());
-        createNewOrder(buyOrder);
-    }
+  /**
+   * Creates new sell/buy order.
+   *
+   * @param symbol           Symbol information
+   * @param orderSide        Buy or sell
+   * @param roundedMyQuatity Quantity of new order
+   */
+  public void createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
+    NewOrder buyOrder = new NewOrder(symbol,
+                                     orderSide,
+                                     MARKET,
+                                     null,
+                                     roundedMyQuatity.toPlainString());
+    createNewOrder(buyOrder);
+  }
 
-    private void createNewOrder(NewOrder newOrder) {
-        logger.log("My new order: " + newOrder);
-        binanceApiRestClient.newOrder(newOrder);
-    }
+  private void createNewOrder(NewOrder newOrder) {
+    logger.log("My new order: " + newOrder);
+    binanceApiRestClient.newOrder(newOrder);
+  }
 
-    private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
-        return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
-    }
+  private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
+    return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
+  }
 
-    private BigDecimal waitUntilHaveBalance(String asset, BigDecimal quantity) {
-        BigDecimal myBalance = getMyBalance(asset);
-        if (myBalance.compareTo(quantity) >= 0) {
-            return myBalance;
-        } else {
-            CommonUtils.sleep(500, logger);
-            return waitUntilHaveBalance(asset, quantity);
-        }
+  private BigDecimal waitUntilHaveBalance(String asset, BigDecimal quantity) {
+    BigDecimal myBalance = getMyBalance(asset);
+    if (myBalance.compareTo(quantity) >= 0) {
+      return myBalance;
+    } else {
+      CommonUtils.sleep(500, logger);
+      return waitUntilHaveBalance(asset, quantity);
     }
+  }
 }

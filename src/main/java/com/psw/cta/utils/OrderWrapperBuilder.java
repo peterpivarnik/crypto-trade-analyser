@@ -15,39 +15,75 @@ import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.util.Map;
 
+/**
+ * Buider to build {@link OrderWrapper}.
+ */
 public class OrderWrapperBuilder {
 
-    public static OrderWrapper build(Order order) {
-        BigDecimal orderPrice = calculateOrderPrice(order);
-        BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
-        OrderWrapper orderWrapper = new OrderWrapper(order);
-        orderWrapper.setOrderPrice(orderPrice);
-        orderWrapper.setOrderBtcAmount(orderBtcAmount);
-        return orderWrapper;
-    }
+  /**
+   * Builds {@link OrderWrapper}.
+   *
+   * @param order Order to build {@link OrderWrapper}
+   * @return {@link OrderWrapper}
+   */
+  public static OrderWrapper build(Order order) {
+    BigDecimal orderPrice = calculateOrderPrice(order);
+    BigDecimal orderBtcAmount = calculateOrderBtcAmount(order, orderPrice);
+    OrderWrapper orderWrapper = new OrderWrapper(order);
+    orderWrapper.setOrderPrice(orderPrice);
+    orderWrapper.setOrderBtcAmount(orderBtcAmount);
+    return orderWrapper;
+  }
 
-    public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
-        BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()), orderWrapper.getOrderBtcAmount());
-        BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
-        orderWrapper.setMinWaitingTime(minWaitingTime);
-        orderWrapper.setActualWaitingTime(actualWaitingTime);
-        return orderWrapper;
-    }
+  /**
+   * Add waiting times to {@link OrderWrapper}.
+   *
+   * @param totalAmounts Total amounts from all orders
+   * @param orderWrapper {@link OrderWrapper} to update
+   * @return Updated {@link OrderWrapper}
+   */
+  public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts,
+                                              OrderWrapper orderWrapper) {
+    BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()),
+                                                        orderWrapper.getOrderBtcAmount());
+    BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
+    orderWrapper.setMinWaitingTime(minWaitingTime);
+    orderWrapper.setActualWaitingTime(actualWaitingTime);
+    return orderWrapper;
+  }
 
-    public static OrderWrapper withPrices(OrderWrapper orderWrapper,
-                                          OrderBook orderBook,
-                                          SymbolInfo symbolInfo,
-                                          BigDecimal myBtcBalance,
-                                          BigDecimal actualBalance) {
-        BigDecimal orderPrice = orderWrapper.getOrderPrice();
-        BigDecimal currentPrice = getCurrentPrice(orderBook);
-        BigDecimal priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderWrapper.getOrderBtcAmount(), symbolInfo, myBtcBalance, actualBalance);
-        BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
-        BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
-        orderWrapper.setCurrentPrice(currentPrice);
-        orderWrapper.setPriceToSell(priceToSell);
-        orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
-        orderWrapper.setOrderPricePercentage(orderPricePercentage);
-        return orderWrapper;
-    }
+  /**
+   * Add prices to {@link OrderWrapper}.
+   *
+   * @param orderWrapper  {@link OrderWrapper} to update
+   * @param orderBook     Order book of a symbol
+   * @param symbolInfo    Symbol information
+   * @param myBtcBalance  Actual balance in BTC
+   * @param actualBalance Total actual balance
+   * @return updated {@link OrderWrapper}
+   */
+  public static OrderWrapper withPrices(OrderWrapper orderWrapper,
+                                        OrderBook orderBook,
+                                        SymbolInfo symbolInfo,
+                                        BigDecimal myBtcBalance,
+                                        BigDecimal actualBalance) {
+    BigDecimal orderPrice = orderWrapper.getOrderPrice();
+    BigDecimal currentPrice = getCurrentPrice(orderBook);
+    BigDecimal priceToSell = calculatePriceToSell(orderPrice,
+                                                  currentPrice,
+                                                  orderWrapper.getOrderBtcAmount(),
+                                                  symbolInfo,
+                                                  myBtcBalance,
+                                                  actualBalance);
+    BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
+    BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
+    orderWrapper.setCurrentPrice(currentPrice);
+    orderWrapper.setPriceToSell(priceToSell);
+    orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
+    orderWrapper.setOrderPricePercentage(orderPricePercentage);
+    return orderWrapper;
+  }
+
+  private OrderWrapperBuilder() {
+  }
 }

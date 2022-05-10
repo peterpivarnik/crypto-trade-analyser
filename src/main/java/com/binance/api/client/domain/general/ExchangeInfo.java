@@ -3,13 +3,12 @@ package com.binance.api.client.domain.general;
 import com.binance.api.client.constant.BinanceApiConstants;
 import com.binance.api.client.exception.BinanceApiException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 import java.util.List;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Current exchange trading rules and symbol information.
- * https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md
+ * <a href="https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md">documentation</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExchangeInfo {
@@ -57,22 +56,31 @@ public class ExchangeInfo {
   }
 
   /**
+   * Returns Symbol information.
+   *
    * @param symbol the symbol to obtain information for (e.g. ETHBTC)
    * @return symbol exchange information
    */
   public SymbolInfo getSymbolInfo(String symbol) {
-    return symbols.stream().filter(symbolInfo -> symbolInfo.getSymbol().equals(symbol))
-        .findFirst()
-        .orElseThrow(() -> new BinanceApiException("Unable to obtain information for symbol " + symbol));
+    return symbols.stream()
+                  .filter(symbolInfo -> symbolInfo.getSymbol().equals(symbol))
+                  .findFirst()
+                  .orElseThrow(() -> new BinanceApiException(
+                      "Unable to obtain information for symbol " + symbol));
   }
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("timezone", timezone)
-        .append("serverTime", serverTime)
-        .append("rateLimits", rateLimits)
-        .append("symbols", symbols)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("timezone",
+                                                                                         timezone)
+                                                                                 .append(
+                                                                                     "serverTime",
+                                                                                     serverTime)
+                                                                                 .append(
+                                                                                     "rateLimits",
+                                                                                     rateLimits)
+                                                                                 .append("symbols",
+                                                                                         symbols)
+                                                                                 .toString();
   }
 }

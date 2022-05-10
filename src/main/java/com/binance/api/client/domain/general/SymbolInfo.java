@@ -1,11 +1,12 @@
 package com.binance.api.client.domain.general;
 
-import com.binance.api.client.constant.BinanceApiConstants;
+import static com.binance.api.client.constant.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
+
 import com.binance.api.client.domain.OrderType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 import java.util.List;
+import java.util.Optional;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Symbol information (base/quote).
@@ -104,19 +105,20 @@ public class SymbolInfo {
   }
 
   /**
+   * Returns symbol filter.
+   *
    * @param filterType filter type to filter for.
    * @return symbol filter information for the provided filter type.
    */
-  public SymbolFilter getSymbolFilter(FilterType filterType) {
+  public Optional<SymbolFilter> getSymbolFilter(FilterType filterType) {
     return filters.stream()
-        .filter(symbolFilter -> symbolFilter.getFilterType() == filterType)
-        .findFirst()
-        .get();
+                  .filter(symbolFilter -> symbolFilter.getFilterType() == filterType)
+                  .findFirst();
   }
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
+    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
         .append("symbol", symbol)
         .append("status", status)
         .append("baseAsset", baseAsset)

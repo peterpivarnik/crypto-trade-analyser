@@ -53,10 +53,12 @@ public class AssetBalance {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("asset", asset)
-        .append("free", free)
-        .append("locked", locked)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("asset",
+                                                                                         asset)
+                                                                                 .append("free",
+                                                                                         free)
+                                                                                 .append("locked",
+                                                                                         locked)
+                                                                                 .toString();
   }
 }

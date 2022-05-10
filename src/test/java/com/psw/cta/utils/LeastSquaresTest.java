@@ -15,20 +15,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class LeastSquaresTest {
 
-    @Test
-    void shouldCalculateCorrectSlopeFromLeastSquare() {
-        List<BigDecimal> data = Arrays.asList(new BigDecimal("1"), new BigDecimal("5"), new BigDecimal("13"), new BigDecimal("21"), new BigDecimal("45"));
+  @Test
+  void shouldCalculateCorrectSlopeFromLeastSquare() {
+    List<BigDecimal> data = Arrays.asList(new BigDecimal("1"),
+                                          new BigDecimal("5"),
+                                          new BigDecimal("13"),
+                                          new BigDecimal("21"),
+                                          new BigDecimal("45"));
 
-        double slope = getSlope(data);
+    double slope = getSlope(data);
 
-        assertThat(slope).isEqualTo(10.4);
-    }
+    assertThat(slope).isEqualTo(10.4);
+  }
 
-    @Test
-    void shouldCalculateCorrectRegressionForLine() {
-        SimpleRegression regression = getRegression(1, 2, 2, 10);
+  @Test
+  void shouldCalculateCorrectRegressionForLine() {
+    SimpleRegression regression = getRegression(1, 2, 2, 10);
 
-        assertThat(regression.getSlope()).isEqualTo(8.0);
-        assertThat(regression.getIntercept()).isEqualTo(-6.0);
-    }
+    assertThat(regression.getSlope()).isEqualTo(8.0);
+    assertThat(regression.getIntercept()).isEqualTo(-6.0);
+  }
 }

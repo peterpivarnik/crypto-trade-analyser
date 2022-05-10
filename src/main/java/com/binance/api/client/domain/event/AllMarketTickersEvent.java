@@ -1,11 +1,12 @@
 package com.binance.api.client.domain.event;
 
 import com.binance.api.client.constant.BinanceApiConstants;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
+ * All market ticker event.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AllMarketTickersEvent {
@@ -265,30 +266,62 @@ public class AllMarketTickersEvent {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-            .append("eventType", eventType)
-            .append("eventTime", eventTime)
-            .append("symbol", symbol)
-            .append("priceChange", priceChange)
-            .append("priceChangePercent", priceChangePercent)
-            .append("weightedAveragePrice", weightedAveragePrice)
-            .append("previousDaysClosePrice", previousDaysClosePrice)
-            .append("currentDaysClosePrice", currentDaysClosePrice)
-            .append("closeTradesQuantity", closeTradesQuantity)
-            .append("bestBidPrice", bestBidPrice)
-            .append("bestBidQuantity", bestBidQuantity)
-            .append("bestAskPrice", bestAskPrice)
-            .append("bestAskQuantity", bestAskQuantity)
-            .append("openPrice", openPrice)
-            .append("highPrice", highPrice)
-            .append("lowPrice", lowPrice)
-            .append("totalTradedBaseAssetVolume", totalTradedBaseAssetVolume)
-            .append("totalTradedQuoteAssetVolume", totalTradedQuoteAssetVolume)
-            .append("statisticesOpenTime", statisticesOpenTime)
-            .append("statisticesCloseTime", statisticesCloseTime)
-            .append("firstTradeId", firstTradeId)
-            .append("lastTradeId", lastTradeId)
-            .append("totalNumberOfTrades", totalNumberOfTrades)
-            .toString();
+    return new ToStringBuilder(this,
+                               BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("eventType",
+                                                                                   eventType)
+                                                                           .append("eventTime",
+                                                                                   eventTime)
+                                                                           .append("symbol", symbol)
+                                                                           .append("priceChange",
+                                                                                   priceChange)
+                                                                           .append(
+                                                                               "priceChangePercent",
+                                                                               priceChangePercent)
+                                                                           .append(
+                                                                               "weightedAveragePrice",
+                                                                               weightedAveragePrice)
+                                                                           .append(
+                                                                               "previousDaysClosePrice",
+                                                                               previousDaysClosePrice)
+                                                                           .append(
+                                                                               "currentDaysClosePrice",
+                                                                               currentDaysClosePrice)
+                                                                           .append(
+                                                                               "closeTradesQuantity",
+                                                                               closeTradesQuantity)
+                                                                           .append("bestBidPrice",
+                                                                                   bestBidPrice)
+                                                                           .append("bestBidQuantity",
+                                                                                   bestBidQuantity)
+                                                                           .append("bestAskPrice",
+                                                                                   bestAskPrice)
+                                                                           .append("bestAskQuantity",
+                                                                                   bestAskQuantity)
+                                                                           .append("openPrice",
+                                                                                   openPrice)
+                                                                           .append("highPrice",
+                                                                                   highPrice)
+                                                                           .append("lowPrice",
+                                                                                   lowPrice)
+                                                                           .append(
+                                                                               "totalTradedBaseAssetVolume",
+                                                                               totalTradedBaseAssetVolume)
+                                                                           .append(
+                                                                               "totalTradedQuoteAssetVolume",
+                                                                               totalTradedQuoteAssetVolume)
+                                                                           .append(
+                                                                               "statisticesOpenTime",
+                                                                               statisticesOpenTime)
+                                                                           .append(
+                                                                               "statisticesCloseTime",
+                                                                               statisticesCloseTime)
+                                                                           .append("firstTradeId",
+                                                                                   firstTradeId)
+                                                                           .append("lastTradeId",
+                                                                                   lastTradeId)
+                                                                           .append(
+                                                                               "totalNumberOfTrades",
+                                                                               totalNumberOfTrades)
+                                                                           .toString();
   }
 }

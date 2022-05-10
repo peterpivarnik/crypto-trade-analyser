@@ -39,7 +39,7 @@ public class Trade {
   private String commission;
 
   /**
-   * Asset on which commission is taken
+   * Asset on which commission is taken.
    */
   private String commissionAsset;
 
@@ -73,6 +73,11 @@ public class Trade {
     this.id = id;
   }
 
+  /**
+   * Set trade id.
+   *
+   * @param id Id of trade
+   */
   @JsonSetter("tradeId")
   public void setTradeId(Long id) {
     if (this.id == null) {
@@ -170,19 +175,30 @@ public class Trade {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("id", id)
-        .append("symbol", symbol)
-        .append("price", price)
-        .append("qty", qty)
-        .append("quoteQty", quoteQty)
-        .append("commission", commission)
-        .append("commissionAsset", commissionAsset)
-        .append("time", time)
-        .append("buyer", buyer)
-        .append("maker", maker)
-        .append("bestMatch", bestMatch)
-        .append("orderId", orderId)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("id", id)
+                                                                                 .append("symbol",
+                                                                                         symbol)
+                                                                                 .append("price",
+                                                                                         price)
+                                                                                 .append("qty", qty)
+                                                                                 .append("quoteQty",
+                                                                                         quoteQty)
+                                                                                 .append(
+                                                                                     "commission",
+                                                                                     commission)
+                                                                                 .append(
+                                                                                     "commissionAsset",
+                                                                                     commissionAsset)
+                                                                                 .append("time",
+                                                                                         time)
+                                                                                 .append("buyer",
+                                                                                         buyer)
+                                                                                 .append("maker",
+                                                                                         maker)
+                                                                                 .append("bestMatch",
+                                                                                         bestMatch)
+                                                                                 .append("orderId",
+                                                                                         orderId)
+                                                                                 .toString();
   }
 }

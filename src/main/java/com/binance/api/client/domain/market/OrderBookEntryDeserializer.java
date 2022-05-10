@@ -1,12 +1,10 @@
 package com.binance.api.client.domain.market;
 
-import com.binance.api.client.domain.market.OrderBookEntry;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-
 import java.io.IOException;
 
 /**

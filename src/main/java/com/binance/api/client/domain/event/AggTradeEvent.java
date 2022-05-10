@@ -47,11 +47,14 @@ public class AggTradeEvent extends AggTrade {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("eventType", eventType)
-        .append("eventTime", eventTime)
-        .append("symbol", symbol)
-        .append("aggTrade", super.toString())
-        .toString();
+    return new ToStringBuilder(this,
+                               BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("eventType",
+                                                                                   eventType)
+                                                                           .append("eventTime",
+                                                                                   eventTime)
+                                                                           .append("symbol", symbol)
+                                                                           .append("aggTrade",
+                                                                                   super.toString())
+                                                                           .toString();
   }
 }

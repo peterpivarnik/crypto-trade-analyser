@@ -1,18 +1,18 @@
 package com.binance.api.client.impl;
 
+import static com.binance.api.client.impl.BinanceApiServiceGenerator.getBinanceApiError;
+
 import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.BinanceApiError;
 import com.binance.api.client.exception.BinanceApiException;
+import java.io.IOException;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import java.io.IOException;
-
-import static com.binance.api.client.impl.BinanceApiServiceGenerator.getBinanceApiError;
-
 /**
- * An adapter/wrapper which transforms a Callback from Retrofit into a BinanceApiCallback which is exposed to the client.
+ * An adapter/wrapper which transforms a Callback from Retrofit into a BinanceApiCallback
+ * which is exposed to the client.
  */
 public class BinanceApiCallbackAdapter<T> implements Callback<T> {
 
@@ -22,13 +22,20 @@ public class BinanceApiCallbackAdapter<T> implements Callback<T> {
     this.callback = callback;
   }
 
+  /**
+   * Method called on response.
+   *
+   * @param call     Call
+   * @param response Response
+   */
   public void onResponse(Call<T> call, Response<T> response) {
     if (response.isSuccessful()) {
       callback.onResponse(response.body());
     } else {
       if (response.code() == 504) {
-        // HTTP 504 return code is used when the API successfully sent the message but not get a response within the timeout period.
-        // It is important to NOT treat this as a failure; the execution status is UNKNOWN and could have been a success.
+        // HTTP 504 return code is used when the API successfully sent the message but not get a response within the
+        // timeout period. It is important to NOT treat this as a failure; the execution status is UNKNOWN and
+        // could have been a success.
         return;
       }
       try {

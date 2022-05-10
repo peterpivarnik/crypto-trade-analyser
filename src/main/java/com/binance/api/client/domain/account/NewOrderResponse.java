@@ -1,17 +1,17 @@
 package com.binance.api.client.domain.account;
 
-import com.binance.api.client.constant.BinanceApiConstants;
+import static com.binance.api.client.constant.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
+
 import com.binance.api.client.domain.OrderSide;
 import com.binance.api.client.domain.OrderStatus;
 import com.binance.api.client.domain.OrderType;
 import com.binance.api.client.domain.TimeInForce;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Response returned when placing a new order on the system.
@@ -167,22 +167,23 @@ public class NewOrderResponse {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("symbol", symbol)
-        .append("orderId", orderId)
-        .append("clientOrderId", clientOrderId)
-        .append("transactTime", transactTime)
-        .append("price", price)
-        .append("origQty", origQty)
-        .append("executedQty", executedQty)
-        .append("status", status)
-        .append("timeInForce", timeInForce)
-        .append("type", type)
-        .append("side", side)
-        .append("fills", Optional.ofNullable(fills).orElse(Collections.emptyList())
-            .stream()
-            .map(Object::toString)
-            .collect(Collectors.joining(", ")))
-        .toString();
+    String joinedFills = ofNullable(fills)
+        .orElse(emptyList())
+        .stream()
+        .map(Object::toString)
+        .collect(Collectors.joining(", "));
+    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE).append("symbol", symbol)
+                                                             .append("orderId", orderId)
+                                                             .append("clientOrderId", clientOrderId)
+                                                             .append("transactTime", transactTime)
+                                                             .append("price", price)
+                                                             .append("origQty", origQty)
+                                                             .append("executedQty", executedQty)
+                                                             .append("status", status)
+                                                             .append("timeInForce", timeInForce)
+                                                             .append("type", type)
+                                                             .append("side", side)
+                                                             .append("fills", joinedFills)
+                                                             .toString();
   }
 }

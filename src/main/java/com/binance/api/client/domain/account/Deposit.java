@@ -26,12 +26,12 @@ public class Deposit {
   private String insertTime;
 
   /**
-   * Transaction id
+   * Transaction id.
    */
   private String txId;
 
   /**
-   * (0:pending,1:success)
+   * (0:pending,1:success).
    */
   private int status;
 
@@ -77,12 +77,17 @@ public class Deposit {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("amount", amount)
-        .append("asset", asset)
-        .append("insertTime", insertTime)
-        .append("txId", txId)
-        .append("status", status)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("amount",
+                                                                                         amount)
+                                                                                 .append("asset",
+                                                                                         asset)
+                                                                                 .append(
+                                                                                     "insertTime",
+                                                                                     insertTime)
+                                                                                 .append("txId",
+                                                                                         txId)
+                                                                                 .append("status",
+                                                                                         status)
+                                                                                 .toString();
   }
 }

@@ -6,8 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * User data update event which can be of two types:
- *
+ * User data update event which can be of three types:
  * 1) outboundAccountInfo, whenever there is a change in the account (e.g. balance of an asset)
  * 2) outboundAccountPosition, the change in account balances caused by an event.
  * 3) executionReport, whenever there is a trade or an order
@@ -58,19 +57,23 @@ public class UserDataUpdateEvent {
 
   @Override
   public String toString() {
-    ToStringBuilder sb = new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("eventType", eventType)
-        .append("eventTime", eventTime);
+    ToStringBuilder sb = new ToStringBuilder(this,
+                                             BinanceApiConstants.TO_STRING_BUILDER_STYLE).append(
+        "eventType",
+        eventType).append("eventTime", eventTime);
     if (eventType == UserDataUpdateEventType.ACCOUNT_UPDATE) {
       sb.append("accountUpdateEvent", accountUpdateEvent);
     } else if (eventType == UserDataUpdateEventType.ACCOUNT_POSITION_UPDATE) {
-        sb.append("accountPositionUpdateEvent", accountUpdateEvent);
+      sb.append("accountPositionUpdateEvent", accountUpdateEvent);
     } else {
       sb.append("orderTradeUpdateEvent", orderTradeUpdateEvent);
     }
     return sb.toString();
   }
 
+  /**
+   * UserDataUpdateEventType.
+   */
   public enum UserDataUpdateEventType {
     ACCOUNT_UPDATE("outboundAccountInfo"),
     ACCOUNT_POSITION_UPDATE("outboundAccountPosition"),
@@ -82,10 +85,12 @@ public class UserDataUpdateEvent {
       this.eventTypeId = eventTypeId;
     }
 
-    public String getEventTypeId() {
-      return eventTypeId;
-    }
-
+    /**
+     * Returns {@link UserDataUpdateEventType}.
+     *
+     * @param eventTypeId Event Id typ
+     * @return {@link UserDataUpdateEventType}
+     */
     public static UserDataUpdateEventType fromEventTypeId(String eventTypeId) {
       if (ACCOUNT_UPDATE.eventTypeId.equals(eventTypeId)) {
         return ACCOUNT_UPDATE;
@@ -94,7 +99,12 @@ public class UserDataUpdateEvent {
       } else if (ACCOUNT_POSITION_UPDATE.eventTypeId.equals(eventTypeId)) {
         return ACCOUNT_POSITION_UPDATE;
       }
-      throw new IllegalArgumentException("Unrecognized user data update event type id: " + eventTypeId);
+      throw new IllegalArgumentException("Unrecognized user data update event type id: "
+                                         + eventTypeId);
+    }
+
+    public String getEventTypeId() {
+      return eventTypeId;
     }
   }
 }

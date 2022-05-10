@@ -90,14 +90,24 @@ public class AggTrade {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE)
-        .append("aggregatedTradeId", aggregatedTradeId)
-        .append("price", price)
-        .append("quantity", quantity)
-        .append("firstBreakdownTradeId", firstBreakdownTradeId)
-        .append("lastBreakdownTradeId", lastBreakdownTradeId)
-        .append("tradeTime", tradeTime)
-        .append("isBuyerMaker", isBuyerMaker)
-        .toString();
+    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append(
+                                                                                     "aggregatedTradeId",
+                                                                                     aggregatedTradeId)
+                                                                                 .append("price",
+                                                                                         price)
+                                                                                 .append("quantity",
+                                                                                         quantity)
+                                                                                 .append(
+                                                                                     "firstBreakdownTradeId",
+                                                                                     firstBreakdownTradeId)
+                                                                                 .append(
+                                                                                     "lastBreakdownTradeId",
+                                                                                     lastBreakdownTradeId)
+                                                                                 .append("tradeTime",
+                                                                                         tradeTime)
+                                                                                 .append(
+                                                                                     "isBuyerMaker",
+                                                                                     isBuyerMaker)
+                                                                                 .toString();
   }
 }

@@ -15,6 +15,7 @@ import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
+import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
@@ -162,6 +163,7 @@ public class TradingService {
                                                                                             .getSymbol()),
                                                      myBtcBalance,
                                                      actualBalance))
+                     .filter(getOrderWrapperPredicate(myBtcBalance))
                      .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
                                                          .subtract(orderWrapper.getPriceToSellPercentage())
                                                          .compareTo(MIN_PROFIT_PERCENTAGE) > 0)

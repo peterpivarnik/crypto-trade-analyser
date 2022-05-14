@@ -7,10 +7,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
 class OrderUtilsTest {
@@ -413,5 +415,46 @@ class OrderUtilsTest {
     BigDecimal actualWaitingTime = OrderUtils.calculateActualWaitingTime(order);
 
     assertThat(actualWaitingTime.stripTrailingZeros().toPlainString()).isEqualTo("1");
+  }
+
+  @Test
+  void shouldReturnTrueWhenOrderPricePercentageLessThan10() {
+    BigDecimal myBtcBalance = new BigDecimal("1");
+    OrderWrapper orderWrapper = createOrderWrapper(new BigDecimal("1"), new BigDecimal("1"));
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    assertThat(orderWrapperPredicate.test(orderWrapper)).isTrue();
+  }
+
+  @Test
+  void shouldReturnTrueWhenOrderPricePercentageMoreThan10AndDoubleOrderBtcAmountLessThanMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("15");
+    OrderWrapper orderWrapper = createOrderWrapper(new BigDecimal("1"), new BigDecimal("15"));
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    assertThat(orderWrapperPredicate.test(orderWrapper)).isTrue();
+  }
+
+  @Test
+  void shouldReturnFalseWhenOrderPricePercentageMoreThan10AndDoubleOrderBtcAmountMoreThanMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("15");
+    OrderWrapper orderWrapper = createOrderWrapper(new BigDecimal("10"), new BigDecimal("15"));
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    assertThat(orderWrapperPredicate.test(orderWrapper)).isFalse();
+  }
+
+  private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
+    OrderWrapper orderWrapper = new OrderWrapper(createOrder());
+    orderWrapper.setOrderPricePercentage(orderPricePercentage);
+    orderWrapper.setOrderBtcAmount(orderBtcAmount);
+    return orderWrapper;
+  }
+
+  private Order createOrder() {
+    return new Order();
   }
 }

@@ -18,10 +18,12 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.Predicate;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
@@ -164,5 +166,18 @@ public class OrderUtils {
     Duration duration = between(date, now);
     double actualWaitingTimeDouble = (double) duration.get(SECONDS) / (double) 3600;
     return new BigDecimal(String.valueOf(actualWaitingTimeDouble), new MathContext(5));
+  }
+
+  /**
+   * Returns predicate for filtering orders with double BTC amount less than myBtcAmount,
+   * in case orderPricePercentage higher than 10.
+   *
+   * @param myBtcBalance Actual BTC amount
+   * @return Flag whether order should be filtered out
+   */
+  public static Predicate<OrderWrapper> getOrderWrapperPredicate(BigDecimal myBtcBalance) {
+    return orderWrapper ->
+        orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) < 0
+        || orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2")).compareTo(myBtcBalance) < 0;
   }
 }

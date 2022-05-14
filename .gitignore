@@ -4,3 +4,5 @@
 .gitignore
 *.log
 /crypto-trade-analyser.iml
+/crypto-trader.iml
+/dependency-reduced-pom.xml

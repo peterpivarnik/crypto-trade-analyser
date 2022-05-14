@@ -33,6 +33,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +116,7 @@ public class TradingService {
     } else {
       repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
+    diversifyOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
   }
 
   private void repeatTrading(List<Order> openOrders,
@@ -185,7 +187,7 @@ public class TradingService {
                                                         totalAmounts,
                                                         exchangeInfo,
                                                         actualBalance);
-    diversify(totalAmounts, exchangeInfo, orderWrappers);
+    diversifyOrderWithHighestBtcAmount(totalAmounts, exchangeInfo, orderWrappers);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
@@ -193,9 +195,9 @@ public class TradingService {
   }
 
 
-  private void diversify(Map<String, BigDecimal> totalAmounts,
-                         ExchangeInfo exchangeInfo,
-                         List<OrderWrapper> orderWrappers) {
+  private void diversifyOrderWithHighestBtcAmount(Map<String, BigDecimal> totalAmounts,
+                                                  ExchangeInfo exchangeInfo,
+                                                  List<OrderWrapper> orderWrappers) {
     orderWrappers.stream()
                  .max(comparing(OrderWrapper::getOrderBtcAmount))
                  .ifPresent(orderWrapper -> diversifyService.diversify(orderWrapper,
@@ -252,5 +254,30 @@ public class TradingService {
                    .filter(crypto -> crypto.getSumPercentageDifferences10h()
                                            .compareTo(new BigDecimal("400")) < 0)
                    .forEach(initialTradingService::buyCrypto);
+  }
+
+  private void diversifyOrderWithLowestOrderPricePercentage(List<Order> openOrders,
+                                                            Map<String, BigDecimal> totalAmounts,
+                                                            BigDecimal myBtcBalance,
+                                                            ExchangeInfo exchangeInfo,
+                                                            BigDecimal actualBalance) {
+    logger.log("Sleep for 1 minute before splitting");
+    sleep(1000 * 60, logger);
+    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
+                                                        myBtcBalance,
+                                                        totalAmounts,
+                                                        exchangeInfo,
+                                                        actualBalance);
+    boolean allOldersThanDay = orderWrappers.stream()
+                                            .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
+                                                                                  .compareTo(new BigDecimal("24")) > 0);
+    if (allOldersThanDay) {
+      OrderWrapper orderToSplit = Collections.min(orderWrappers, comparing(OrderWrapper::getOrderPricePercentage));
+      logger.log("***** ***** Diversifying amounts with lowest order price percentage ***** *****");
+      diversifyService.diversify(orderToSplit,
+                                 () -> getCryptos(exchangeInfo),
+                                 totalAmounts,
+                                 exchangeInfo);
+    }
   }
 }

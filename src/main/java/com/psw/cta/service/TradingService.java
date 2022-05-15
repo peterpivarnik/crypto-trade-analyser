@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -135,7 +136,9 @@ public class TradingService {
                                                    myBtcBalance,
                                                    totalAmounts,
                                                    exchangeInfo,
-                                                   actualBalance);
+                                                   actualBalance,
+                                                   orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                                               .compareTo(myBtcBalance) < 0);
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
     wrappers.stream()
             .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
@@ -147,7 +150,8 @@ public class TradingService {
                                               BigDecimal myBtcBalance,
                                               Map<String, BigDecimal> totalAmounts,
                                               ExchangeInfo exchangeInfo,
-                                              BigDecimal actualBalance) {
+                                              BigDecimal actualBalance,
+                                              Predicate<OrderWrapper> predicate) {
     return openOrders.stream()
                      .map(Order::getSymbol)
                      .distinct()
@@ -156,7 +160,7 @@ public class TradingService {
                                               .min(getOrderComparator()))
                      .map(Optional::orElseThrow)
                      .map(OrderWrapperBuilder::build)
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0)
+                     .filter(predicate)
                      .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                      .map(orderWrapper -> withPrices(orderWrapper,
                                                      binanceApiService.getOrderBook(orderWrapper.getOrder()
@@ -186,7 +190,9 @@ public class TradingService {
                                                         myBtcBalance,
                                                         totalAmounts,
                                                         exchangeInfo,
-                                                        actualBalance);
+                                                        actualBalance,
+                                                        orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                                                    .compareTo(myBtcBalance) < 0);
     diversifyOrderWithHighestBtcAmount(totalAmounts, exchangeInfo, orderWrappers);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
@@ -267,7 +273,8 @@ public class TradingService {
                                                         myBtcBalance,
                                                         totalAmounts,
                                                         exchangeInfo,
-                                                        actualBalance);
+                                                        actualBalance,
+                                                        orderWrapper -> true);
     boolean allOldersThanDay = orderWrappers.stream()
                                             .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                                                   .compareTo(new BigDecimal("24")) > 0);

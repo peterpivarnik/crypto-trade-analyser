@@ -177,8 +177,7 @@ public class OrderUtils {
    */
   public static Predicate<OrderWrapper> getOrderWrapperPredicate(BigDecimal myBtcBalance) {
     return orderWrapper ->
-        (orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) < 0
-         || orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2")).compareTo(myBtcBalance) < 0)
-        && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0003")) > 0;
+        orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) < 0
+        || orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2")).compareTo(myBtcBalance) < 0;
   }
 }

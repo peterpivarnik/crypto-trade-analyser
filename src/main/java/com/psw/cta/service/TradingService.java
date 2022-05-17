@@ -274,10 +274,10 @@ public class TradingService {
                                                         exchangeInfo,
                                                         actualBalance,
                                                         getOrderWrapperPredicate(myBtcBalance));
-    boolean allOldersThanDay = orderWrappers.stream()
+    boolean allOlderThanDay = orderWrappers.stream()
                                             .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                                                   .compareTo(new BigDecimal("24")) > 0);
-    if (allOldersThanDay && !orderWrappers.isEmpty()) {
+    if (allOlderThanDay && !orderWrappers.isEmpty()) {
       OrderWrapper orderToSplit = Collections.min(orderWrappers, comparing(OrderWrapper::getOrderPricePercentage));
       logger.log("***** ***** Diversifying amounts with lowest order price percentage ***** *****");
       diversifyService.diversify(orderToSplit,

@@ -447,6 +447,16 @@ class OrderUtilsTest {
     assertThat(orderWrapperPredicate.test(orderWrapper)).isFalse();
   }
 
+  @Test
+  void shouldReturnFalseWhenOrderBtcAmountLessThan0003() {
+    BigDecimal myBtcBalance = new BigDecimal("15");
+    OrderWrapper orderWrapper = createOrderWrapper(new BigDecimal("10"), new BigDecimal("0.0001"));
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    assertThat(orderWrapperPredicate.test(orderWrapper)).isFalse();
+  }
+
   private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
     OrderWrapper orderWrapper = new OrderWrapper(createOrder());
     orderWrapper.setOrderPricePercentage(orderPricePercentage);

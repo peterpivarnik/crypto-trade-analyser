@@ -15,7 +15,6 @@ import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
-import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
@@ -133,13 +132,15 @@ public class TradingService {
                                                                     .equals(orderWrapper.getOrder().getSymbol()))
                                     .findAny()
                                     .orElseThrow();
+    Predicate<OrderWrapper> orderWrapperPredicate = orderWrapper ->
+        orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0
+        && orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2")).compareTo(myBtcBalance) < 0;
     List<OrderWrapper> wrappers = getOrderWrappers(openOrders,
                                                    myBtcBalance,
                                                    totalAmounts,
                                                    exchangeInfo,
                                                    actualBalance,
-                                                   orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                                               .compareTo(myBtcBalance) < 0);
+                                                   orderWrapperPredicate);
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
     wrappers.stream()
             .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
@@ -169,9 +170,6 @@ public class TradingService {
                                                      myBtcBalance,
                                                      actualBalance))
                      .filter(predicate)
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                         .multiply(new BigDecimal("2"))
-                                                         .compareTo(myBtcBalance) < 0)
                      .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
                                                          .subtract(orderWrapper.getPriceToSellPercentage())
                                                          .compareTo(MIN_PROFIT_PERCENTAGE) > 0)
@@ -193,8 +191,7 @@ public class TradingService {
                                                         totalAmounts,
                                                         exchangeInfo,
                                                         actualBalance,
-                                                        orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                                                    .compareTo(myBtcBalance) < 0);
+                                                        orderWrapper -> true);
     diversifyOrderWithHighestBtcAmount(totalAmounts, exchangeInfo, orderWrappers);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
@@ -276,7 +273,7 @@ public class TradingService {
                                                         totalAmounts,
                                                         exchangeInfo,
                                                         actualBalance,
-                                                        getOrderWrapperPredicate(myBtcBalance));
+                                                        orderWrapper -> true);
     boolean allOlderThanDay = orderWrappers.stream()
                                            .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                                                  .compareTo(new BigDecimal("24")) > 0);

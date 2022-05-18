@@ -21,7 +21,9 @@ import com.binance.api.client.domain.OrderSide;
 import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.NewOrder;
+import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
+import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
 import com.binance.api.client.domain.general.ExchangeInfo;
@@ -204,15 +206,16 @@ public class BinanceApiService {
    * @param price      price of new order
    * @return bought quantity
    */
-  public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+  public Pair<Long, BigDecimal> buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
     BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                      MIN_NOTIONAL,
                                                                      SymbolFilter::getMinNotional);
     BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-    createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
-    return roundedQuantity;
+    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
+
+    return Pair.of(newOrder.getOrderId(), roundedQuantity);
   }
 
   /**
@@ -257,19 +260,20 @@ public class BinanceApiService {
    * @param symbol           Symbol information
    * @param orderSide        Buy or sell
    * @param roundedMyQuatity Quantity of new order
+   * @return New Order response
    */
-  public void createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
+  public NewOrderResponse createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
     NewOrder buyOrder = new NewOrder(symbol,
                                      orderSide,
                                      MARKET,
                                      null,
                                      roundedMyQuatity.toPlainString());
-    createNewOrder(buyOrder);
+    return createNewOrder(buyOrder);
   }
 
-  private void createNewOrder(NewOrder newOrder) {
+  private NewOrderResponse createNewOrder(NewOrder newOrder) {
     logger.log("My new order: " + newOrder);
-    binanceApiRestClient.newOrder(newOrder);
+    return binanceApiRestClient.newOrder(newOrder);
   }
 
   private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
@@ -284,5 +288,9 @@ public class BinanceApiService {
       CommonUtils.sleep(500, logger);
       return waitUntilHaveBalance(asset, quantity);
     }
+  }
+
+  public List<Trade> getMyTrades(String symbol, String orderId) {
+    return binanceApiRestClient.getMyTrades(symbol, orderId);
   }
 }

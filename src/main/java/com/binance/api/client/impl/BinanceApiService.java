@@ -169,6 +169,7 @@ public interface BinanceApiService {
   @Headers(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNED_HEADER)
   @GET("/api/v3/myTrades")
   Call<List<Trade>> getMyTrades(@Query("symbol") String symbol,
+                                @Query("orderId") String orderId,
                                 @Query("limit") Integer limit,
                                 @Query("fromId") Long fromId,
                                 @Query("recvWindow") Long recvWindow,

@@ -11,7 +11,6 @@ import com.binance.api.client.domain.account.DepositHistory;
 import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.TradeHistoryItem;
 import com.binance.api.client.domain.account.WithdrawHistory;
 import com.binance.api.client.domain.account.WithdrawResult;
@@ -246,37 +245,6 @@ public class BinanceApiAsyncRestClientImpl implements BinanceApiAsyncRestClient 
     long timestamp = System.currentTimeMillis();
     binanceApiService.getAccount(BinanceApiConstants.DEFAULT_RECEIVING_WINDOW, timestamp)
                      .enqueue(new BinanceApiCallbackAdapter<>(callback));
-  }
-
-  @Override
-  public void getMyTrades(String symbol,
-                          Integer limit,
-                          Long fromId,
-                          Long recvWindow,
-                          Long timestamp,
-                          BinanceApiCallback<List<Trade>> callback) {
-    binanceApiService.getMyTrades(symbol, limit, fromId, recvWindow, timestamp)
-                     .enqueue(new BinanceApiCallbackAdapter<>(callback));
-  }
-
-  @Override
-  public void getMyTrades(String symbol, Integer limit, BinanceApiCallback<List<Trade>> callback) {
-    getMyTrades(symbol,
-                limit,
-                null,
-                BinanceApiConstants.DEFAULT_RECEIVING_WINDOW,
-                System.currentTimeMillis(),
-                callback);
-  }
-
-  @Override
-  public void getMyTrades(String symbol, BinanceApiCallback<List<Trade>> callback) {
-    getMyTrades(symbol,
-                null,
-                null,
-                BinanceApiConstants.DEFAULT_RECEIVING_WINDOW,
-                System.currentTimeMillis(),
-                callback);
   }
 
   @Override

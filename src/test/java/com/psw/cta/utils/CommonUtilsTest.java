@@ -17,6 +17,7 @@ import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.initializeTradingService;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
+import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -218,6 +219,17 @@ class CommonUtilsTest {
   }
 
   @Test
+  void shouldRoundPriceUp() {
+    String filterValue = "0.00002";
+    SymbolInfo symbolInfo = getSymbolInfo(PRICE_FILTER, filterValue);
+    BigDecimal amount = new BigDecimal("0.00005");
+
+    BigDecimal roundedAmount = roundPriceUp(symbolInfo, amount);
+
+    assertThat(roundedAmount).isEqualTo("0.00006");
+  }
+
+  @Test
   void shouldReturnValidCountToSlope() {
     List<BigDecimal> averagePrices = new ArrayList<>();
     for (int i = 0; i < 100; i++) {
@@ -237,7 +249,7 @@ class CommonUtilsTest {
 
     assertThat(averagePrices).hasSize(99);
     for (int i = 0; i < 99; i++) {
-      assertThat(averagePrices.get(i).compareTo(new BigDecimal(i))).isEqualTo(0);
+      assertThat(averagePrices.get(i)).isEqualByComparingTo(new BigDecimal(i));
     }
   }
 
@@ -287,11 +299,11 @@ class CommonUtilsTest {
 
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
 
-    assertThat(totalAmounts).hasSize(2);
-    assertThat(totalAmounts).containsKey(symbol1);
-    assertThat(totalAmounts.get(symbol1).compareTo(new BigDecimal("30"))).isEqualTo(0);
+    assertThat(totalAmounts).hasSize(2)
+                            .containsKey(symbol1);
+    assertThat(totalAmounts.get(symbol1)).isEqualByComparingTo(new BigDecimal("30"));
     assertThat(totalAmounts).containsKey(symbol2);
-    assertThat(totalAmounts.get(symbol2).compareTo(new BigDecimal("50"))).isEqualTo(0);
+    assertThat(totalAmounts.get(symbol2)).isEqualByComparingTo(new BigDecimal("50"));
   }
 
   private Order getOrder(String symbol, int index) {

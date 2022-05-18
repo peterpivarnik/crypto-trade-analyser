@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Service to diversify crypto to cryptos with small amount.
@@ -121,9 +122,10 @@ public class DiversifyService {
                                            minAddition,
                                            minValueFromMinNotionalFilter);
     logger.log("btcAmount: " + btcAmount);
-    BigDecimal boughtQuantity = binanceApiService.buy(symbolInfo,
-                                                      btcAmount,
-                                                      cryptoToBuyCurrentPrice);
+    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo,
+                                                        btcAmount,
+                                                        cryptoToBuyCurrentPrice);
+    BigDecimal boughtQuantity = pair.getRight();
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order

@@ -5,13 +5,16 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Service to rebuy crypto.
@@ -58,7 +61,16 @@ public class RepeatTradingService {
     BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount,
                                            minAddition,
                                            minValueFromMinNotionalFilter);
-    binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
+    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
+    Long orderId = pair.getLeft();
+    BigDecimal averageBuyPrice = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId))
+                                         .stream()
+                                         .map(Trade::getPrice)
+                                         .map(BigDecimal::new)
+                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal roundedAverageBuyPrice = roundPriceUp(symbolInfo, averageBuyPrice);
+    BigDecimal buyPriceDifference = roundedAverageBuyPrice.subtract(orderPrice);
+    logger.log("buyPriceDifference: " + buyPriceDifference);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());

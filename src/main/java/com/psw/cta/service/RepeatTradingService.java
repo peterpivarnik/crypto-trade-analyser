@@ -7,6 +7,7 @@ import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Trade;
@@ -14,6 +15,7 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
+import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -63,14 +65,15 @@ public class RepeatTradingService {
                                            minValueFromMinNotionalFilter);
     Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
     Long orderId = pair.getLeft();
-    BigDecimal averageBuyPrice = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId))
-                                         .stream()
+    List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
+    BigDecimal averageBuyPrice = myTrades.stream()
                                          .map(Trade::getPrice)
                                          .map(BigDecimal::new)
-                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                         .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                         .divide(new BigDecimal(myTrades.size()), 8, CEILING);
     BigDecimal roundedAverageBuyPrice = roundPriceUp(symbolInfo, averageBuyPrice);
-    BigDecimal buyPriceDifference = roundedAverageBuyPrice.subtract(orderPrice);
-    logger.log("buyPriceDifference: " + buyPriceDifference);
+    BigDecimal buyPriceAverageDifference = roundedAverageBuyPrice.subtract(orderPrice);
+    logger.log("buyPriceAverageDifference: " + buyPriceAverageDifference);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());

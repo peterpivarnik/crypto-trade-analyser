@@ -7,10 +7,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
 class OrderUtilsTest {
@@ -413,5 +415,81 @@ class OrderUtilsTest {
     BigDecimal actualWaitingTime = OrderUtils.calculateActualWaitingTime(order);
 
     assertThat(actualWaitingTime.stripTrailingZeros().toPlainString()).isEqualTo("1");
+  }
+
+  @Test
+  void shouldTestPredicateWithOrderPricePercentageLessThan10AndOrderBtcAmountLessThaMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("5");
+    BigDecimal orderPricePercentage = new BigDecimal("6");
+    BigDecimal orderBtcAmount = new BigDecimal("2");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isTrue();
+  }
+
+  @Test
+  void shouldTestPredicateWithOrderPricePercentageLessThan10AndOrderBtcAmounMoreThaMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("0.5");
+    BigDecimal orderPricePercentage = new BigDecimal("6");
+    BigDecimal orderBtcAmount = new BigDecimal("2");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isFalse();
+  }
+
+  @Test
+  void shouldTestPredicateWithOrderPricePercentageMoreThan10AndOrderBtcAmountLessThaMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("3");
+    BigDecimal orderPricePercentage = new BigDecimal("15");
+    BigDecimal orderBtcAmount = new BigDecimal("2");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isFalse();
+  }
+
+  @Test
+  void shouldTestPredicateWithOrderPricePercentageMoreThan10AndDoubleOrderBtcAmountLessThaMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("3");
+    BigDecimal orderPricePercentage = new BigDecimal("15");
+    BigDecimal orderBtcAmount = new BigDecimal("1");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isTrue();
+  }
+
+  @Test
+  void shouldTestPredicateWithOrderPricePercentageMoreThan10AndDoubleOrderBtcAmountMoreThaMyBtcAmount() {
+    BigDecimal myBtcBalance = new BigDecimal("3");
+    BigDecimal orderPricePercentage = new BigDecimal("15");
+    BigDecimal orderBtcAmount = new BigDecimal("8");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isFalse();
+  }
+
+  private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
+    OrderWrapper orderWrapper = new OrderWrapper(createOrder());
+    orderWrapper.setOrderPricePercentage(orderPricePercentage);
+    orderWrapper.setOrderBtcAmount(orderBtcAmount);
+    return orderWrapper;
+  }
+
+  private Order createOrder() {
+    return new Order();
   }
 }

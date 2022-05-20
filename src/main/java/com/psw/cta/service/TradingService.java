@@ -15,6 +15,7 @@ import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
+import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
@@ -132,9 +133,7 @@ public class TradingService {
                                                                     .equals(orderWrapper.getOrder().getSymbol()))
                                     .findAny()
                                     .orElseThrow();
-    Predicate<OrderWrapper> orderWrapperPredicate = orderWrapper ->
-        orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0
-        && orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2")).compareTo(myBtcBalance) < 0;
+    Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(myBtcBalance);
     List<OrderWrapper> wrappers = getOrderWrappers(openOrders,
                                                    myBtcBalance,
                                                    totalAmounts,

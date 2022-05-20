@@ -66,7 +66,8 @@ public class RepeatTradingService {
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal sumOfTrades = myTrades.stream()
-                                     .map(trade -> new BigDecimal(trade.getPrice()).multiply(new BigDecimal(trade.getQty())))
+                                     .map(trade -> new BigDecimal(trade.getPrice()).
+                                         multiply(new BigDecimal(trade.getQty())))
                                      .reduce(BigDecimal.ZERO, BigDecimal::add);
     logger.log("sumOfTrades: " + sumOfTrades);
     BigDecimal spentBtc = orderWrapper.getCurrentPrice()

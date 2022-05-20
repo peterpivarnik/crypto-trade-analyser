@@ -5,9 +5,7 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Trade;
@@ -67,14 +65,15 @@ public class RepeatTradingService {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal averageBuyPrice = myTrades.stream()
-                                         .map(Trade::getPrice)
-                                         .map(BigDecimal::new)
-                                         .reduce(BigDecimal.ZERO, BigDecimal::add)
-                                         .divide(new BigDecimal(myTrades.size()), 8, CEILING);
-    BigDecimal roundedAverageBuyPrice = roundPriceUp(symbolInfo, averageBuyPrice);
-    BigDecimal buyPriceAverageDifference = roundedAverageBuyPrice.subtract(orderPrice);
-    logger.log("buyPriceAverageDiff: " + buyPriceAverageDifference);
+    BigDecimal sumOfTrades = myTrades.stream()
+                                     .map(trade -> new BigDecimal(trade.getPrice()).multiply(new BigDecimal(trade.getQty())))
+                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+    logger.log("sumOfTrades: " + sumOfTrades);
+    BigDecimal spentBtc = orderWrapper.getCurrentPrice()
+                                      .multiply(getQuantity(orderWrapper.getOrder()));
+    logger.log("spentBtc: " + spentBtc);
+    BigDecimal missingBtcAmount = sumOfTrades.subtract(spentBtc);
+    logger.log("missingBtcAmount: " + missingBtcAmount);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());

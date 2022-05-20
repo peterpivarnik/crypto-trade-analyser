@@ -5,6 +5,7 @@ import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
@@ -86,6 +87,7 @@ public class CommonUtils {
    * @param millis Milliseconds to sleep
    * @param logger Logger to log the exception
    */
+  @SuppressWarnings("java:S2142")
   public static void sleep(int millis, LambdaLogger logger) {
     try {
       Thread.sleep(millis);
@@ -229,8 +231,8 @@ public class CommonUtils {
   public static Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
     return openOrders.stream()
                      .collect(toMap(Order::getSymbol,
-                                    order -> new BigDecimal(order.getPrice()).multiply(getQuantity(
-                                        order)),
+                                    order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order),
+                                                                                       new MathContext(8, FLOOR)),
                                     BigDecimal::add))
                      .entrySet()
                      .stream()

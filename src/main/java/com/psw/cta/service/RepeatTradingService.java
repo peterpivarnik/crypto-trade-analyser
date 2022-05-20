@@ -66,6 +66,7 @@ public class RepeatTradingService {
     Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
+    myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal averageBuyPrice = myTrades.stream()
                                          .map(Trade::getPrice)
                                          .map(BigDecimal::new)
@@ -73,7 +74,7 @@ public class RepeatTradingService {
                                          .divide(new BigDecimal(myTrades.size()), 8, CEILING);
     BigDecimal roundedAverageBuyPrice = roundPriceUp(symbolInfo, averageBuyPrice);
     BigDecimal buyPriceAverageDifference = roundedAverageBuyPrice.subtract(orderPrice);
-    logger.log("buyPriceAverageDifference: " + buyPriceAverageDifference);
+    logger.log("buyPriceAverageDiff: " + buyPriceAverageDifference);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());

@@ -129,11 +129,9 @@ public class DiversifyService {
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order
-    BigDecimal
-        finalPriceWithProfit
-        = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
-                                 .multiply(new BigDecimal("1.01"))
-                                 .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
+    BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
+                                                             .multiply(new BigDecimal("1.01"))
+                                                             .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
     logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
     BigDecimal roundedPriceToSell = roundPrice(symbolInfo, finalPriceWithProfit);
     logger.log("roundedPriceToSell: " + roundedPriceToSell);

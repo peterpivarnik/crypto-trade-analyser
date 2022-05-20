@@ -186,29 +186,30 @@ public class TradingService {
                             Map<String, BigDecimal> totalAmounts,
                             ExchangeInfo exchangeInfo,
                             BigDecimal actualBalance) {
-    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
-                                                        myBtcBalance,
-                                                        totalAmounts,
-                                                        exchangeInfo,
-                                                        actualBalance,
-                                                        orderWrapper -> true);
-    diversifyOrderWithHighestBtcAmount(totalAmounts, exchangeInfo, orderWrappers);
+    diversifyOrderWithHighestBtcAmount(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
     }
   }
 
-
-  private void diversifyOrderWithHighestBtcAmount(Map<String, BigDecimal> totalAmounts,
+  private void diversifyOrderWithHighestBtcAmount(List<Order> openOrders,
+                                                  BigDecimal myBtcBalance,
+                                                  Map<String, BigDecimal> totalAmounts,
                                                   ExchangeInfo exchangeInfo,
-                                                  List<OrderWrapper> orderWrappers) {
-    orderWrappers.stream()
-                 .max(comparing(OrderWrapper::getOrderBtcAmount))
-                 .ifPresent(orderWrapper -> diversifyService.diversify(orderWrapper,
-                                                                       () -> getCryptos(exchangeInfo),
-                                                                       totalAmounts,
-                                                                       exchangeInfo));
+                                                  BigDecimal actualBalance) {
+    getOrderWrappers(openOrders,
+                     myBtcBalance,
+                     totalAmounts,
+                     exchangeInfo,
+                     actualBalance,
+                     orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
+        .stream()
+        .max(comparing(OrderWrapper::getOrderBtcAmount))
+        .ifPresent(orderWrapper -> diversifyService.diversify(orderWrapper,
+                                                              () -> getCryptos(exchangeInfo),
+                                                              totalAmounts,
+                                                              exchangeInfo));
   }
 
   private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {

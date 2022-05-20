@@ -65,9 +65,7 @@ public class InitialTradingService {
                                       BigDecimal myBtcBalance,
                                       OrderBookEntry orderBookEntry) {
     BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-    BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()),
-                                                         8,
-                                                         CEILING);
+    BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
     BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
     return roundAmount(crypto.getSymbolInfo(), min);
   }
@@ -95,10 +93,7 @@ public class InitialTradingService {
     try {
       binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
     } catch (Exception e) {
-      logger.log("Catched exception: "
-                 + e.getClass().getName()
-                 + ", with message: "
-                 + e.getMessage());
+      logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
       sleep(61000, logger);
       binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
     }

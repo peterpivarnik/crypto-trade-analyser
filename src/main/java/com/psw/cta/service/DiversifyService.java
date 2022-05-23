@@ -60,14 +60,13 @@ public class DiversifyService {
     // 2. sell cancelled order
     BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
     logger.log("currentQuantity: " + currentQuantity);
-    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder()
-                                                                               .getSymbol());
+    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
     binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
     List<Crypto> cryptos = cryptosSupplier.get();
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
     List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
-    buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 2);
+    buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 2, symbolInfoOfSellOrder);
   }
 
   private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
@@ -84,33 +83,33 @@ public class DiversifyService {
   private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,
                                        List<Crypto> cryptoToBuy,
                                        BigDecimal btcAmountToSpend,
-                                       int fibonacciIndex) {
+                                       int fibonacciIndex,
+                                       SymbolInfo symbolInfoOfSellOrder) {
     BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
-    BigDecimal
-        fibonnaciAmountToSpend
-        = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
+    BigDecimal fibonacciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
     logger.log("btcAmountToSpend: " + btcAmountToSpend);
-    logger.log("fibonnaciAmountToSpend: " + fibonnaciAmountToSpend);
-    if (btcAmountToSpend.compareTo(fibonnaciAmountToSpend) > 0) {
-      buyAndSell(orderToCancel, cryptoToBuy.get(fibonacciIndex - 1), fibonnaciAmountToSpend);
+    logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
+    Crypto crypto = cryptoToBuy.get(fibonacciIndex - 1);
+    logger.log("cryptoToBuy: " + crypto);
+    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0) {
+      buyAndSell(orderToCancel, fibonacciAmountToSpend, crypto.getSymbolInfo(), crypto.getCurrentPrice());
       buyAndSellWithFibonacci(orderToCancel,
                               cryptoToBuy,
-                              btcAmountToSpend.subtract(fibonnaciAmountToSpend),
-                              fibonacciIndex + 1);
+                              btcAmountToSpend.subtract(fibonacciAmountToSpend),
+                              fibonacciIndex + 1,
+                              symbolInfoOfSellOrder);
     } else {
-      buyAndSell(orderToCancel, cryptoToBuy.get(fibonacciIndex - 1), btcAmountToSpend);
+      buyAndSell(orderToCancel, btcAmountToSpend, symbolInfoOfSellOrder, orderToCancel.getCurrentPrice());
     }
   }
 
-  private void buyAndSell(OrderWrapper orderToCancel, Crypto crypto, BigDecimal btcAmountToSpend) {
+  private void buyAndSell(OrderWrapper orderToCancel,
+                          BigDecimal btcAmountToSpend,
+                          SymbolInfo symbolInfo,
+                          BigDecimal cryptoToBuyCurrentPrice) {
     // 3. buy
-    logger.log("cryptoToBuy: " + crypto);
-    SymbolInfo symbolInfo = crypto.getSymbolInfo();
-    BigDecimal cryptoToBuyCurrentPrice = crypto.getCurrentPrice();
     logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo,
-                                                              LOT_SIZE,
-                                                              SymbolFilter::getMinQty);
+    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
     logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                   MIN_NOTIONAL,
@@ -118,13 +117,9 @@ public class DiversifyService {
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
     logger.log("minAddition: " + minAddition);
-    BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend,
-                                           minAddition,
-                                           minValueFromMinNotionalFilter);
+    BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
     logger.log("btcAmount: " + btcAmount);
-    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo,
-                                                        btcAmount,
-                                                        cryptoToBuyCurrentPrice);
+    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
     BigDecimal boughtQuantity = pair.getRight();
     logger.log("boughtQuantity: " + boughtQuantity);
 

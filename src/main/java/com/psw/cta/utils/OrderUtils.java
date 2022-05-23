@@ -2,6 +2,7 @@ package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
+import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.TIME_CONSTANT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
@@ -183,8 +184,11 @@ public class OrderUtils {
       boolean haveEnoughAmount = orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0;
       boolean haveDoubleAmount = orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2"))
                                              .compareTo(myBtcBalance) < 0;
-      return (orderPricePercentageLessThan10 && haveEnoughAmount)
-             || (!orderPricePercentageLessThan10 && haveDoubleAmount);
+      boolean hasMinProfit = orderWrapper.getOrderPricePercentage()
+                                         .subtract(orderWrapper.getPriceToSellPercentage())
+                                         .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
+      return ((orderPricePercentageLessThan10 && haveEnoughAmount)
+              || (!orderPricePercentageLessThan10 && haveDoubleAmount)) && hasMinProfit;
     };
   }
 }

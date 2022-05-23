@@ -431,7 +431,7 @@ class OrderUtilsTest {
   }
 
   @Test
-  void shouldTestPredicateWithOrderPricePercentageLessThan10AndOrderBtcAmounMoreThaMyBtcAmount() {
+  void shouldTestPredicateWithOrderPricePercentageLessThan10AndOrderBtcAmountMoreThaMyBtcAmount() {
     BigDecimal myBtcBalance = new BigDecimal("0.5");
     BigDecimal orderPricePercentage = new BigDecimal("6");
     BigDecimal orderBtcAmount = new BigDecimal("2");
@@ -482,10 +482,24 @@ class OrderUtilsTest {
     assertThat(test).isFalse();
   }
 
+  @Test
+  void shouldTestWithDifferenceBetweenOrderPricePercentageAndPriceToSellPercentageLessThanMinProfitPercentage() {
+    BigDecimal myBtcBalance = new BigDecimal("30");
+    BigDecimal orderPricePercentage = new BigDecimal("0.2");
+    BigDecimal orderBtcAmount = new BigDecimal("8");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isFalse();
+  }
+
   private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
     OrderWrapper orderWrapper = new OrderWrapper(createOrder());
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
     orderWrapper.setOrderBtcAmount(orderBtcAmount);
+    orderWrapper.setPriceToSellPercentage(new BigDecimal("0.1"));
     return orderWrapper;
   }
 

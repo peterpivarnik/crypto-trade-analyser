@@ -10,7 +10,6 @@ import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
-import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
@@ -169,9 +168,6 @@ public class TradingService {
                                                      myBtcBalance,
                                                      actualBalance))
                      .filter(predicate)
-                     .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
-                                                         .subtract(orderWrapper.getPriceToSellPercentage())
-                                                         .compareTo(MIN_PROFIT_PERCENTAGE) > 0)
                      .sorted(comparing(OrderWrapper::getOrderPricePercentage))
                      .collect(Collectors.toList());
   }

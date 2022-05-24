@@ -231,8 +231,8 @@ public class CommonUtils {
   public static Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
     return openOrders.stream()
                      .collect(toMap(Order::getSymbol,
-                                    order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order),
-                                                                                       new MathContext(8, FLOOR)),
+                                    order -> new BigDecimal(order.getPrice()).multiply(getQuantity(order))
+                                                                             .setScale(8, FLOOR),
                                     BigDecimal::add))
                      .entrySet()
                      .stream()

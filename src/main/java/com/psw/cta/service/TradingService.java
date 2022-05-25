@@ -89,7 +89,9 @@ public class TradingService {
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
     logger.log("totalAmounts: " + totalAmounts);
-    BigDecimal ordersAmount = totalAmounts.values().stream().reduce(ZERO, BigDecimal::add);
+    BigDecimal ordersAmount = totalAmounts.values()
+                                          .stream()
+                                          .reduce(ZERO, BigDecimal::add);
     logger.log("ordersAmount: " + ordersAmount);
     BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
@@ -140,9 +142,7 @@ public class TradingService {
                                                    actualBalance,
                                                    orderWrapperPredicate);
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
-    wrappers.stream()
-            .filter(orderWrapper -> orderWrapper.getActualWaitingTime().compareTo(orderWrapper.getMinWaitingTime()) > 0)
-            .forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper),
+    wrappers.forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper),
                                                                            orderWrapper));
   }
 

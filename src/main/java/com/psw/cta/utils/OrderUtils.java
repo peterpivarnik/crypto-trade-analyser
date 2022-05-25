@@ -187,8 +187,10 @@ public class OrderUtils {
       boolean hasMinProfit = orderWrapper.getOrderPricePercentage()
                                          .subtract(orderWrapper.getPriceToSellPercentage())
                                          .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
+      boolean remainingTimeGreaterZero = orderWrapper.getActualWaitingTime()
+                                                     .compareTo(orderWrapper.getMinWaitingTime()) > 0;
       return ((orderPricePercentageLessThan10 && haveEnoughAmount)
-              || (!orderPricePercentageLessThan10 && haveDoubleAmount)) && hasMinProfit;
+              || (!orderPricePercentageLessThan10 && haveDoubleAmount)) && hasMinProfit && remainingTimeGreaterZero;
     };
   }
 }

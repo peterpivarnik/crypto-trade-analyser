@@ -422,7 +422,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("5");
     BigDecimal orderPricePercentage = new BigDecimal("6");
     BigDecimal orderBtcAmount = new BigDecimal("2");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -435,7 +435,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("0.5");
     BigDecimal orderPricePercentage = new BigDecimal("6");
     BigDecimal orderBtcAmount = new BigDecimal("2");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -448,7 +448,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("3");
     BigDecimal orderPricePercentage = new BigDecimal("15");
     BigDecimal orderBtcAmount = new BigDecimal("2");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -461,7 +461,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("3");
     BigDecimal orderPricePercentage = new BigDecimal("15");
     BigDecimal orderBtcAmount = new BigDecimal("1");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -474,7 +474,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("3");
     BigDecimal orderPricePercentage = new BigDecimal("15");
     BigDecimal orderBtcAmount = new BigDecimal("8");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -487,7 +487,7 @@ class OrderUtilsTest {
     BigDecimal myBtcBalance = new BigDecimal("30");
     BigDecimal orderPricePercentage = new BigDecimal("0.2");
     BigDecimal orderBtcAmount = new BigDecimal("8");
-    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount);
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, new BigDecimal("15"));
 
     Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
 
@@ -495,11 +495,29 @@ class OrderUtilsTest {
     assertThat(test).isFalse();
   }
 
-  private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
+  @Test
+  void shouldTestPredicateWithActualWaitingTimeLessThenMinWaitingTime() {
+    BigDecimal myBtcBalance = new BigDecimal("3");
+    BigDecimal orderPricePercentage = new BigDecimal("15");
+    BigDecimal orderBtcAmount = new BigDecimal("1");
+    BigDecimal actualWaitingTime = new BigDecimal("5");
+    OrderWrapper orderWrapper = createOrderWrapper(orderPricePercentage, orderBtcAmount, actualWaitingTime);
+
+    Predicate<OrderWrapper> orderWrapperPredicate = OrderUtils.getOrderWrapperPredicate(myBtcBalance);
+
+    boolean test = orderWrapperPredicate.test(orderWrapper);
+    assertThat(test).isFalse();
+  }
+
+  private OrderWrapper createOrderWrapper(BigDecimal orderPricePercentage,
+                                          BigDecimal orderBtcAmount,
+                                          BigDecimal actualWaitingTime) {
     OrderWrapper orderWrapper = new OrderWrapper(createOrder());
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
     orderWrapper.setOrderBtcAmount(orderBtcAmount);
     orderWrapper.setPriceToSellPercentage(new BigDecimal("0.1"));
+    orderWrapper.setActualWaitingTime(actualWaitingTime);
+    orderWrapper.setMinWaitingTime(new BigDecimal("10"));
     return orderWrapper;
   }
 

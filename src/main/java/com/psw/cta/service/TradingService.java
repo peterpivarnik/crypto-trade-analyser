@@ -84,8 +84,6 @@ public class TradingService {
     logger.log("***** ***** Start of trading ***** *****");
     String implementationVersion = Manifests.read("Implementation-Version");
     logger.log("Crypto trader with version " + implementationVersion + " started.");
-    Map<String, String> getenv = System.getenv();
-    logger.log("getenv: " + getenv);
     BigDecimal bnbBalance = bnbService.buyBnB();
     List<Order> openOrders = binanceApiService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());

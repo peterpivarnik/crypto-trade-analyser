@@ -5,7 +5,9 @@ import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Trade;
@@ -14,6 +16,7 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -65,16 +68,20 @@ public class RepeatTradingService {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal sumOfTrades = myTrades.stream()
-                                     .map(trade -> new BigDecimal(trade.getPrice())
-                                         .multiply(new BigDecimal(trade.getQty())))
-                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-    logger.log("sumOfTrades: " + sumOfTrades);
-    BigDecimal spentBtc = orderWrapper.getCurrentPrice()
-                                      .multiply(getQuantity(orderWrapper.getOrder()));
+    BigDecimal sumOfTrades = getSumOfTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+    while (sumOfTrades.compareTo(ZERO) == 0) {
+      sleep(1000, logger);
+      sumOfTrades = getSumOfTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+    }
+    BigDecimal spentBtc = getSumOfTrades(myTrades,
+                                         trade -> new BigDecimal(trade.getQty())
+                                             .multiply(new BigDecimal(trade.getPrice())));
     logger.log("spentBtc: " + spentBtc);
-    BigDecimal missingBtcAmount = sumOfTrades.subtract(spentBtc);
-    logger.log("missingBtcAmount: " + missingBtcAmount);
+    BigDecimal plannedSpentBtc = orderWrapper.getCurrentPrice()
+                                             .multiply(getQuantity(orderWrapper.getOrder()));
+    logger.log("plannedSpentBtc: " + plannedSpentBtc);
+    BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
+    logger.log("missingBtcs: " + missingBtcs);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
@@ -82,5 +89,13 @@ public class RepeatTradingService {
     binanceApiService.placeSellOrder(symbolInfo,
                                      orderWrapper.getPriceToSell(),
                                      completeQuantityToSell);
+  }
+
+  private BigDecimal getSumOfTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
+    BigDecimal sumOfTrades = myTrades.stream()
+                                     .map(function)
+                                     .reduce(ZERO, BigDecimal::add);
+    logger.log("sumOfTrades: " + sumOfTrades);
+    return sumOfTrades;
   }
 }

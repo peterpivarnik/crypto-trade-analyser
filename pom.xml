@@ -4,7 +4,7 @@
 
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
-    <version>1.6.12-SNAPSHOT</version>
+    <version>1.6.13-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Crypto trader</name>

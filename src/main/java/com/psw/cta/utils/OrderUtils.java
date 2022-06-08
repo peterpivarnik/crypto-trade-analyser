@@ -1,7 +1,7 @@
 package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.getQuantity;
-import static com.psw.cta.utils.CommonUtils.roundPrice;
+import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.TIME_CONSTANT;
 import static com.psw.cta.utils.Constants.TWO;
@@ -111,7 +111,7 @@ public class OrderUtils {
     BigDecimal profit = priceToSellWithoutProfit.subtract(currentPrice);
     BigDecimal realProfit = profit.multiply(profitCoefficient);
     BigDecimal priceToSell = priceToSellWithoutProfit.add(realProfit);
-    BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
+    BigDecimal roundedPriceToSell = roundPriceUp(symbolInfo, priceToSell);
     return roundedPriceToSell.stripTrailingZeros();
   }
 

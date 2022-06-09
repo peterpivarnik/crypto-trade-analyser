@@ -7,6 +7,7 @@ import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -17,6 +18,7 @@ import com.psw.cta.dto.OrderWrapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -42,8 +44,9 @@ public class RepeatTradingService {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
     BigDecimal mybtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
-    if (mybtcBalance.compareTo(orderWrapper.getOrderBtcAmount()) < 0) {
-      logger.log("BTC balance too low, skip rebuy of crypto.");
+    Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(mybtcBalance);
+    if (orderWrapperPredicate.test(orderWrapper)) {
+      logger.log("Conditions to rebuy crypto not valid.");
       return;
     }
     // 1. cancel existing order

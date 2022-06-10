@@ -45,7 +45,7 @@ public class RepeatTradingService {
     logger.log("OrderWrapper: " + orderWrapper);
     BigDecimal mybtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(mybtcBalance);
-    if (orderWrapperPredicate.test(orderWrapper)) {
+    if (!orderWrapperPredicate.test(orderWrapper)) {
       logger.log("Conditions to rebuy crypto not valid.");
       return;
     }

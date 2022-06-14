@@ -102,6 +102,7 @@ public class OrderWrapper {
            + ", orderPricePercentage=" + orderPricePercentage
            + ", priceToSellPercentage=" + priceToSellPercentage
            + ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString()
+           + ", actualWaitingTime=" + actualWaitingTime.toPlainString()
            + '}';
   }
 }

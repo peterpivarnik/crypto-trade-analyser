@@ -26,6 +26,7 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.domain.market.TickerStatistics;
+import com.binance.api.client.exception.BinanceApiException;
 import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
@@ -119,6 +120,21 @@ public class TradingService {
       repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
     diversifyOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
+    List<Order> newOpenOrders = binanceApiService.getOpenOrders();
+    Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
+    BigDecimal newOrdersAmount = newTotalAmounts.values()
+                                                .stream()
+                                                .reduce(ZERO, BigDecimal::add);
+    BigDecimal myNewBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal newOrdersAndBtcAmount = newOrdersAmount.add(myNewBtcBalance);
+    logger.log("newOrdersAndBtcAmount: " + newOrdersAndBtcAmount);
+    logger.log("ordersAndBtcAmountDifference: " + newOrdersAndBtcAmount.subtract(ordersAndBtcAmount));
+    if (newOrdersAndBtcAmount.compareTo(ordersAndBtcAmount) < 0) {
+      throw new BinanceApiException("New amount lower than before trading! Old amount : "
+                                    + ordersAndBtcAmount
+                                    + ". New amount: "
+                                    + newOrdersAndBtcAmount);
+    }
     logger.log("Finished trading.");
   }
 

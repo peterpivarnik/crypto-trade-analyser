@@ -128,8 +128,11 @@ public class TradingService {
     BigDecimal myNewBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     BigDecimal newOrdersAndBtcAmount = newOrdersAmount.add(myNewBtcBalance);
     logger.log("newOrdersAndBtcAmount: " + newOrdersAndBtcAmount);
-    logger.log("ordersAndBtcAmountDifference: " + newOrdersAndBtcAmount.subtract(ordersAndBtcAmount));
-    if (newOrdersAndBtcAmount.compareTo(ordersAndBtcAmount) < 0) {
+    BigDecimal ordersAndBtcAmountDifference = newOrdersAndBtcAmount.subtract(ordersAndBtcAmount);
+    if (ordersAndBtcAmountDifference.compareTo(ZERO) > 0) {
+      logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
+    }
+    if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
                                     + ordersAndBtcAmount
                                     + ". New amount: "

@@ -236,7 +236,7 @@ public class CommonUtils {
                                     BigDecimal::add))
                      .entrySet()
                      .stream()
-                     .sorted(Map.Entry.comparingByValue())
+                     .sorted((c1, c2) -> c2.getValue().compareTo(c1.getValue()))
                      .collect(toMap(Map.Entry::getKey,
                                     Map.Entry::getValue,
                                     (e1, e2) -> e1,

@@ -11,6 +11,7 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_TORN_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
@@ -238,6 +239,7 @@ public class TradingService {
                                        .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
                                        .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
                                        .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_WBTC_BTC))
+                                       .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_TORN_BTC))
                                        .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
                                        .map(crypto -> withVolume(crypto, tickers))
                                        .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)

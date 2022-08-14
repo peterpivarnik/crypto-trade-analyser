@@ -4,6 +4,7 @@ import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.LeastSquares.getSlope;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.FLOOR;
 import static java.math.RoundingMode.UP;
@@ -187,6 +188,9 @@ public class CommonUtils {
       leastSquaresSlope = 0.00000001;
     }
     BigDecimal slope = new BigDecimal(String.valueOf(leastSquaresSlope), new MathContext(8));
+    if (ZERO.equals(slope)) {
+      slope = new BigDecimal("0.00000001");
+    }
     return priceCount.divide(slope, 8, CEILING);
   }
 

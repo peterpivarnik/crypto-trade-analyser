@@ -188,7 +188,7 @@ public class CommonUtils {
       leastSquaresSlope = 0.00000001;
     }
     BigDecimal slope = new BigDecimal(String.valueOf(leastSquaresSlope), new MathContext(8));
-    if (ZERO.equals(slope)) {
+    if (ZERO.compareTo(slope) == 0) {
       slope = new BigDecimal("0.00000001");
     }
     return priceCount.divide(slope, 8, CEILING);

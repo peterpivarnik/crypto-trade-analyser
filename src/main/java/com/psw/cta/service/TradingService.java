@@ -21,7 +21,6 @@ import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Order;
@@ -106,12 +105,10 @@ public class TradingService {
     logger.log("Min open orders: " + minOpenOrders);
 
     ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
-    int uniqueOpenOrdersSize = openOrders.parallelStream()
-                                         .collect(toMap(Order::getSymbolWithPrice,
-                                                        order -> order,
-                                                        (order1, order2) -> order1))
-                                         .values()
-                                         .size();
+    long uniqueOpenOrdersSize = openOrders.parallelStream()
+                                          .map(Order::getSymbol)
+                                          .distinct()
+                                          .count();
     logger.log("Unique open orders: " + uniqueOpenOrdersSize);
     BigDecimal actualBalance = binanceApiService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance);
@@ -193,7 +190,7 @@ public class TradingService {
                      .collect(Collectors.toList());
   }
 
-  private boolean canHaveMoreOrders(int minOpenOrders, int uniqueOpenOrdersSize) {
+  private boolean canHaveMoreOrders(long minOpenOrders, long uniqueOpenOrdersSize) {
     return uniqueOpenOrdersSize <= minOpenOrders;
   }
 

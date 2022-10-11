@@ -328,22 +328,11 @@ class CommonUtilsTest {
 
   @Test
   void shouldCalculateMinNumberOfOrdersFromMyBtcBalance() {
-    BigDecimal totalPossibleBalance = new BigDecimal("20");
     BigDecimal myBtcBalance = new BigDecimal("4");
 
-    int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
+    int minNumberOfOrders = calculateMinNumberOfOrders(myBtcBalance);
 
     assertThat(minNumberOfOrders).isEqualTo(200);
-  }
-
-  @Test
-  void shouldCalculateMinNumberOfOrdersFromTotalPossibleBalance() {
-    BigDecimal totalPossibleBalance = new BigDecimal("4");
-    BigDecimal myBtcBalance = new BigDecimal("20");
-
-    int minNumberOfOrders = calculateMinNumberOfOrders(totalPossibleBalance, myBtcBalance);
-
-    assertThat(minNumberOfOrders).isEqualTo(1000);
   }
 
   @Test

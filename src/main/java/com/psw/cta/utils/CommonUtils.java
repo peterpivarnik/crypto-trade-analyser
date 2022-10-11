@@ -260,15 +260,11 @@ public class CommonUtils {
   /**
    * Calculates minimal number of open orders.
    *
-   * @param myTotalPossibleBalance Total possible balance
    * @param myBtcBalance           BTC balance
    * @return Minimal number of open orders
    */
-  public static int calculateMinNumberOfOrders(BigDecimal myTotalPossibleBalance,
-                                               BigDecimal myBtcBalance) {
-    BigDecimal minFromPossibleBalance = myTotalPossibleBalance.multiply(new BigDecimal("5"));
-    BigDecimal minFromActualBtcBalance = myBtcBalance.multiply(new BigDecimal("50"));
-    return minFromActualBtcBalance.max(minFromPossibleBalance).intValue();
+  public static int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {
+    return myBtcBalance.multiply(new BigDecimal("50")).intValue();
   }
 
   /**

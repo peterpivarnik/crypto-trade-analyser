@@ -101,7 +101,7 @@ public class TradingService {
     BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
     BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
     logger.log("totalAmount: " + totalAmount);
-    int minOpenOrders = calculateMinNumberOfOrders(totalAmount, myBtcBalance);
+    int minOpenOrders = calculateMinNumberOfOrders(myBtcBalance);
     logger.log("Min open orders: " + minOpenOrders);
 
     ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();

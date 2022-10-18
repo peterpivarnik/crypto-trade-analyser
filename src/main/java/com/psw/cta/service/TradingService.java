@@ -113,12 +113,24 @@ public class TradingService {
     BigDecimal actualBalance = binanceApiService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance);
 
+    boolean expanded = false;
+    boolean repeated = false;
     if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
-      expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+      expanded = expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     } else {
-      repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+      repeated = repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
-    diversifyOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
+    boolean diversified = diversifyOrderWithLowestOrderPricePercentage(openOrders,
+                                                                       totalAmounts,
+                                                                       myBtcBalance,
+                                                                       exchangeInfo,
+                                                                       actualBalance);
+
+    if (!expanded && !repeated && !diversified) {
+      diversifyOrderWithHighestBtcAmount(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance,
+                                         orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                                     .compareTo(new BigDecimal("20")) < 0);
+    }
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     BigDecimal newOrdersAmount = newTotalAmounts.values()
@@ -128,10 +140,10 @@ public class TradingService {
     BigDecimal newOrdersAndBtcAmount = newOrdersAmount.add(myNewBtcBalance);
     logger.log("newOrdersAndBtcAmount: " + newOrdersAndBtcAmount);
     BigDecimal ordersAndBtcAmountDifference = newOrdersAndBtcAmount.subtract(ordersAndBtcAmount);
+
     if (ordersAndBtcAmountDifference.compareTo(ZERO) > 0) {
       logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
-    }
-    if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
+    } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
                                     + ordersAndBtcAmount
                                     + ". New amount: "
@@ -140,11 +152,11 @@ public class TradingService {
     logger.log("Finished trading.");
   }
 
-  private void repeatTrading(List<Order> openOrders,
-                             BigDecimal myBtcBalance,
-                             Map<String, BigDecimal> totalAmounts,
-                             ExchangeInfo exchangeInfo,
-                             BigDecimal actualBalance) {
+  private boolean repeatTrading(List<Order> openOrders,
+                                BigDecimal myBtcBalance,
+                                Map<String, BigDecimal> totalAmounts,
+                                ExchangeInfo exchangeInfo,
+                                BigDecimal actualBalance) {
     Function<OrderWrapper, SymbolInfo> symbolFunction =
         orderWrapper -> exchangeInfo.getSymbols()
                                     .parallelStream()
@@ -159,9 +171,11 @@ public class TradingService {
                                                    exchangeInfo,
                                                    actualBalance,
                                                    orderWrapperPredicate);
+    boolean repeated = !wrappers.isEmpty();
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
     wrappers.forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper),
                                                                            orderWrapper));
+    return repeated;
   }
 
   private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,
@@ -194,29 +208,40 @@ public class TradingService {
     return uniqueOpenOrdersSize <= minOpenOrders;
   }
 
-  private void expandOrders(List<Order> openOrders,
-                            BigDecimal myBtcBalance,
-                            Map<String, BigDecimal> totalAmounts,
-                            ExchangeInfo exchangeInfo,
-                            BigDecimal actualBalance) {
-    diversifyOrderWithHighestBtcAmount(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+  private boolean expandOrders(List<Order> openOrders,
+                               BigDecimal myBtcBalance,
+                               Map<String, BigDecimal> totalAmounts,
+                               ExchangeInfo exchangeInfo,
+                               BigDecimal actualBalance) {
+    Predicate<OrderWrapper> orderWrapperPredicate =
+        orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0
+                        && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0;
+    diversifyOrderWithHighestBtcAmount(openOrders,
+                                       myBtcBalance,
+                                       totalAmounts,
+                                       exchangeInfo,
+                                       actualBalance,
+                                       orderWrapperPredicate);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
+      return true;
     }
+    return false;
   }
 
   private void diversifyOrderWithHighestBtcAmount(List<Order> openOrders,
                                                   BigDecimal myBtcBalance,
                                                   Map<String, BigDecimal> totalAmounts,
                                                   ExchangeInfo exchangeInfo,
-                                                  BigDecimal actualBalance) {
+                                                  BigDecimal actualBalance,
+                                                  Predicate<OrderWrapper> orderWrapperPredicate) {
     getOrderWrappers(openOrders,
                      myBtcBalance,
                      totalAmounts,
                      exchangeInfo,
                      actualBalance,
-                     orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
+                     orderWrapperPredicate)
         .stream()
         .max(comparing(OrderWrapper::getOrderBtcAmount))
         .ifPresent(orderWrapper -> diversifyService.diversify(orderWrapper,
@@ -277,11 +302,11 @@ public class TradingService {
                    .forEach(initialTradingService::buyCrypto);
   }
 
-  private void diversifyOrderWithLowestOrderPricePercentage(List<Order> openOrders,
-                                                            Map<String, BigDecimal> totalAmounts,
-                                                            BigDecimal myBtcBalance,
-                                                            ExchangeInfo exchangeInfo,
-                                                            BigDecimal actualBalance) {
+  private boolean diversifyOrderWithLowestOrderPricePercentage(List<Order> openOrders,
+                                                               Map<String, BigDecimal> totalAmounts,
+                                                               BigDecimal myBtcBalance,
+                                                               ExchangeInfo exchangeInfo,
+                                                               BigDecimal actualBalance) {
     logger.log("Sleep for 1 minute before splitting");
     sleep(1000 * 60, logger);
     List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
@@ -300,6 +325,8 @@ public class TradingService {
                                  () -> getCryptos(exchangeInfo),
                                  totalAmounts,
                                  exchangeInfo);
+      return true;
     }
+    return false;
   }
 }

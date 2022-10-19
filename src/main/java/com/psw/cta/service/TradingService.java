@@ -20,6 +20,7 @@ import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -126,10 +127,17 @@ public class TradingService {
                                                                        exchangeInfo,
                                                                        actualBalance);
 
-    if (!expanded && !repeated && !diversified) {
-      diversifyOrderWithHighestBtcAmount(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance,
-                                         orderWrapper -> orderWrapper.getOrderPricePercentage()
-                                                                     .compareTo(new BigDecimal("20")) < 0);
+    if (shouldDiversify(myBtcBalance, actualBalance) && !expanded && !repeated && !diversified) {
+      logger.log("***** ***** Diversifying amounts for having more trades ***** *****");
+      Predicate<OrderWrapper> orderWrapperPredicate =
+          orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) < 0
+                          && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0;
+      diversifyOrderWithHighestBtcAmount(openOrders,
+                                         myBtcBalance,
+                                         totalAmounts,
+                                         exchangeInfo,
+                                         actualBalance,
+                                         orderWrapperPredicate);
     }
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
@@ -213,21 +221,23 @@ public class TradingService {
                                Map<String, BigDecimal> totalAmounts,
                                ExchangeInfo exchangeInfo,
                                BigDecimal actualBalance) {
-    Predicate<OrderWrapper> orderWrapperPredicate =
-        orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0
-                        && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0;
     diversifyOrderWithHighestBtcAmount(openOrders,
                                        myBtcBalance,
                                        totalAmounts,
                                        exchangeInfo,
                                        actualBalance,
-                                       orderWrapperPredicate);
+                                       orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                                   .compareTo(new BigDecimal("20")) < 0);
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
       return true;
     }
     return false;
+  }
+
+  private boolean shouldDiversify(BigDecimal myBtcBalance, BigDecimal actualBalance) {
+    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("3"), 8, CEILING)) > 0;
   }
 
   private void diversifyOrderWithHighestBtcAmount(List<Order> openOrders,

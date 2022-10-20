@@ -127,7 +127,8 @@ public class TradingService {
                                                                        exchangeInfo,
                                                                        actualBalance);
 
-    if (shouldDiversify(myBtcBalance, actualBalance) && !expanded && !repeated && !diversified) {
+    if (shouldDiversify(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)
+        && !expanded && !repeated && !diversified) {
       logger.log("***** ***** Diversifying trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
           orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
@@ -236,8 +237,12 @@ public class TradingService {
     return false;
   }
 
-  private boolean shouldDiversify(BigDecimal myBtcBalance, BigDecimal actualBalance) {
-    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("3"), 8, CEILING)) > 0;
+  private boolean shouldDiversify(BigDecimal myBtcBalance,
+                                  BigDecimal actualBalance,
+                                  BigDecimal totalAmount,
+                                  long uniqueOpenOrdersSize) {
+    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0
+           && new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
   }
 
   private void diversifyOrderWithHighestBtcAmount(List<Order> openOrders,

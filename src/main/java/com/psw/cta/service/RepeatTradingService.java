@@ -9,6 +9,7 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.account.Trade;
@@ -85,6 +86,12 @@ public class RepeatTradingService {
     logger.log("plannedSpentBtc: " + plannedSpentBtc);
     BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
     logger.log("missingBtcs: " + missingBtcs);
+    logger.log("oldPriceToSell: " + orderWrapper.getPriceToSell());
+    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(spentBtc, orderWrapper);
+    logger.log("priceToSellAfterBuy: " + priceToSellAfterBuy);
+    BigDecimal turnover = getSumOfTrades(myTrades,
+                                         trade -> new BigDecimal(trade.getQty()).multiply(priceToSellAfterBuy));
+    logger.log("turnover: " + turnover);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
@@ -100,5 +107,11 @@ public class RepeatTradingService {
                                      .reduce(ZERO, BigDecimal::add);
     logger.log("sumOfTrades: " + sumOfTrades);
     return sumOfTrades;
+  }
+
+  private static BigDecimal getPriceToSellAfterBuy(BigDecimal spentBtc,
+                                                   OrderWrapper orderWrapper) {
+
+    return spentBtc.divide(orderWrapper.getPriceToSell(), 8, CEILING);
   }
 }

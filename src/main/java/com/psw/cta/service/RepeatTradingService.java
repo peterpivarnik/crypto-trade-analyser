@@ -72,12 +72,12 @@ public class RepeatTradingService {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal sumOfTrades = getSumOfTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-    while (sumOfTrades.compareTo(ZERO) == 0) {
+    BigDecimal boughtQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
+    while (boughtQuantity.compareTo(ZERO) == 0) {
       sleep(1000, logger);
-      sumOfTrades = getSumOfTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+      boughtQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
     }
-    BigDecimal spentBtc = getSumOfTrades(myTrades,
+    BigDecimal spentBtc = getSumOfValues(myTrades,
                                          trade -> new BigDecimal(trade.getQty())
                                              .multiply(new BigDecimal(trade.getPrice())));
     logger.log("spentBtc: " + spentBtc);
@@ -87,11 +87,13 @@ public class RepeatTradingService {
     BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
     logger.log("missingBtcs: " + missingBtcs);
     logger.log("oldPriceToSell: " + orderWrapper.getPriceToSell());
-    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(plannedSpentBtc.subtract(missingBtcs), orderWrapper);
+    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(spentBtc, boughtQuantity);
     logger.log("newPriceToSellAfterBuy2: " + priceToSellAfterBuy);
-    BigDecimal turnover = getSumOfTrades(myTrades,
+    BigDecimal turnover = getSumOfValues(myTrades,
                                          trade -> new BigDecimal(trade.getQty()).multiply(priceToSellAfterBuy));
     logger.log("turnover: " + turnover);
+    BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getOrderPrice());
+    logger.log("plannedTurnover" + plannedTurnover);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
@@ -101,17 +103,15 @@ public class RepeatTradingService {
                                      completeQuantityToSell);
   }
 
-  private BigDecimal getSumOfTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
-    BigDecimal sumOfTrades = myTrades.stream()
-                                     .map(function)
-                                     .reduce(ZERO, BigDecimal::add);
-    logger.log("sumOfTrades: " + sumOfTrades);
-    return sumOfTrades;
+  private BigDecimal getSumOfValues(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
+    return myTrades.stream()
+                   .map(function)
+                   .reduce(ZERO, BigDecimal::add);
   }
 
   private static BigDecimal getPriceToSellAfterBuy(BigDecimal spentBtc,
-                                                   OrderWrapper orderWrapper) {
+                                                   BigDecimal boughtQuantity) {
 
-    return spentBtc.divide(getQuantity(orderWrapper.getOrder()), 8, CEILING);
+    return spentBtc.divide(boughtQuantity, 8, CEILING);
   }
 }

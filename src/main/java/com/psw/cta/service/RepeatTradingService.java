@@ -87,8 +87,8 @@ public class RepeatTradingService {
     BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
     logger.log("missingBtcs: " + missingBtcs);
     logger.log("oldPriceToSell: " + orderWrapper.getPriceToSell());
-    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(spentBtc, orderWrapper);
-    logger.log("newPriceToSellAfterBuy: " + priceToSellAfterBuy);
+    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(plannedSpentBtc.subtract(missingBtcs), orderWrapper);
+    logger.log("newPriceToSellAfterBuy2: " + priceToSellAfterBuy);
     BigDecimal turnover = getSumOfTrades(myTrades,
                                          trade -> new BigDecimal(trade.getQty()).multiply(priceToSellAfterBuy));
     logger.log("turnover: " + turnover);

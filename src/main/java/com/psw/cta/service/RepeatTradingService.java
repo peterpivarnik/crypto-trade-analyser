@@ -86,14 +86,21 @@ public class RepeatTradingService {
     logger.log("plannedSpentBtc: " + plannedSpentBtc);
     BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
     logger.log("missingBtcs: " + missingBtcs);
-    logger.log("oldPriceToSell: " + orderWrapper.getPriceToSell());
-    BigDecimal priceToSellAfterBuy = getPriceToSellAfterBuy(spentBtc, boughtQuantity);
-    logger.log("newPriceToSellAfterBuy2: " + priceToSellAfterBuy);
-    BigDecimal turnover = getSumOfValues(myTrades,
-                                         trade -> new BigDecimal(trade.getQty()).multiply(priceToSellAfterBuy));
-    logger.log("turnover: " + turnover);
-    BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getOrderPrice());
+    logger.log("orderPrice: " + orderPrice);
+    logger.log("currentPrice: " + orderWrapper.getCurrentPrice());
+    logger.log("priceToSell: " + orderWrapper.getPriceToSell());
+    BigDecimal boughtPrice = spentBtc.divide(getQuantity(orderWrapper.getOrder()), 8, CEILING);
+    logger.log("boughtPrice: " + boughtPrice);
+    BigDecimal priceDiff = boughtPrice.subtract(orderPrice);
+    logger.log("priceDiff: " + priceDiff);
+    BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDiff);
+    logger.log("newPriceToSell: " + newPriceToSell);
+    BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getPriceToSell());
     logger.log("plannedTurnover" + plannedTurnover);
+    BigDecimal newTurnover =  getQuantity(orderWrapper.getOrder()).multiply(newPriceToSell);
+    logger.log("newTurnover: " + newTurnover);
+    BigDecimal turnoverDiff = newTurnover.subtract(plannedTurnover);
+    logger.log("turnoverDiff: " + turnoverDiff);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
@@ -107,11 +114,5 @@ public class RepeatTradingService {
     return myTrades.stream()
                    .map(function)
                    .reduce(ZERO, BigDecimal::add);
-  }
-
-  private static BigDecimal getPriceToSellAfterBuy(BigDecimal spentBtc,
-                                                   BigDecimal boughtQuantity) {
-
-    return spentBtc.divide(boughtQuantity, 8, CEILING);
   }
 }

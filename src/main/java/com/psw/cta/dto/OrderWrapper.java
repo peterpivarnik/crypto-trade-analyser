@@ -1,5 +1,7 @@
 package com.psw.cta.dto;
 
+import static com.psw.cta.utils.CommonUtils.getQuantity;
+
 import com.binance.api.client.domain.account.Order;
 import java.math.BigDecimal;
 
@@ -95,6 +97,7 @@ public class OrderWrapper {
   public String toString() {
     return "OrderWrapper{"
            + "symbol=" + order.getSymbol()
+           + ", quantity=" + getQuantity(order)
            + ", orderBtcAmount=" + orderBtcAmount
            + ", currentPrice=" + currentPrice
            + ", orderPrice=" + orderPrice

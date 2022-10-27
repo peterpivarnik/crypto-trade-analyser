@@ -77,19 +77,19 @@ public class RepeatTradingService {
       sleep(1000, logger);
       boughtQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
     }
-    BigDecimal spentBtc = getSumOfValues(myTrades,
-                                         trade -> new BigDecimal(trade.getQty())
-                                             .multiply(new BigDecimal(trade.getPrice())));
-    logger.log("spentBtc: " + spentBtc);
-    BigDecimal plannedSpentBtc = orderWrapper.getCurrentPrice()
-                                             .multiply(getQuantity(orderWrapper.getOrder()));
-    logger.log("plannedSpentBtc: " + plannedSpentBtc);
-    BigDecimal missingBtcs = spentBtc.subtract(plannedSpentBtc);
+    BigDecimal earnedBtcs = getSumOfValues(myTrades,
+                                           trade -> new BigDecimal(trade.getQty())
+                                               .multiply(new BigDecimal(trade.getPrice())));
+    logger.log("earnedBtcs: " + earnedBtcs);
+    BigDecimal plannedEarnedBtc = orderWrapper.getOrderPrice()
+                                              .multiply(getQuantity(orderWrapper.getOrder()));
+    logger.log("plannedEarnedBtc: " + plannedEarnedBtc);
+    BigDecimal missingBtcs = plannedEarnedBtc.subtract(earnedBtcs);
     logger.log("missingBtcs: " + missingBtcs);
     logger.log("orderPrice: " + orderPrice);
     logger.log("currentPrice: " + orderWrapper.getCurrentPrice());
     logger.log("priceToSell: " + orderWrapper.getPriceToSell());
-    BigDecimal boughtPrice = spentBtc.divide(getQuantity(orderWrapper.getOrder()), 8, CEILING);
+    BigDecimal boughtPrice = earnedBtcs.divide(getQuantity(orderWrapper.getOrder()), 8, CEILING);
     logger.log("boughtPrice: " + boughtPrice);
     BigDecimal priceDiff = boughtPrice.subtract(orderPrice);
     logger.log("priceDiff: " + priceDiff);
@@ -97,7 +97,7 @@ public class RepeatTradingService {
     logger.log("newPriceToSell: " + newPriceToSell);
     BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getPriceToSell());
     logger.log("plannedTurnover" + plannedTurnover);
-    BigDecimal newTurnover =  getQuantity(orderWrapper.getOrder()).multiply(newPriceToSell);
+    BigDecimal newTurnover = getQuantity(orderWrapper.getOrder()).multiply(newPriceToSell);
     logger.log("newTurnover: " + newTurnover);
     BigDecimal turnoverDiff = newTurnover.subtract(plannedTurnover);
     logger.log("turnoverDiff: " + turnoverDiff);

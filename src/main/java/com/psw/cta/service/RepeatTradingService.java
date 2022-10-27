@@ -72,11 +72,12 @@ public class RepeatTradingService {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal boughtQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
-    while (boughtQuantity.compareTo(ZERO) == 0) {
+    BigDecimal soldQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
+    while (soldQuantity.compareTo(ZERO) == 0) {
       sleep(1000, logger);
-      boughtQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
+      soldQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
     }
+    logger.log("soldQuantity: " + soldQuantity);
     BigDecimal earnedBtcs = getSumOfValues(myTrades,
                                            trade -> new BigDecimal(trade.getQty())
                                                .multiply(new BigDecimal(trade.getPrice())));
@@ -89,11 +90,11 @@ public class RepeatTradingService {
     logger.log("orderPrice: " + orderPrice);
     logger.log("currentPrice: " + orderWrapper.getCurrentPrice());
     logger.log("priceToSell: " + orderWrapper.getPriceToSell());
-    BigDecimal boughtPrice = earnedBtcs.divide(getQuantity(orderWrapper.getOrder()), 8, CEILING);
-    logger.log("boughtPrice: " + boughtPrice);
-    BigDecimal priceDiff = boughtPrice.subtract(orderPrice);
-    logger.log("priceDiff: " + priceDiff);
-    BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDiff);
+    BigDecimal soldPrice = earnedBtcs.divide(soldQuantity, 8, CEILING);
+    logger.log("soldPrice: " + soldPrice);
+    BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
+    logger.log("priceDifference: " + priceDifference);
+    BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
     logger.log("newPriceToSell: " + newPriceToSell);
     BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getPriceToSell());
     logger.log("plannedTurnover" + plannedTurnover);

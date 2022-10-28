@@ -71,47 +71,38 @@ public class RepeatTradingService {
     Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
+    BigDecimal newPriceToSell = getNewPriceToSell(orderWrapper, myTrades);
+
+    // 3. create new order
+    BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
+    BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
+    binanceApiService.placeSellOrder(symbolInfo,
+                                     newPriceToSell,
+                                     completeQuantityToSell);
+  }
+
+  private BigDecimal getNewPriceToSell(OrderWrapper orderWrapper, List<Trade> myTrades) {
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal soldQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
+    BigDecimal soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     while (soldQuantity.compareTo(ZERO) == 0) {
       sleep(1000, logger);
-      soldQuantity = getSumOfValues(myTrades, trade -> new BigDecimal(trade.getQty()));
+      soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     }
     logger.log("soldQuantity: " + soldQuantity);
-    BigDecimal earnedBtcs = getSumOfValues(myTrades,
+    BigDecimal earnedBtcs = getSumFromTrades(myTrades,
                                            trade -> new BigDecimal(trade.getQty())
                                                .multiply(new BigDecimal(trade.getPrice())));
     logger.log("earnedBtcs: " + earnedBtcs);
-    BigDecimal plannedEarnedBtc = orderWrapper.getOrderPrice()
-                                              .multiply(getQuantity(orderWrapper.getOrder()));
-    logger.log("plannedEarnedBtc: " + plannedEarnedBtc);
-    BigDecimal missingBtcs = plannedEarnedBtc.subtract(earnedBtcs);
-    logger.log("missingBtcs: " + missingBtcs);
-    logger.log("orderPrice: " + orderPrice);
-    logger.log("currentPrice: " + orderWrapper.getCurrentPrice());
-    logger.log("priceToSell: " + orderWrapper.getPriceToSell());
     BigDecimal soldPrice = earnedBtcs.divide(soldQuantity, 8, CEILING);
     logger.log("soldPrice: " + soldPrice);
     BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
     logger.log("priceDifference: " + priceDifference);
     BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
     logger.log("newPriceToSell: " + newPriceToSell);
-    BigDecimal plannedTurnover = getQuantity(orderWrapper.getOrder()).multiply(orderWrapper.getPriceToSell());
-    logger.log("plannedTurnover" + plannedTurnover);
-    BigDecimal newTurnover = getQuantity(orderWrapper.getOrder()).multiply(newPriceToSell);
-    logger.log("newTurnover: " + newTurnover);
-    BigDecimal turnoverDiff = newTurnover.subtract(plannedTurnover);
-    logger.log("turnoverDiff: " + turnoverDiff);
-
-    // 3. create new order
-    BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
-    BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-    binanceApiService.placeSellOrder(symbolInfo,
-                                     orderWrapper.getPriceToSell(),
-                                     completeQuantityToSell);
+    return newPriceToSell;
   }
 
-  private BigDecimal getSumOfValues(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
+  private BigDecimal getSumFromTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
     return myTrades.stream()
                    .map(function)
                    .reduce(ZERO, BigDecimal::add);

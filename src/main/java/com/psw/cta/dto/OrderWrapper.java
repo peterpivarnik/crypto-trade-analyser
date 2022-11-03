@@ -97,8 +97,8 @@ public class OrderWrapper {
   public String toString() {
     return "OrderWrapper{"
            + "symbol=" + order.getSymbol()
-           + ", quantity=" + getQuantity(order)
            + ", orderBtcAmount=" + orderBtcAmount
+           + ", quantity=" + getQuantity(order)
            + ", currentPrice=" + currentPrice
            + ", orderPrice=" + orderPrice
            + ", priceToSell=" + priceToSell

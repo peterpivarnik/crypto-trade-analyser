@@ -16,6 +16,7 @@ import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
@@ -78,7 +79,8 @@ public class RepeatTradingService {
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
     binanceApiService.placeSellOrder(symbolInfo,
                                      newPriceToSell,
-                                     completeQuantityToSell);
+                                     completeQuantityToSell,
+                                     CommonUtils::roundPriceUp);
   }
 
   private BigDecimal getNewPriceToSell(OrderWrapper orderWrapper, List<Trade> myTrades) {
@@ -90,15 +92,17 @@ public class RepeatTradingService {
     }
     logger.log("soldQuantity: " + soldQuantity);
     BigDecimal earnedBtcs = getSumFromTrades(myTrades,
-                                           trade -> new BigDecimal(trade.getQty())
-                                               .multiply(new BigDecimal(trade.getPrice())));
+                                             trade -> new BigDecimal(trade.getQty())
+                                                 .multiply(new BigDecimal(trade.getPrice())));
     logger.log("earnedBtcs: " + earnedBtcs);
     BigDecimal soldPrice = earnedBtcs.divide(soldQuantity, 8, CEILING);
     logger.log("soldPrice: " + soldPrice);
     BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
-    logger.log("priceDifference: " + priceDifference);
     BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
-    logger.log("newPriceToSell: " + newPriceToSell);
+    if (priceDifference.compareTo(ZERO) > 0) {
+      logger.log("priceDifference: " + priceDifference);
+      logger.log("newPriceToSell: " + newPriceToSell);
+    }
     return newPriceToSell;
   }
 

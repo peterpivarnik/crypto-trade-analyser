@@ -17,6 +17,7 @@ import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
 import java.util.List;
@@ -132,6 +133,6 @@ public class DiversifyService {
     logger.log("roundedPriceToSell: " + roundedPriceToSell);
     roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
     logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-    binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
+    binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity, CommonUtils::roundPrice);
   }
 }

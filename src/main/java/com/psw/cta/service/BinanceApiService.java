@@ -8,7 +8,6 @@ import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
-import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
@@ -39,6 +38,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -238,13 +238,17 @@ public class BinanceApiService {
    * @param symbolInfo  Symbol information
    * @param priceToSell Price of new sell order
    * @param quantity    Quantity of new sell order
+   * @param roundPrice  Function for rounding price
    */
-  public void placeSellOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal quantity) {
+  public void placeSellOrder(SymbolInfo symbolInfo,
+                             BigDecimal priceToSell,
+                             BigDecimal quantity,
+                             BiFunction<SymbolInfo, BigDecimal, BigDecimal> roundPrice) {
     logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
     String asset = getAssetFromSymbolInfo(symbolInfo);
     BigDecimal balance = waitUntilHaveBalance(asset, quantity);
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
-    BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
+    BigDecimal roundedPriceToSell = roundPrice.apply(symbolInfo, priceToSell);
     NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(),
                                       SELL,
                                       LIMIT,

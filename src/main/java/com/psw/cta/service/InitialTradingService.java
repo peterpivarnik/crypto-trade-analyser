@@ -13,6 +13,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 
 /**
@@ -91,11 +92,17 @@ public class InitialTradingService {
 
   private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
     try {
-      binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
+      binanceApiService.placeSellOrder(crypto.getSymbolInfo(),
+                                       crypto.getPriceToSell(),
+                                       quantity,
+                                       CommonUtils::roundPrice);
     } catch (Exception e) {
       logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
       sleep(61000, logger);
-      binanceApiService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
+      binanceApiService.placeSellOrder(crypto.getSymbolInfo(),
+                                       crypto.getPriceToSell(),
+                                       quantity,
+                                       CommonUtils::roundPrice);
     }
   }
 }

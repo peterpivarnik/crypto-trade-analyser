@@ -21,10 +21,10 @@
         <commons.codec.commons-codec.version>1.15</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.12.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
-        <com.jcabi.jcabi-manifests.version>1.1</com.jcabi.jcabi-manifests.version>
-        <org.junit.jupiter.junit-jupiter-api.version>5.8.2</org.junit.jupiter.junit-jupiter-api.version>
-        <org.mockito.version>4.5.1</org.mockito.version>
-        <org.assertj.assertj-core.version>3.22.0</org.assertj.assertj-core.version>
+        <com.jcabi.jcabi-manifests.version>1.2.1</com.jcabi.jcabi-manifests.version>
+        <org.junit.jupiter.junit-jupiter-api.version>5.9.0</org.junit.jupiter.junit-jupiter-api.version>
+        <org.mockito.version>4.8.0</org.mockito.version>
+        <org.assertj.assertj-core.version>3.23.1</org.assertj.assertj-core.version>
     </properties>
 
     <dependencies>
@@ -97,7 +97,7 @@
                 <!-- Build an executable JAR -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>3.3.0</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -112,7 +112,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -151,7 +151,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>3.0.0-M5</version>
+                <version>3.0.0-M7</version>
                 <configuration>
                     <tagNameFormat>crypto-trader-${project.version}</tagNameFormat>
                 </configuration>
@@ -159,7 +159,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.2.0</version>
                 <configuration>
                     <configLocation>${project.basedir}/build/google_checks.xml</configLocation>
                     <indentSize>4</indentSize>

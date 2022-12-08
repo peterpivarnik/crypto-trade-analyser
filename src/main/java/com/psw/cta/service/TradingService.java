@@ -115,21 +115,18 @@ public class TradingService {
     BigDecimal actualBalance = binanceApiService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance);
 
-    boolean expanded = false;
-    boolean repeated = false;
     if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
-      expanded = expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+      expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     } else {
-      repeated = repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+      repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
-    boolean diversified = diversifyOrderWithLowestOrderPricePercentage(openOrders,
-                                                                       totalAmounts,
-                                                                       myBtcBalance,
-                                                                       exchangeInfo,
-                                                                       actualBalance);
+    diversifyOrderWithLowestOrderPricePercentage(openOrders,
+                                                 totalAmounts,
+                                                 myBtcBalance,
+                                                 exchangeInfo,
+                                                 actualBalance);
 
-    if (shouldDiversify(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)
-        && !expanded && !repeated && !diversified) {
+    if (shouldDiversify(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Diversifying trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
           orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
@@ -162,11 +159,11 @@ public class TradingService {
     logger.log("Finished trading.");
   }
 
-  private boolean repeatTrading(List<Order> openOrders,
-                                BigDecimal myBtcBalance,
-                                Map<String, BigDecimal> totalAmounts,
-                                ExchangeInfo exchangeInfo,
-                                BigDecimal actualBalance) {
+  private void repeatTrading(List<Order> openOrders,
+                             BigDecimal myBtcBalance,
+                             Map<String, BigDecimal> totalAmounts,
+                             ExchangeInfo exchangeInfo,
+                             BigDecimal actualBalance) {
     Function<OrderWrapper, SymbolInfo> symbolFunction =
         orderWrapper -> exchangeInfo.getSymbols()
                                     .parallelStream()
@@ -181,11 +178,9 @@ public class TradingService {
                                                    exchangeInfo,
                                                    actualBalance,
                                                    orderWrapperPredicate);
-    boolean repeated = !wrappers.isEmpty();
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
     wrappers.forEach(orderWrapper -> repeatTradingService.rebuySingleOrder(symbolFunction.apply(orderWrapper),
                                                                            orderWrapper));
-    return repeated;
   }
 
   private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,
@@ -218,11 +213,11 @@ public class TradingService {
     return uniqueOpenOrdersSize <= minOpenOrders;
   }
 
-  private boolean expandOrders(List<Order> openOrders,
-                               BigDecimal myBtcBalance,
-                               Map<String, BigDecimal> totalAmounts,
-                               ExchangeInfo exchangeInfo,
-                               BigDecimal actualBalance) {
+  private void expandOrders(List<Order> openOrders,
+                            BigDecimal myBtcBalance,
+                            Map<String, BigDecimal> totalAmounts,
+                            ExchangeInfo exchangeInfo,
+                            BigDecimal actualBalance) {
     diversifyOrderWithHighestBtcAmount(openOrders,
                                        myBtcBalance,
                                        totalAmounts,
@@ -233,9 +228,7 @@ public class TradingService {
     BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
-      return true;
     }
-    return false;
   }
 
   private boolean shouldDiversify(BigDecimal myBtcBalance,
@@ -319,11 +312,11 @@ public class TradingService {
                    .forEach(initialTradingService::buyCrypto);
   }
 
-  private boolean diversifyOrderWithLowestOrderPricePercentage(List<Order> openOrders,
-                                                               Map<String, BigDecimal> totalAmounts,
-                                                               BigDecimal myBtcBalance,
-                                                               ExchangeInfo exchangeInfo,
-                                                               BigDecimal actualBalance) {
+  private void diversifyOrderWithLowestOrderPricePercentage(List<Order> openOrders,
+                                                            Map<String, BigDecimal> totalAmounts,
+                                                            BigDecimal myBtcBalance,
+                                                            ExchangeInfo exchangeInfo,
+                                                            BigDecimal actualBalance) {
     logger.log("Sleep for 1 minute before splitting");
     sleep(1000 * 60, logger);
     List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
@@ -342,8 +335,6 @@ public class TradingService {
                                  () -> getCryptos(exchangeInfo),
                                  totalAmounts,
                                  exchangeInfo);
-      return true;
     }
-    return false;
   }
 }

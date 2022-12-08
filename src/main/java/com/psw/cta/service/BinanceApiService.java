@@ -25,6 +25,7 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.account.request.OrderRequest;
+import com.binance.api.client.domain.account.request.OrderStatusRequest;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
@@ -296,5 +297,10 @@ public class BinanceApiService {
 
   public List<Trade> getMyTrades(String symbol, String orderId) {
     return binanceApiRestClient.getMyTrades(symbol, orderId);
+  }
+
+  public void checkOrderStatus(String symbol, Long orderId) {
+    OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
+    binanceApiRestClient.getOrderStatus(orderStatusRequest);
   }
 }

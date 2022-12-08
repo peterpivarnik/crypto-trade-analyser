@@ -15,6 +15,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
+import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
@@ -53,6 +54,15 @@ public class DiversifyService {
                         Map<String, BigDecimal> totalAmounts,
                         ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Diversifying amounts ***** *****");
+
+    //0. Check order still exist
+    try {
+      binanceApiService.checkOrderStatus(orderToCancel.getOrder().getSymbol(),
+                                         orderToCancel.getOrder().getOrderId());
+    } catch (BinanceApiException exception) {
+      logger.log("Order do not exist anymore: " + orderToCancel.getOrder().getSymbol());
+      return;
+    }
 
     // 1. cancel existing order
     logger.log("orderToCancel: " + orderToCancel);

@@ -263,7 +263,7 @@ public class CommonUtils {
   /**
    * Calculates minimal number of open orders.
    *
-   * @param myBtcBalance           BTC balance
+   * @param myBtcBalance BTC balance
    * @return Minimal number of open orders
    */
   public static int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {
@@ -327,6 +327,12 @@ public class CommonUtils {
     return btcAmountToSpend.add(minAddition);
   }
 
+  /**
+   * Splits forbidden pairs from environment variables to list of pairs.
+   *
+   * @param forbiddenPairs String representation of forbidden pairs
+   * @return List of forbidden pairs
+   */
   public static List<String> splitForbiddenPairs(String forbiddenPairs) {
     return Arrays.asList(forbiddenPairs.split(","));
   }

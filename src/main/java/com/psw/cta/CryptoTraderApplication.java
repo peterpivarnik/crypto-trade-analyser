@@ -1,6 +1,7 @@
 package com.psw.cta;
 
 import static com.psw.cta.utils.CommonUtils.initializeTradingService;
+import static java.util.Collections.emptyList;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.service.TradingService;
@@ -11,7 +12,7 @@ import java.io.IOException;
  */
 public class CryptoTraderApplication {
   public static void main(String[] args) {
-    TradingService tradingService = initializeTradingService(args[0], args[1], getLogger());
+    TradingService tradingService = initializeTradingService(args[0], args[1], emptyList(), getLogger());
     tradingService.startTrading();
   }
 

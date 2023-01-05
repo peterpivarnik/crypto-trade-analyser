@@ -28,6 +28,7 @@ import com.psw.cta.service.RepeatTradingService;
 import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ public class CommonUtils {
    */
   public static TradingService initializeTradingService(String apiKey,
                                                         String apiSecret,
+                                                        List<String> forbiddenPairs,
                                                         LambdaLogger logger) {
     BinanceApiService binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
     InitialTradingService initialTradingService = new InitialTradingService(binanceApiService,
@@ -63,6 +65,7 @@ public class CommonUtils {
                               diversifyService,
                               bnbService,
                               binanceApiService,
+                              forbiddenPairs,
                               logger);
   }
 
@@ -322,6 +325,10 @@ public class CommonUtils {
                              minValueFromMinNotionalFilter);
     }
     return btcAmountToSpend.add(minAddition);
+  }
+
+  public static List<String> splitForbiddenPairs(String forbiddenPairs) {
+    return Arrays.asList(forbiddenPairs.split(","));
   }
 
   private CommonUtils() {

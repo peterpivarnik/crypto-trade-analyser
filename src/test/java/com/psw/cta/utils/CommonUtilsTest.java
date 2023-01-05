@@ -19,7 +19,9 @@ import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.CommonUtils.splitForbiddenPairs;
 import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -51,7 +53,7 @@ class CommonUtilsTest {
     String apiSecret = "apiSecret";
     LambdaLogger logger = createLogger();
 
-    TradingService tradingService = initializeTradingService(apiKey, apiSecret, logger);
+    TradingService tradingService = initializeTradingService(apiKey, apiSecret, emptyList(), logger);
 
     assertThat(tradingService).isNotNull();
   }
@@ -400,5 +402,15 @@ class CommonUtilsTest {
     boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
 
     assertThat(haveBalance).isFalse();
+  }
+
+  @Test
+  void shouldSplitForbiddenPairs() {
+    String forbiddenPairsVariable = "test1,test2,test3";
+
+    List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
+
+    assertThat(forbiddenPairs).hasSize(3);
+    assertThat(forbiddenPairs).contains("test1", "test2", "test3");
   }
 }

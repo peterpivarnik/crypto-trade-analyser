@@ -11,8 +11,6 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_FTT_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_TORN_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
@@ -36,6 +34,8 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CryptoBuilder;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +56,7 @@ public class TradingService {
   private final BnbService bnbService;
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
+  private final List<String> allForbiddenPairs;
 
   /**
    * Default constructor of {@link TradingService}.
@@ -72,6 +73,7 @@ public class TradingService {
                         DiversifyService diversifyService,
                         BnbService bnbService,
                         BinanceApiService binanceApiService,
+                        List<String> forbiddenPairs,
                         LambdaLogger logger) {
     this.initialTradingService = initialTradingService;
     this.repeatTradingService = repeatTradingService;
@@ -79,6 +81,18 @@ public class TradingService {
     this.bnbService = bnbService;
     this.binanceApiService = binanceApiService;
     this.logger = logger;
+    this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
+
+  }
+
+  private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {
+    List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC, SYMBOL_WBTC_BTC);
+    ArrayList<String> allForbiddenPairs = new ArrayList<>();
+    allForbiddenPairs.addAll(defaultForbiddenPairs);
+    allForbiddenPairs.addAll(forbiddenPairs);
+    logger.log("ForbiddenPairs:");
+    allForbiddenPairs.forEach(logger::log);
+    return allForbiddenPairs;
   }
 
   /**
@@ -268,10 +282,8 @@ public class TradingService {
                                        .parallelStream()
                                        .map(CryptoBuilder::build)
                                        .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
-                                       .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_BNB_BTC))
-                                       .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_WBTC_BTC))
-                                       .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_TORN_BTC))
-                                       .filter(crypto -> !crypto.getSymbolInfo().getSymbol().endsWith(SYMBOL_FTT_BTC))
+                                       .filter(crypto -> !allForbiddenPairs.contains(crypto.getSymbolInfo()
+                                                                                           .getSymbol()))
                                        .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
                                        .map(crypto -> withVolume(crypto, tickers))
                                        .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)

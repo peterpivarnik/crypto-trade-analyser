@@ -20,7 +20,7 @@ public class ServiceHandler implements RequestHandler<Input, Object> {
   public Object handleRequest(Input input, Context context) {
     Map<String, String> variables = System.getenv();
 
-    String forbiddenPairsVariable = variables.get("forbiddenPairsVariable");
+    String forbiddenPairsVariable = variables.get("forbiddenPairs");
     List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
     TradingService tradingService = initializeTradingService(variables.get("apiKey"),
                                                              variables.get("apiSecret"),

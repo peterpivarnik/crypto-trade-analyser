@@ -4,7 +4,7 @@
 
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
-    <version>1.6.47-SNAPSHOT</version>
+    <version>1.7.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Crypto trader</name>
@@ -16,14 +16,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <com.amazonaws.aws-lambda-java-core.version>1.2.1</com.amazonaws.aws-lambda-java-core.version>
+        <com.amazonaws.aws-lambda-java-core.version>1.2.2</com.amazonaws.aws-lambda-java-core.version>
         <com.squareup.retrofit2.converter-jackson.version>2.9.0</com.squareup.retrofit2.converter-jackson.version>
         <commons.codec.commons-codec.version>1.15</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.12.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>1.2.1</com.jcabi.jcabi-manifests.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.9.0</org.junit.jupiter.junit-jupiter-api.version>
-        <org.mockito.version>4.8.0</org.mockito.version>
+        <org.mockito.version>4.11.0</org.mockito.version>
         <org.assertj.assertj-core.version>3.23.1</org.assertj.assertj-core.version>
     </properties>
 

@@ -144,7 +144,7 @@ public class TradingService {
       logger.log("***** ***** Diversifying trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
           orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
-                          && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.01")) > 0;
+                          && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
       diversifyOrderWithHighestBtcAmount(openOrders,
                                          myBtcBalance,
                                          totalAmounts,

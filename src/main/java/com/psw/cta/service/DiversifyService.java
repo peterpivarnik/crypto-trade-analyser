@@ -97,12 +97,15 @@ public class DiversifyService {
                                        int fibonacciIndex,
                                        SymbolInfo symbolInfoOfSellOrder) {
     BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
-    BigDecimal fibonacciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
     logger.log("btcAmountToSpend: " + btcAmountToSpend);
+    BigDecimal fibonacciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
     logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
-    Crypto crypto = cryptoToBuy.get(fibonacciIndex - 1);
-    logger.log("cryptoToBuy: " + crypto);
-    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0) {
+    int cryptoToBuyIndex = fibonacciIndex - 1;
+    logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
+    logger.log("cryptoToBuy.size(): " + cryptoToBuy.size());
+    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0 && cryptoToBuyIndex < cryptoToBuy.size()) {
+      Crypto crypto = cryptoToBuy.get(cryptoToBuyIndex);
+      logger.log("cryptoToBuy: " + crypto);
       buyAndSell(orderToCancel, fibonacciAmountToSpend, crypto.getSymbolInfo(), crypto.getCurrentPrice());
       buyAndSellWithFibonacci(orderToCancel,
                               cryptoToBuy,

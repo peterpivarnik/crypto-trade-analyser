@@ -44,7 +44,7 @@ public class CryptoBuilder {
     List<BigDecimal> averagePrices = getAveragePrices(crypto.getThreeMonthsCandleStickData());
     BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
     crypto.setPriceCountToSlope(priceCountToSlope);
-    crypto.setNumberOfCandles(new BigDecimal(averagePrices.size()));
+    crypto.setNumberOfCandles(new BigDecimal(crypto.getThreeMonthsCandleStickData().size()));
     return crypto;
   }
 

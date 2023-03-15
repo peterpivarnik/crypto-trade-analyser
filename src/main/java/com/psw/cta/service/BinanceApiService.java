@@ -38,6 +38,8 @@ import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.apache.commons.lang3.tuple.Pair;
@@ -103,15 +105,23 @@ public class BinanceApiService {
   /**
    * Returns Kline/Candlestick bars for a symbol.
    *
-   * @param symbol   Order symbol
-   * @param interval Interval for Candlestick
-   * @param limit    Limit for candlestick
+   * @param symbol            Order symbol
+   * @param interval          Interval for Candlestick
+   * @param numberOfTimeUnits number of time intervals
+   * @param chronoUnit        the unit of the amount to subtract
    * @return List of candlestick data
    */
   public List<Candlestick> getCandleStickData(String symbol,
                                               CandlestickInterval interval,
-                                              Integer limit) {
-    return binanceApiRestClient.getCandlestickBars(symbol, interval, limit, null, null);
+                                              long numberOfTimeUnits,
+                                              ChronoUnit chronoUnit) {
+    Instant endTime = Instant.now();
+    Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
+    return binanceApiRestClient.getCandlestickBars(symbol,
+                                                   interval,
+                                                   null,
+                                                   startTime.toEpochMilli(),
+                                                   endTime.toEpochMilli());
   }
 
   /**

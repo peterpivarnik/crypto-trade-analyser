@@ -20,6 +20,8 @@ import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -290,7 +292,8 @@ public class TradingService {
                                        .map(crypto -> crypto.setThreeMonthsCandleStickData(
                                            binanceApiService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
                                                                                 DAILY,
-                                                                                90)))
+                                                                                90L,
+                                                                                DAYS)))
                                        .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
                                        .map(crypto -> withCurrentPrice(crypto,
                                                                        binanceApiService.getOrderBook(
@@ -310,7 +313,8 @@ public class TradingService {
                                                       binanceApiService.getCandleStickData(crypto.getSymbolInfo()
                                                                                                  .getSymbol(),
                                                                                            FIFTEEN_MINUTES,
-                                                                                           96)))
+                                                                                           96L * 15L,
+                                                                                           MINUTES)))
                    .filter(crypto -> crypto.getLastThreeHighAverage()
                                            .compareTo(crypto.getPreviousThreeHighAverage()) > 0)
                    .map(CryptoBuilder::withPrices)

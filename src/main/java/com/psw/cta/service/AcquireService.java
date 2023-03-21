@@ -17,14 +17,14 @@ import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 
 /**
- * Service for initial buy of crypto.
+ * Service for acquire crypto.
  */
-public class InitialTradingService {
+public class AcquireService {
 
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
 
-  public InitialTradingService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public AcquireService(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.binanceApiService = binanceApiService;
     this.logger = logger;
   }
@@ -34,7 +34,7 @@ public class InitialTradingService {
    *
    * @param crypto Crypto to buy.
    */
-  public synchronized void buyCrypto(Crypto crypto) {
+  public synchronized void acquireCrypto(Crypto crypto) {
     // 1. get balance on account
     logger.log("Trading crypto " + crypto);
     String symbol = crypto.getSymbolInfo().getSymbol();

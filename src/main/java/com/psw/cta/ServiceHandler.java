@@ -1,13 +1,12 @@
 package com.psw.cta;
 
 
-import static com.psw.cta.utils.CommonUtils.initializeTradingService;
 import static com.psw.cta.utils.CommonUtils.splitForbiddenPairs;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.psw.cta.dto.Input;
-import com.psw.cta.service.TradingService;
+import com.psw.cta.service.CryptoTradeService;
 import java.util.List;
 import java.util.Map;
 
@@ -22,11 +21,12 @@ public class ServiceHandler implements RequestHandler<Input, Object> {
 
     String forbiddenPairsVariable = variables.get("forbiddenPairs");
     List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
-    TradingService tradingService = initializeTradingService(variables.get("apiKey"),
-                                                             variables.get("apiSecret"),
-                                                             forbiddenPairs,
-                                                             context.getLogger());
-    tradingService.startTrading();
+
+    CryptoTradeService cryptoTradeService = new CryptoTradeService(variables.get("apiKey"),
+                                                                   variables.get("apiSecret"),
+                                                                   forbiddenPairs,
+                                                                   context.getLogger());
+    cryptoTradeService.startTrading();
     return "Lambda Function is invoked....";
   }
 

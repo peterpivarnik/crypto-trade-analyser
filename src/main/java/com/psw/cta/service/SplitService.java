@@ -29,31 +29,31 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * Service to diversify crypto to cryptos with small amount.
+ * Service to split crypto to cryptos with small amount.
  */
-public class DiversifyService {
+public class SplitService {
 
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
 
-  public DiversifyService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public SplitService(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.binanceApiService = binanceApiService;
     this.logger = logger;
   }
 
   /**
-   * Diversify big order to smaller orders.
+   * Split big order to smaller orders.
    *
-   * @param orderToCancel   Order to diversify
+   * @param orderToCancel   Order to split
    * @param cryptosSupplier Cryptos to new orders
    * @param totalAmounts    Total amount
    * @param exchangeInfo    Current exchange trading rules and symbol information
    */
-  public void diversify(OrderWrapper orderToCancel,
-                        Supplier<List<Crypto>> cryptosSupplier,
-                        Map<String, BigDecimal> totalAmounts,
-                        ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Diversifying amounts ***** *****");
+  public void split(OrderWrapper orderToCancel,
+                    Supplier<List<Crypto>> cryptosSupplier,
+                    Map<String, BigDecimal> totalAmounts,
+                    ExchangeInfo exchangeInfo) {
+    logger.log("***** ***** Splitting amounts ***** *****");
 
     //0. Check order still exist
     try {

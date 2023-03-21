@@ -20,12 +20,6 @@ import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.BinanceApiService;
-import com.psw.cta.service.BnbService;
-import com.psw.cta.service.DiversifyService;
-import com.psw.cta.service.InitialTradingService;
-import com.psw.cta.service.RepeatTradingService;
-import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Arrays;
@@ -43,33 +37,6 @@ import java.util.stream.Collectors;
 public class CommonUtils {
 
   /**
-   * Initialize Trading service.
-   *
-   * @param apiKey    ApiKey to be used for trading
-   * @param apiSecret ApiSecret to be used for trading
-   * @param logger    Logger
-   * @return Initialized {@link TradingService}
-   */
-  public static TradingService initializeTradingService(String apiKey,
-                                                        String apiSecret,
-                                                        List<String> forbiddenPairs,
-                                                        LambdaLogger logger) {
-    BinanceApiService binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-    InitialTradingService initialTradingService = new InitialTradingService(binanceApiService,
-                                                                            logger);
-    RepeatTradingService repeatTradingService = new RepeatTradingService(binanceApiService, logger);
-    DiversifyService diversifyService = new DiversifyService(binanceApiService, logger);
-    BnbService bnbService = new BnbService(binanceApiService, logger);
-    return new TradingService(initialTradingService,
-                              repeatTradingService,
-                              diversifyService,
-                              bnbService,
-                              binanceApiService,
-                              forbiddenPairs,
-                              logger);
-  }
-
-  /**
    * Returns order comparator.
    *
    * @return Comparator
@@ -77,8 +44,7 @@ public class CommonUtils {
   public static Comparator<Order> getOrderComparator() {
     Function<Order, BigDecimal> quantityFunction = CommonUtils::getQuantity;
     Function<Order, BigDecimal>
-        btcAmountFunction
-        = order -> (getQuantity(order)).multiply(new BigDecimal(order.getPrice()));
+        btcAmountFunction = order -> (getQuantity(order)).multiply(new BigDecimal(order.getPrice()));
     Function<Order, BigDecimal> timeFunction = order -> new BigDecimal(order.getTime());
     return comparing(quantityFunction).reversed()
                                       .thenComparing(comparing(btcAmountFunction).reversed())

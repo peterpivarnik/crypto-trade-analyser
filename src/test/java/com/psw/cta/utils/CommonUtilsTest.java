@@ -14,14 +14,12 @@ import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
-import static com.psw.cta.utils.CommonUtils.initializeTradingService;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.CommonUtils.splitForbiddenPairs;
 import static java.lang.System.currentTimeMillis;
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -34,7 +32,6 @@ import com.binance.api.client.domain.market.Candlestick;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.TradingService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,32 +43,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class CommonUtilsTest {
-
-  @Test
-  void shouldInitializeTradingService() {
-    String apiKey = "apiKey";
-    String apiSecret = "apiSecret";
-    LambdaLogger logger = createLogger();
-
-    TradingService tradingService = initializeTradingService(apiKey, apiSecret, emptyList(), logger);
-
-    assertThat(tradingService).isNotNull();
-  }
-
-  private LambdaLogger createLogger() {
-    return new LambdaLogger() {
-      @Override
-      public void log(String s) {
-
-      }
-
-      @Override
-      public void log(byte[] bytes) {
-
-      }
-    };
-  }
-
 
   @Test
   void shouldOrderByOriginalQuantity() {
@@ -148,6 +119,18 @@ class CommonUtilsTest {
     long end = currentTimeMillis();
 
     assertThat(end - start).isGreaterThanOrEqualTo(millis);
+  }
+
+  private LambdaLogger createLogger() {
+    return new LambdaLogger() {
+      @Override
+      public void log(String s) {
+      }
+
+      @Override
+      public void log(byte[] bytes) {
+      }
+    };
   }
 
   @Test

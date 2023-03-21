@@ -60,8 +60,8 @@ public class LambdaTradeService extends TradeService {
     this.acquireService = new AcquireService(binanceApiService, logger);
     this.repeatTradingService = new RepeatTradingService(binanceApiService, logger);
     this.splitService = new SplitService(binanceApiService, logger);
-    this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
     this.logger = logger;
+    this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
   }
 
   private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {

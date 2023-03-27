@@ -99,12 +99,13 @@ public class LambdaTradeService extends TradeService {
     } else {
       repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
-    splitOrderWithLowestOrderPricePercentage(openOrders,
-                                             totalAmounts,
-                                             myBtcBalance,
-                                             exchangeInfo,
-                                             actualBalance);
-
+    if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
+      splitOrderWithLowestOrderPricePercentage(openOrders,
+                                               totalAmounts,
+                                               myBtcBalance,
+                                               exchangeInfo,
+                                               actualBalance);
+    }
     if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
@@ -181,8 +182,18 @@ public class LambdaTradeService extends TradeService {
                               BigDecimal actualBalance,
                               BigDecimal totalAmount,
                               long uniqueOpenOrdersSize) {
-    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0
-           && new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
+    return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
+           && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
+  }
+
+  private static boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance,
+                                                                     BigDecimal actualBalance) {
+    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
+  }
+
+  private static boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
+                                                                           BigDecimal totalAmount) {
+    return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
   }
 
   private void splitOrderWithHighestBtcAmount(List<Order> openOrders,
@@ -265,12 +276,13 @@ public class LambdaTradeService extends TradeService {
                                                         BigDecimal actualBalance) {
     logger.log("Sleep for 1 minute before splitting");
     sleep(1000 * 60, logger);
-    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
-                                                        myBtcBalance,
-                                                        totalAmounts,
-                                                        exchangeInfo,
-                                                        actualBalance,
-                                                        orderWrapper -> true);
+    List<OrderWrapper> orderWrappers =
+        getOrderWrappers(openOrders,
+                         myBtcBalance,
+                         totalAmounts,
+                         exchangeInfo,
+                         actualBalance,
+                         orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0);
     boolean allOlderThanDay = orderWrappers.stream()
                                            .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                                                  .compareTo(new BigDecimal("24")) > 0);

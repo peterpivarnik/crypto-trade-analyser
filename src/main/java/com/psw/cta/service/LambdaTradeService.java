@@ -276,18 +276,23 @@ public class LambdaTradeService extends TradeService {
                                                         BigDecimal actualBalance) {
     logger.log("Sleep for 1 minute before splitting");
     sleep(1000 * 60, logger);
-    List<OrderWrapper> orderWrappers =
-        getOrderWrappers(openOrders,
-                         myBtcBalance,
-                         totalAmounts,
-                         exchangeInfo,
-                         actualBalance,
-                         orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0);
+    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
+                                                        myBtcBalance,
+                                                        totalAmounts,
+                                                        exchangeInfo,
+                                                        actualBalance,
+                                                        orderWrapper -> true);
     boolean allOlderThanDay = orderWrappers.stream()
                                            .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                                                  .compareTo(new BigDecimal("24")) > 0);
-    if (allOlderThanDay && !orderWrappers.isEmpty()) {
-      OrderWrapper orderToSplit = Collections.min(orderWrappers, comparing(OrderWrapper::getOrderPricePercentage));
+    List<OrderWrapper> filteredOrderWrappers =
+        orderWrappers.stream()
+                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                         .compareTo(new BigDecimal("0.001")) > 0)
+                     .collect(Collectors.toList());
+    if (allOlderThanDay && !filteredOrderWrappers.isEmpty()) {
+      OrderWrapper orderToSplit = Collections.min(filteredOrderWrappers,
+                                                  comparing(OrderWrapper::getOrderPricePercentage));
       logger.log("***** ***** Splitting amounts with lowest order price percentage ***** *****");
       splitService.split(orderToSplit,
                          () -> getCryptos(exchangeInfo),

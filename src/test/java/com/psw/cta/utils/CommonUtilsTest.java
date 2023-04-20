@@ -169,8 +169,8 @@ class CommonUtilsTest {
                                                                                         symbolFilterFunction,
                                                                                         PRICE_FILTER));
 
-    assertThat(cryptoTraderException.getMessage()).isEqualTo(
-        "Value from filter PRICE_FILTER not found");
+    assertThat(cryptoTraderException.getMessage())
+        .isEqualTo("Value from filters [PRICE_FILTER] not found");
   }
 
   private SymbolInfo getSymbolInfo(FilterType filterType, String filterValue) {

@@ -6,6 +6,7 @@ import static com.binance.api.client.domain.OrderType.LIMIT;
 import static com.binance.api.client.domain.OrderType.MARKET;
 import static com.binance.api.client.domain.TimeInForce.GTC;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -220,8 +221,9 @@ public class BinanceApiService {
   public Pair<Long, BigDecimal> buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
     BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                     SymbolFilter::getMinNotional,
                                                                      MIN_NOTIONAL,
-                                                                     SymbolFilter::getMinNotional);
+                                                                     NOTIONAL);
     BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);

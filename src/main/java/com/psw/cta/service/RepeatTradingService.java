@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
@@ -56,12 +57,13 @@ public class RepeatTradingService {
     // 2. buy
     BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
     BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo,
-                                                              LOT_SIZE,
-                                                              SymbolFilter::getMinQty);
+                                                              SymbolFilter::getMinQty,
+                                                              LOT_SIZE);
     logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
                                                                   MIN_NOTIONAL,
-                                                                  SymbolFilter::getMinNotional);
+                                                                  NOTIONAL);
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
     BigDecimal orderPrice = orderWrapper.getOrderPrice();
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);

@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
@@ -48,8 +49,9 @@ public class AcquireService {
     BigDecimal quantity = getQuantityToBuy(crypto, myBtcBalance, orderBookEntry);
     BigDecimal btcAmount = quantity.multiply(new BigDecimal(orderBookEntry.getPrice()));
     BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(crypto.getSymbolInfo(),
+                                                                     SymbolFilter::getMinNotional,
                                                                      MIN_NOTIONAL,
-                                                                     SymbolFilter::getMinNotional);
+                                                                     NOTIONAL);
     if (shouldBuyAndSell(crypto,
                          myBtcBalance,
                          orderBookEntry,

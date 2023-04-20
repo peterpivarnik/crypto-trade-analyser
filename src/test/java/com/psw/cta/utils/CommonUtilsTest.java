@@ -2,6 +2,7 @@ package com.psw.cta.utils;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
@@ -140,7 +141,19 @@ class CommonUtilsTest {
     SymbolInfo symbolInfo = getSymbolInfo(filterType, minNotional);
     Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
 
-    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
+
+    assertThat(valueFromFilter).isEqualTo(minNotional);
+  }
+
+  @Test
+  void shouldReturnCorrectValueFromFilterForNotionalFilterType() {
+    FilterType filterType = NOTIONAL;
+    String minNotional = "2";
+    SymbolInfo symbolInfo = getSymbolInfo(filterType, minNotional);
+    Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
+
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
 
     assertThat(valueFromFilter).isEqualTo(minNotional);
   }
@@ -153,8 +166,8 @@ class CommonUtilsTest {
 
     CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class,
                                                                () -> getValueFromFilter(symbolInfo,
-                                                                                        PRICE_FILTER,
-                                                                                        symbolFilterFunction));
+                                                                                        symbolFilterFunction,
+                                                                                        PRICE_FILTER));
 
     assertThat(cryptoTraderException.getMessage()).isEqualTo(
         "Value from filter PRICE_FILTER not found");

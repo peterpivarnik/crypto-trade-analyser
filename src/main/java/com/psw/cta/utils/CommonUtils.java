@@ -70,21 +70,22 @@ public class CommonUtils {
    * Returns value from provided filter according provided function.
    *
    * @param symbolInfo           Symbol information
-   * @param filterType           Filter of symbol
    * @param symbolFilterFunction Function to get proper value
+   * @param filterTypes          Filters of symbol
    * @return Value from filter according function
    */
   public static BigDecimal getValueFromFilter(SymbolInfo symbolInfo,
-                                              FilterType filterType,
-                                              Function<SymbolFilter, String> symbolFilterFunction) {
+                                              Function<SymbolFilter, String> symbolFilterFunction,
+                                              FilterType... filterTypes) {
+    List<FilterType> filterTypesList = Arrays.asList(filterTypes);
     return symbolInfo.getFilters()
                      .parallelStream()
-                     .filter(filter -> filter.getFilterType().equals(filterType))
+                     .filter(filter -> filterTypesList.contains(filter.getFilterType()))
                      .map(symbolFilterFunction)
                      .map(BigDecimal::new)
                      .findAny()
-                     .orElseThrow(() -> new CryptoTraderException("Value from filter "
-                                                                  + filterType
+                     .orElseThrow(() -> new CryptoTraderException("Value from filters "
+                                                                  + Arrays.toString(filterTypes)
                                                                   + " not found"));
   }
 
@@ -138,7 +139,7 @@ public class CommonUtils {
                                   FilterType filterType,
                                   Function<SymbolFilter, String> symbolFilterFunction,
                                   BinaryOperator<BigDecimal> roundUpFunction) {
-    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, filterType, symbolFilterFunction);
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
     BigDecimal remainder = amountToRound.remainder(valueFromFilter);
     BigDecimal roundedValue = amountToRound.subtract(remainder);
     return roundUpFunction.apply(roundedValue, valueFromFilter);

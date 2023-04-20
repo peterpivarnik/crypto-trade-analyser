@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
+import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
@@ -123,11 +124,12 @@ public class SplitService {
                           BigDecimal cryptoToBuyCurrentPrice) {
     // 3. buy
     logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, LOT_SIZE, SymbolFilter::getMinQty);
+    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
     logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
                                                                   MIN_NOTIONAL,
-                                                                  SymbolFilter::getMinNotional);
+                                                                  NOTIONAL);
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
     logger.log("minAddition: " + minAddition);

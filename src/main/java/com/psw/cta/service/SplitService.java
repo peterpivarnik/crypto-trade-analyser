@@ -7,6 +7,7 @@ import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
+import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
@@ -159,7 +160,7 @@ public class SplitService {
                                                              .multiply(new BigDecimal("1.01"))
                                                              .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
     logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-    BigDecimal roundedPriceToSell = roundPrice(symbolInfo, finalPriceWithProfit);
+    BigDecimal roundedPriceToSell = roundPriceUp(symbolInfo, finalPriceWithProfit);
     logger.log("roundedPriceToSell: " + roundedPriceToSell);
     roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
     logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);

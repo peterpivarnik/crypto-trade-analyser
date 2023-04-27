@@ -45,15 +45,17 @@ public class SplitService {
   /**
    * Split big order to smaller orders.
    *
-   * @param orderToCancel   Order to split
-   * @param cryptosSupplier Cryptos to new orders
-   * @param totalAmounts    Total amount
-   * @param exchangeInfo    Current exchange trading rules and symbol information
+   * @param orderToCancel            Order to split
+   * @param cryptosSupplier          Cryptos to new orders
+   * @param totalAmounts             Total amount
+   * @param exchangeInfo             Current exchange trading rules and symbol information
+   * @param isForbiddenPairSplitting Flag whether is splitting of forbidden pair
    */
   public void split(OrderWrapper orderToCancel,
                     Supplier<List<Crypto>> cryptosSupplier,
                     Map<String, BigDecimal> totalAmounts,
-                    ExchangeInfo exchangeInfo) {
+                    ExchangeInfo exchangeInfo,
+                    boolean isForbiddenPairSplitting) {
     logger.log("***** ***** Splitting amounts ***** *****");
 
     //0. Check order still exist
@@ -78,7 +80,12 @@ public class SplitService {
     List<Crypto> cryptos = cryptosSupplier.get();
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
     List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
-    buyAndSellWithFibonacci(orderToCancel, cryptoToBuy, totalBtcAmountToSpend, 2, symbolInfoOfSellOrder);
+    buyAndSellWithFibonacci(orderToCancel,
+                            cryptoToBuy,
+                            totalBtcAmountToSpend,
+                            2,
+                            symbolInfoOfSellOrder,
+                            isForbiddenPairSplitting);
   }
 
   private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
@@ -93,28 +100,36 @@ public class SplitService {
   }
 
   private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,
-                                       List<Crypto> cryptoToBuy,
+                                       List<Crypto> cryptosToBuy,
                                        BigDecimal btcAmountToSpend,
                                        int fibonacciIndex,
-                                       SymbolInfo symbolInfoOfSellOrder) {
+                                       SymbolInfo symbolInfoOfSellOrder,
+                                       boolean isForbiddenPairSplitting) {
     BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
     logger.log("btcAmountToSpend: " + btcAmountToSpend);
     BigDecimal fibonacciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
     logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
     int cryptoToBuyIndex = fibonacciIndex - 1;
     logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
-    logger.log("cryptoToBuy.size(): " + cryptoToBuy.size());
-    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0 && cryptoToBuyIndex < cryptoToBuy.size()) {
-      Crypto crypto = cryptoToBuy.get(cryptoToBuyIndex);
-      logger.log("cryptoToBuy: " + crypto);
+    logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
+    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0 && cryptoToBuyIndex < cryptosToBuy.size()) {
+      Crypto crypto = cryptosToBuy.get(cryptoToBuyIndex);
+      logger.log("cryptosToBuy: " + crypto);
       buyAndSell(orderToCancel, fibonacciAmountToSpend, crypto.getSymbolInfo(), crypto.getCurrentPrice());
       buyAndSellWithFibonacci(orderToCancel,
-                              cryptoToBuy,
+                              cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
                               fibonacciIndex + 1,
-                              symbolInfoOfSellOrder);
+                              symbolInfoOfSellOrder,
+                              isForbiddenPairSplitting);
     } else {
-      buyAndSell(orderToCancel, btcAmountToSpend, symbolInfoOfSellOrder, orderToCancel.getCurrentPrice());
+      logger.log("isForbiddenPairSplitting: " + isForbiddenPairSplitting);
+      if (isForbiddenPairSplitting) {
+        SymbolInfo symbolInfo = cryptosToBuy.get(cryptoToBuyIndex).getSymbolInfo();
+        buyAndSell(orderToCancel, btcAmountToSpend, symbolInfo, orderToCancel.getCurrentPrice());
+      } else {
+        buyAndSell(orderToCancel, btcAmountToSpend, symbolInfoOfSellOrder, orderToCancel.getCurrentPrice());
+      }
     }
   }
 

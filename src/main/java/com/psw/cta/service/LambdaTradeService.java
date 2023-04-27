@@ -16,6 +16,7 @@ import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.RoundingMode.CEILING;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -94,6 +95,9 @@ public class LambdaTradeService extends TradeService {
                     ExchangeInfo exchangeInfo,
                     long uniqueOpenOrdersSize,
                     BigDecimal actualBalance) {
+    openOrders.stream()
+              .filter(order -> allForbiddenPairs.contains(order.getSymbol()))
+              .forEach(order -> splitCancelledOrder(order, myBtcBalance, actualBalance, totalAmounts, exchangeInfo));
     if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
       expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     } else {
@@ -118,6 +122,24 @@ public class LambdaTradeService extends TradeService {
                                      actualBalance,
                                      orderWrapperPredicate);
     }
+  }
+
+  private void splitCancelledOrder(Order orderToSplit,
+                                   BigDecimal myBtcBalance,
+                                   BigDecimal actualBalance,
+                                   Map<String, BigDecimal> totalAmounts,
+                                   ExchangeInfo exchangeInfo) {
+    List<OrderWrapper> orderWrappers = getOrderWrappers(singletonList(orderToSplit),
+                                                        myBtcBalance,
+                                                        totalAmounts,
+                                                        exchangeInfo,
+                                                        actualBalance,
+                                                        orderWrapper -> true);
+    splitService.split(orderWrappers.get(0),
+                       () -> getCryptos(exchangeInfo),
+                       totalAmounts,
+                       exchangeInfo,
+                       true);
   }
 
   private void repeatTrading(List<Order> openOrders,
@@ -213,7 +235,8 @@ public class LambdaTradeService extends TradeService {
         .ifPresent(orderWrapper -> splitService.split(orderWrapper,
                                                       () -> getCryptos(exchangeInfo),
                                                       totalAmounts,
-                                                      exchangeInfo));
+                                                      exchangeInfo,
+                                                      false));
   }
 
   private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
@@ -297,7 +320,8 @@ public class LambdaTradeService extends TradeService {
       splitService.split(orderToSplit,
                          () -> getCryptos(exchangeInfo),
                          totalAmounts,
-                         exchangeInfo);
+                         exchangeInfo,
+                         false);
     }
   }
 }

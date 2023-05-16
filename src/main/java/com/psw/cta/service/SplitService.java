@@ -6,7 +6,6 @@ import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static java.math.RoundingMode.CEILING;
@@ -114,9 +113,9 @@ public class SplitService {
     logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
     logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
     if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0 && cryptoToBuyIndex < cryptosToBuy.size()) {
-      Crypto crypto = cryptosToBuy.get(cryptoToBuyIndex);
-      logger.log("cryptosToBuy: " + crypto);
-      buyAndSell(orderToCancel, fibonacciAmountToSpend, crypto.getSymbolInfo(), crypto.getCurrentPrice());
+      Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+      logger.log("cryptoToBuy: " + cryptoToBuy);
+      buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy.getSymbolInfo(), cryptoToBuy.getCurrentPrice());
       buyAndSellWithFibonacci(orderToCancel,
                               cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
@@ -126,8 +125,9 @@ public class SplitService {
     } else {
       logger.log("isForbiddenPairSplitting: " + isForbiddenPairSplitting);
       if (isForbiddenPairSplitting) {
-        SymbolInfo symbolInfo = cryptosToBuy.get(cryptoToBuyIndex).getSymbolInfo();
-        buyAndSell(orderToCancel, btcAmountToSpend, symbolInfo, orderToCancel.getCurrentPrice());
+        Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+        logger.log("cryptoToBuy: " + cryptoToBuy);
+        buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy.getSymbolInfo(), cryptoToBuy.getCurrentPrice());
       } else {
         buyAndSell(orderToCancel, btcAmountToSpend, symbolInfoOfSellOrder, orderToCancel.getCurrentPrice());
       }

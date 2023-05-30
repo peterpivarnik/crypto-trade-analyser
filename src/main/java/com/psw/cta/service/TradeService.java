@@ -55,4 +55,6 @@ public abstract class TradeService {
                                                      myBtcBalance,
                                                      actualBalance));
   }
+
+  public abstract Boolean cancelTrade(OrderWrapper orderWrapper, ExchangeInfo exchangeInfo);
 }

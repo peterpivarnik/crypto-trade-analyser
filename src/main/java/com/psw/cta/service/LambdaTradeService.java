@@ -3,6 +3,7 @@ package com.psw.cta.service;
 import static com.binance.api.client.domain.general.SymbolStatus.TRADING;
 import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
 import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -13,6 +14,7 @@ import static com.psw.cta.utils.CryptoBuilder.withCurrentPrice;
 import static com.psw.cta.utils.CryptoBuilder.withLeastMaxAverage;
 import static com.psw.cta.utils.CryptoBuilder.withVolume;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
+import static java.lang.Boolean.TRUE;
 import static java.math.RoundingMode.CEILING;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -87,6 +89,7 @@ public class LambdaTradeService extends TradeService {
    * @param uniqueOpenOrdersSize number of unique open orders
    * @param actualBalance        actual balance
    */
+  @Override
   public void trade(List<Order> openOrders,
                     Map<String, BigDecimal> totalAmounts,
                     BigDecimal myBtcBalance,
@@ -323,5 +326,18 @@ public class LambdaTradeService extends TradeService {
                          exchangeInfo,
                          false);
     }
+  }
+
+  @Override
+  public Boolean cancelTrade(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
+    logger.log("***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
+    // 1. cancel existing order
+    splitService.cancelRequest(orderToCancel);
+
+    // 2. sell cancelled order
+    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
+    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
+    splitService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+    return TRUE;
   }
 }

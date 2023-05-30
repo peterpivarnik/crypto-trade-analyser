@@ -3,6 +3,8 @@ package com.psw.cta.service;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
+import static java.lang.Boolean.FALSE;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -10,9 +12,13 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.exception.BinanceApiException;
 import com.jcabi.manifests.Manifests;
+import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Main service for start trading crypto.
@@ -101,6 +107,33 @@ public class CryptoTradeService {
                        uniqueOpenOrdersSize,
                        actualBalance);
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
+    Boolean tradeCancelled = cancelTrade(totalAmounts, exchangeInfo, newOpenOrders);
+    checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
+    logger.log("Finished trading.");
+  }
+
+  private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,
+                              ExchangeInfo exchangeInfo,
+                              List<Order> newOpenOrders) {
+    List<OrderWrapper> wrappers = newOpenOrders.stream()
+                                               .map(OrderWrapperBuilder::build)
+                                               .map(orderWrapper -> withWaitingTimes(totalAmounts,
+                                                                                     orderWrapper))
+                                               .collect(Collectors.toList());
+    boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
+                                                       .map(OrderWrapper::getRemainWaitingTime)
+                                                       .allMatch(time -> time.compareTo(ZERO) < 0);
+    Boolean tradeCancelled = FALSE;
+    if (allRemainWaitingTimeLessThanZero) {
+      tradeCancelled = wrappers.stream()
+                               .max(Comparator.comparing(OrderWrapper::getOrderBtcAmount))
+                               .map(orderWrapper -> tradeService.cancelTrade(orderWrapper, exchangeInfo))
+                               .orElse(false);
+    }
+    return tradeCancelled;
+  }
+
+  private void checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders, Boolean tradeCancelled) {
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     BigDecimal newOrdersAmount = newTotalAmounts.values()
                                                 .stream()
@@ -112,14 +145,11 @@ public class CryptoTradeService {
 
     if (ordersAndBtcAmountDifference.compareTo(ZERO) > 0) {
       logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
-    } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
+    } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0 && FALSE.equals(tradeCancelled)) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
                                     + ordersAndBtcAmount
                                     + ". New amount: "
                                     + newOrdersAndBtcAmount);
     }
-    logger.log("Finished trading.");
   }
-
-
 }

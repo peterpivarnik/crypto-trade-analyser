@@ -20,7 +20,6 @@ public class OrderWrapper {
   private BigDecimal minWaitingTime = BigDecimal.ZERO;
   private BigDecimal actualWaitingTime = BigDecimal.ZERO;
 
-
   public OrderWrapper(Order order) {
     this.order = order;
   }
@@ -93,6 +92,10 @@ public class OrderWrapper {
     this.orderPricePercentage = orderPricePercentage;
   }
 
+  public BigDecimal getRemainWaitingTime() {
+    return minWaitingTime.subtract(actualWaitingTime);
+  }
+
   @Override
   public String toString() {
     return "OrderWrapper{"
@@ -104,7 +107,7 @@ public class OrderWrapper {
            + ", priceToSell=" + priceToSell
            + ", orderPricePercentage=" + orderPricePercentage
            + ", priceToSellPercentage=" + priceToSellPercentage
-           + ", remainingWaitingTime=" + minWaitingTime.subtract(actualWaitingTime).toPlainString()
+           + ", remainWaitingTime=" + getRemainWaitingTime().toPlainString()
            + ", actualWaitingTime=" + actualWaitingTime.toPlainString()
            + '}';
   }

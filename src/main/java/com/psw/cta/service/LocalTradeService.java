@@ -1,5 +1,6 @@
 package com.psw.cta.service;
 
+import static java.lang.Boolean.FALSE;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -35,5 +36,10 @@ public class LocalTradeService extends TradeService {
     getOrderWrapperStream(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance)
         .sorted(comparing(OrderWrapper::getOrderPricePercentage))
         .forEach(orderWrapper -> logger.log(orderWrapper.toString()));
+  }
+
+  @Override
+  public Boolean cancelTrade(OrderWrapper orderWrapper, ExchangeInfo exchangeInfo) {
+    return FALSE;
   }
 }

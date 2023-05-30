@@ -68,14 +68,12 @@ public class SplitService {
     }
 
     // 1. cancel existing order
-    logger.log("orderToCancel: " + orderToCancel);
-    binanceApiService.cancelRequest(orderToCancel);
+    cancelRequest(orderToCancel);
 
     // 2. sell cancelled order
-    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
-    logger.log("currentQuantity: " + currentQuantity);
     SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
-    binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
+    sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
     List<Crypto> cryptos = cryptosSupplier.get();
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
@@ -86,6 +84,27 @@ public class SplitService {
                             2,
                             symbolInfoOfSellOrder,
                             isForbiddenPairSplitting);
+  }
+
+  /**
+   * Cancel actual order.
+   *
+   * @param orderToCancel Order to cancel
+   */
+  public void cancelRequest(OrderWrapper orderToCancel) {
+    logger.log("orderToCancel: " + orderToCancel);
+    binanceApiService.cancelRequest(orderToCancel);
+  }
+
+  /**
+   * Sell available balance of cancelled order.
+   *
+   * @param symbolInfoOfSellOrder symbol info of sell order
+   * @param currentQuantity quantity
+   */
+  public void sellAvailableBalance(SymbolInfo symbolInfoOfSellOrder, BigDecimal currentQuantity) {
+    logger.log("currentQuantity: " + currentQuantity);
+    binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
   }
 
   private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {

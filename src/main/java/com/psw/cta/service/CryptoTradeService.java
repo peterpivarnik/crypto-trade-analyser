@@ -107,7 +107,8 @@ public class CryptoTradeService {
                        uniqueOpenOrdersSize,
                        actualBalance);
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
-    Boolean tradeCancelled = cancelTrade(totalAmounts, exchangeInfo, newOpenOrders);
+    Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
+    Boolean tradeCancelled = cancelTrade(newTotalAmounts, exchangeInfo, newOpenOrders);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
     logger.log("Finished trading.");
   }

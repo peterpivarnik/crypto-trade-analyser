@@ -117,6 +117,8 @@ public class CryptoTradeService {
   private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,
                               ExchangeInfo exchangeInfo,
                               List<Order> newOpenOrders) {
+    BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal myActualBalance = binanceApiService.getMyActualBalance();
     List<OrderWrapper> wrappers =
         newOpenOrders.stream()
                      .map(OrderWrapperBuilder::build)
@@ -125,8 +127,8 @@ public class CryptoTradeService {
                          orderWrapper,
                          binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()),
                          exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
-                         binanceApiService.getMyBalance(ASSET_BTC),
-                         binanceApiService.getMyActualBalance()))
+                         myBtcBalance,
+                         myActualBalance))
                      .collect(Collectors.toList());
     boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
                                                        .map(OrderWrapper::getRemainWaitingTime)

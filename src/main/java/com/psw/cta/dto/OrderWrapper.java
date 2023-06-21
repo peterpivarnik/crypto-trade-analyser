@@ -12,6 +12,7 @@ public class OrderWrapper {
 
   private final Order order;
   private BigDecimal orderBtcAmount;
+  private BigDecimal currentBtcAmount;
   private BigDecimal orderPrice;
   private BigDecimal currentPrice;
   private BigDecimal priceToSell;
@@ -34,6 +35,14 @@ public class OrderWrapper {
 
   public void setOrderBtcAmount(BigDecimal orderBtcAmount) {
     this.orderBtcAmount = orderBtcAmount;
+  }
+
+  public BigDecimal getCurrentBtcAmount() {
+    return currentBtcAmount;
+  }
+
+  public void setCurrentBtcAmount(BigDecimal currentBtcAmount) {
+    this.currentBtcAmount = currentBtcAmount;
   }
 
   public BigDecimal getOrderPrice() {
@@ -101,6 +110,7 @@ public class OrderWrapper {
     return "OrderWrapper{"
            + "symbol=" + order.getSymbol()
            + ", orderBtcAmount=" + orderBtcAmount
+           + ", currentBtcAmount=" + currentBtcAmount
            + ", quantity=" + getQuantity(order)
            + ", currentPrice=" + currentPrice
            + ", orderPrice=" + orderPrice

@@ -3,6 +3,7 @@ package com.psw.cta.service;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.lang.Boolean.FALSE;
 import static java.math.BigDecimal.ZERO;
@@ -116,18 +117,24 @@ public class CryptoTradeService {
   private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,
                               ExchangeInfo exchangeInfo,
                               List<Order> newOpenOrders) {
-    List<OrderWrapper> wrappers = newOpenOrders.stream()
-                                               .map(OrderWrapperBuilder::build)
-                                               .map(orderWrapper -> withWaitingTimes(totalAmounts,
-                                                                                     orderWrapper))
-                                               .collect(Collectors.toList());
+    List<OrderWrapper> wrappers =
+        newOpenOrders.stream()
+                     .map(OrderWrapperBuilder::build)
+                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
+                     .map(orderWrapper -> withPrices(
+                         orderWrapper,
+                         binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()),
+                         exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
+                         binanceApiService.getMyBalance(ASSET_BTC),
+                         binanceApiService.getMyActualBalance()))
+                     .collect(Collectors.toList());
     boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
                                                        .map(OrderWrapper::getRemainWaitingTime)
                                                        .allMatch(time -> time.compareTo(ZERO) < 0);
     Boolean tradeCancelled = FALSE;
     if (allRemainWaitingTimeLessThanZero) {
       tradeCancelled = wrappers.stream()
-                               .max(Comparator.comparing(OrderWrapper::getOrderBtcAmount))
+                               .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
                                .map(orderWrapper -> tradeService.cancelTrade(orderWrapper, exchangeInfo))
                                .orElse(false);
     }

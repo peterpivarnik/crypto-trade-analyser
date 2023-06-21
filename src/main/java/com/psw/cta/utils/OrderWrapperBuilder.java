@@ -2,6 +2,7 @@ package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
+import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
@@ -81,6 +82,7 @@ public class OrderWrapperBuilder {
     orderWrapper.setPriceToSell(priceToSell);
     orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
+    orderWrapper.setCurrentBtcAmount(getQuantity(orderWrapper.getOrder()).multiply(currentPrice));
     return orderWrapper;
   }
 

@@ -132,17 +132,15 @@ public class LambdaTradeService extends TradeService {
                                    BigDecimal actualBalance,
                                    Map<String, BigDecimal> totalAmounts,
                                    ExchangeInfo exchangeInfo) {
-    List<OrderWrapper> orderWrappers = getOrderWrappers(singletonList(orderToSplit),
-                                                        myBtcBalance,
-                                                        totalAmounts,
-                                                        exchangeInfo,
-                                                        actualBalance,
-                                                        orderWrapper -> true);
-    splitService.split(orderWrappers.get(0),
-                       () -> getCryptos(exchangeInfo),
-                       totalAmounts,
-                       exchangeInfo,
-                       true);
+    OrderWrapper orderToCancel = getOrderWrappers(singletonList(orderToSplit),
+                                                  myBtcBalance,
+                                                  totalAmounts,
+                                                  exchangeInfo,
+                                                  actualBalance,
+                                                  orderWrapper -> true)
+        .get(0);
+    List<Crypto> cryptos = getCryptos(exchangeInfo);
+    splitService.split(orderToCancel, cryptos, totalAmounts, exchangeInfo, true);
   }
 
   private void repeatTrading(List<Order> openOrders,
@@ -236,7 +234,7 @@ public class LambdaTradeService extends TradeService {
         .stream()
         .max(comparing(OrderWrapper::getOrderBtcAmount))
         .ifPresent(orderWrapper -> splitService.split(orderWrapper,
-                                                      () -> getCryptos(exchangeInfo),
+                                                      getCryptos(exchangeInfo),
                                                       totalAmounts,
                                                       exchangeInfo,
                                                       false));
@@ -320,11 +318,8 @@ public class LambdaTradeService extends TradeService {
       OrderWrapper orderToSplit = Collections.min(filteredOrderWrappers,
                                                   comparing(OrderWrapper::getOrderPricePercentage));
       logger.log("***** ***** Splitting amounts with lowest order price percentage ***** *****");
-      splitService.split(orderToSplit,
-                         () -> getCryptos(exchangeInfo),
-                         totalAmounts,
-                         exchangeInfo,
-                         false);
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      splitService.split(orderToSplit, cryptos, totalAmounts, exchangeInfo, false);
     }
   }
 

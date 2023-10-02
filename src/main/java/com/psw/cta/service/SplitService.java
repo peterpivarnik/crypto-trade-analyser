@@ -25,7 +25,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -46,13 +45,13 @@ public class SplitService {
    * Split big order to smaller orders.
    *
    * @param orderToCancel            Order to split
-   * @param cryptosSupplier          Cryptos to new orders
+   * @param cryptos                  Cryptos to new orders
    * @param totalAmounts             Total amount
    * @param exchangeInfo             Current exchange trading rules and symbol information
    * @param isForbiddenPairSplitting Flag whether is splitting of forbidden pair
    */
   public void split(OrderWrapper orderToCancel,
-                    Supplier<List<Crypto>> cryptosSupplier,
+                    List<Crypto> cryptos,
                     Map<String, BigDecimal> totalAmounts,
                     ExchangeInfo exchangeInfo,
                     boolean isForbiddenPairSplitting) {
@@ -75,7 +74,6 @@ public class SplitService {
     BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
     sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
-    List<Crypto> cryptos = cryptosSupplier.get();
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
     List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
     buyAndSellWithFibonacci(orderToCancel,

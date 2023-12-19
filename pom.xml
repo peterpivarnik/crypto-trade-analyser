@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
@@ -15,21 +17,23 @@
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
         <com.squareup.retrofit2.converter-jackson.version>2.9.0</com.squareup.retrofit2.converter-jackson.version>
+        <com.fasterxml.jackson.core.jackson-databind.version>2.16.0
+        </com.fasterxml.jackson.core.jackson-databind.version>
         <commons.codec.commons-codec.version>1.16.0</commons.codec.commons-codec.version>
-        <org.apache.commons.commons-lang3.version>3.13.0</org.apache.commons.commons-lang3.version>
+        <org.apache.commons.commons-lang3.version>3.14.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
-        <org.junit.jupiter.junit-jupiter-api.version>5.10.0</org.junit.jupiter.junit-jupiter-api.version>
+        <org.junit.jupiter.junit-jupiter-api.version>5.10.1</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>3.24.2</org.assertj.assertj-core.version>
-        <org.mockito.version>5.5.0</org.mockito.version>
+        <org.mockito.version>5.8.0</org.mockito.version>
 
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
-        <maven-checkstyle-plugin.version>3.3.0</maven-checkstyle-plugin.version>
-        <checkstyle.version>10.12.4</checkstyle.version>
-        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
+        <checkstyle.version>10.12.6</checkstyle.version>
+        <maven-surefire-plugin.version>3.2.3</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
     </properties>
     <dependencies>
@@ -42,6 +46,11 @@
             <groupId>com.squareup.retrofit2</groupId>
             <artifactId>converter-jackson</artifactId>
             <version>${com.squareup.retrofit2.converter-jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${com.fasterxml.jackson.core.jackson-databind.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -131,21 +140,25 @@
                             <artifact>*:*</artifact>
                             <excludes>
                                 <exclude>module-info.class</exclude>
+                                <exclude>META-INF/versions/9/module-info.class</exclude>
                                 <exclude>META-INF/*.MF</exclude>
                             </excludes>
                         </filter>
                     </filters>
                     <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
                                 <Main-Class>com.psw.cta.CryptoTraderApplication</Main-Class>
                                 <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
                                 <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
                             </manifestEntries>
                         </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
                         </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                             <addHeader>false</addHeader>
                         </transformer>
                     </transformers>

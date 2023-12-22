@@ -109,6 +109,7 @@ public class CryptoTradeService {
                        actualBalance);
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
+    logger.log("newTotalAmounts: " + newTotalAmounts);
     Boolean tradeCancelled = cancelTrade(newTotalAmounts, exchangeInfo, newOpenOrders);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
     logger.log("Finished trading.");
@@ -159,7 +160,9 @@ public class CryptoTradeService {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
                                     + ordersAndBtcAmount
                                     + ". New amount: "
-                                    + newOrdersAndBtcAmount);
+                                    + newOrdersAndBtcAmount
+                                    + ". Difference: "
+                                    + ordersAndBtcAmountDifference);
     }
   }
 }

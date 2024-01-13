@@ -20,9 +20,7 @@ public class Constants {
   public static final BigDecimal MIN_PROFIT_PERCENTAGE = MIN_PRICE_TO_SELL_PERCENTAGE.divide(TWO,
                                                                                              8,
                                                                                              CEILING);
-  public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[] {new BigDecimal("1"),
-                                                                          new BigDecimal("1"),
-                                                                          new BigDecimal("2"),
+  public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[] {new BigDecimal("2"),
                                                                           new BigDecimal("3"),
                                                                           new BigDecimal("5"),
                                                                           new BigDecimal("8"),

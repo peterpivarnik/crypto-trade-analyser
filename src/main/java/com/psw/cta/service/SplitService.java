@@ -8,6 +8,7 @@ import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.DOWN;
 import static java.util.Comparator.comparing;
@@ -22,10 +23,12 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -48,13 +51,11 @@ public class SplitService {
    * @param cryptos                  Cryptos to new orders
    * @param totalAmounts             Total amount
    * @param exchangeInfo             Current exchange trading rules and symbol information
-   * @param isForbiddenPairSplitting Flag whether is splitting of forbidden pair
    */
   public void split(OrderWrapper orderToCancel,
                     List<Crypto> cryptos,
                     Map<String, BigDecimal> totalAmounts,
-                    ExchangeInfo exchangeInfo,
-                    boolean isForbiddenPairSplitting) {
+                    ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Splitting amounts ***** *****");
 
     //0. Check order still exist
@@ -75,13 +76,8 @@ public class SplitService {
     sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
-    List<Crypto> cryptoToBuy = getCryptoToBuy(cryptos, totalAmounts);
-    buyAndSellWithFibonacci(orderToCancel,
-                            cryptoToBuy,
-                            totalBtcAmountToSpend,
-                            2,
-                            symbolInfoOfSellOrder,
-                            isForbiddenPairSplitting);
+    List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, totalAmounts);
+    buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
   }
 
   /**
@@ -98,19 +94,19 @@ public class SplitService {
    * Sell available balance of cancelled order.
    *
    * @param symbolInfoOfSellOrder symbol info of sell order
-   * @param currentQuantity quantity
+   * @param currentQuantity       quantity
    */
   public void sellAvailableBalance(SymbolInfo symbolInfoOfSellOrder, BigDecimal currentQuantity) {
     logger.log("currentQuantity: " + currentQuantity);
     binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
   }
 
-  private List<Crypto> getCryptoToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
+  private List<Crypto> getCryptosToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
     Set<String> existingSymbols = totalAmounts.keySet();
     return cryptos.stream()
                   .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
                   .map(CryptoBuilder::withSlopeData)
-                  .filter(crypto -> crypto.getPriceCountToSlope().compareTo(BigDecimal.ZERO) < 0)
+                  .filter(crypto -> crypto.getPriceCountToSlope().compareTo(ZERO) < 0)
                   .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
                   .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
                   .collect(Collectors.toList());
@@ -119,43 +115,42 @@ public class SplitService {
   private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,
                                        List<Crypto> cryptosToBuy,
                                        BigDecimal btcAmountToSpend,
-                                       int fibonacciIndex,
-                                       SymbolInfo symbolInfoOfSellOrder,
-                                       boolean isForbiddenPairSplitting) {
-    BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
-    logger.log("btcAmountToSpend: " + btcAmountToSpend);
-    BigDecimal fibonacciAmountToSpend = minBtcAmountToTrade.multiply(FIBONACCI_SEQUENCE[fibonacciIndex]);
-    logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
-    int cryptoToBuyIndex = fibonacciIndex - 1;
-    logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
+                                       int cryptoToBuyIndex) {
     logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
-    if (btcAmountToSpend.compareTo(fibonacciAmountToSpend) > 0 && cryptoToBuyIndex < cryptosToBuy.size()) {
-      Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-      logger.log("cryptoToBuy: " + cryptoToBuy);
-      buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy.getSymbolInfo(), cryptoToBuy.getCurrentPrice());
+    logger.log("btcAmountToSpend: " + btcAmountToSpend);
+    logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
+    BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
+    logger.log("minBtcAmountToTrade: " + minBtcAmountToTrade);
+    BigDecimal halfOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("2"),
+                                                                8,
+                                                                CEILING);
+    logger.log("halfOfBtcAmountToSpend: " + halfOfBtcAmountToSpend);
+    BigDecimal fibonacciAmount = halfOfBtcAmountToSpend.multiply(new BigDecimal("10000"));
+    logger.log("fibonacciAmount: " + fibonacciAmount);
+    BigDecimal fibonacciNumber = Stream.of(FIBONACCI_SEQUENCE)
+                                       .filter(number -> number.compareTo(fibonacciAmount) < 0)
+                                       .max(Comparator.naturalOrder())
+                                       .orElse(new BigDecimal("-1"));
+    logger.log("fibonacciNumber: " + fibonacciNumber);
+    BigDecimal fibonacciAmountToSpend = fibonacciNumber.multiply(minBtcAmountToTrade);
+    logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
+    Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+    logger.log("cryptoToBuy: " + cryptoToBuy);
+    if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size()) {
+      buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy);
       buyAndSellWithFibonacci(orderToCancel,
                               cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
-                              fibonacciIndex + 1,
-                              symbolInfoOfSellOrder,
-                              isForbiddenPairSplitting);
+                              cryptoToBuyIndex + 1);
     } else {
-      logger.log("isForbiddenPairSplitting: " + isForbiddenPairSplitting);
-      if (isForbiddenPairSplitting) {
-        Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-        logger.log("cryptoToBuy: " + cryptoToBuy);
-        buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy.getSymbolInfo(), cryptoToBuy.getCurrentPrice());
-      } else {
-        buyAndSell(orderToCancel, btcAmountToSpend, symbolInfoOfSellOrder, orderToCancel.getCurrentPrice());
-      }
+      buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
     }
   }
 
-  private void buyAndSell(OrderWrapper orderToCancel,
-                          BigDecimal btcAmountToSpend,
-                          SymbolInfo symbolInfo,
-                          BigDecimal cryptoToBuyCurrentPrice) {
+  private void buyAndSell(OrderWrapper orderToCancel, BigDecimal btcAmountToSpend, Crypto cryptoToBuy) {
     // 3. buy
+    SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
+    BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
     logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
     BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
     logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);

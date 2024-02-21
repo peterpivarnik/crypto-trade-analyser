@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
@@ -15,12 +17,17 @@
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
         <com.squareup.retrofit2.converter-jackson.version>2.9.0</com.squareup.retrofit2.converter-jackson.version>
+        <com.squareup.okhttp3.version>5.0.0-alpha.12
+        </com.squareup.okhttp3.version>
         <com.fasterxml.jackson.core.jackson-databind.version>2.16.1
         </com.fasterxml.jackson.core.jackson-databind.version>
         <commons.codec.commons-codec.version>1.16.1</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.14.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
+        <jakarta.annotation.jakarta.annotation-api.version>3.0.0-M1</jakarta.annotation.jakarta.annotation-api.version>
+        <io.gsonfire.gson-fire.version>1.9.0</io.gsonfire.gson-fire.version>
+        <com.google.code.gson.gson.version>2.10.1</com.google.code.gson.gson.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.10.2</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>3.25.3</org.assertj.assertj-core.version>
         <org.mockito.version>5.10.0</org.mockito.version>
@@ -33,6 +40,7 @@
         <checkstyle.version>10.13.0</checkstyle.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+        <openapi-generator-maven-plugin.version>7.3.0</openapi-generator-maven-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -53,7 +61,12 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>5.0.0-alpha.12</version>
+            <version>${com.squareup.okhttp3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>logging-interceptor</artifactId>
+            <version>${com.squareup.okhttp3.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -74,6 +87,21 @@
             <groupId>com.jcabi</groupId>
             <artifactId>jcabi-manifests</artifactId>
             <version>${com.jcabi.jcabi-manifests.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${com.google.code.gson.gson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>${jakarta.annotation.jakarta.annotation-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.gsonfire</groupId>
+            <artifactId>gson-fire</artifactId>
+            <version>${io.gsonfire.gson-fire.version}</version>
         </dependency>
 
         <dependency>
@@ -149,16 +177,19 @@
                         </filter>
                     </filters>
                     <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                             <manifestEntries>
                                 <Main-Class>com.psw.cta.CryptoTraderApplication</Main-Class>
                                 <X-Compile-Source-JDK>${maven.compiler.source}</X-Compile-Source-JDK>
                                 <X-Compile-Target-JDK>${maven.compiler.target}</X-Compile-Target-JDK>
                             </manifestEntries>
                         </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
                         </transformer>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                             <addHeader>false</addHeader>
                         </transformer>
                     </transformers>
@@ -177,6 +208,9 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
                 <configuration>
+                    <sourceDirectories>
+                        <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                    </sourceDirectories>
                     <configLocation>${project.basedir}/build/google_checks.xml</configLocation>
                     <indentSize>4</indentSize>
                     <failOnViolation>true</failOnViolation>
@@ -207,6 +241,31 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>${maven-resources-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>https://binance.github.io/binance-api-swagger/spot_api.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <nameMappings>m=smallLetterM,M=capitalLetterM</nameMappings>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <invokerPackage>com.psw.cta.client</invokerPackage>
+                                <apiPackage>com.psw.cta.client.api</apiPackage>
+                                <modelPackage>com.psw.cta.client.model</modelPackage>
+                                <useJakartaEe>true</useJakartaEe>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

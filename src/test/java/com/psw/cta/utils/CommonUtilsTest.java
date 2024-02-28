@@ -39,7 +39,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -55,8 +54,8 @@ class CommonUtilsTest {
 
     List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                      .sorted(orderComparator)
-                                     .collect(Collectors.toList());
-    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
+                                     .toList();
+    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("50");
   }
 
   @Test
@@ -69,8 +68,8 @@ class CommonUtilsTest {
 
     List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                      .sorted(orderComparator)
-                                     .collect(Collectors.toList());
-    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
+                                     .toList();
+    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("20");
   }
 
   @Test
@@ -83,8 +82,8 @@ class CommonUtilsTest {
 
     List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                      .sorted(orderComparator)
-                                     .collect(Collectors.toList());
-    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("20");
+                                     .toList();
+    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("20");
   }
 
   @Test
@@ -97,8 +96,8 @@ class CommonUtilsTest {
 
     List<Order> sortedOrders = Stream.of(order1, order2, order3)
                                      .sorted(orderComparator)
-                                     .collect(Collectors.toList());
-    assertThat(sortedOrders.get(0).getOrigQty()).isEqualTo("50");
+                                     .toList();
+    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("50");
   }
 
   private Order createOrder(String origQty, String executedQty, String price, long time) {
@@ -245,7 +244,7 @@ class CommonUtilsTest {
 
     List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
 
-    assertThat(averagePrices).hasSize(99);
+    assertThat(averagePrices).hasSize(100);
     for (int i = 0; i < 99; i++) {
       assertThat(averagePrices.get(i)).isEqualByComparingTo(new BigDecimal(i));
     }

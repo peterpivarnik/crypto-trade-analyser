@@ -121,11 +121,11 @@ public class SplitService {
     logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
     BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
     logger.log("minBtcAmountToTrade: " + minBtcAmountToTrade);
-    BigDecimal halfOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("2"),
+    BigDecimal quarterOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("4"),
                                                                 8,
                                                                 CEILING);
-    logger.log("halfOfBtcAmountToSpend: " + halfOfBtcAmountToSpend);
-    BigDecimal fibonacciAmount = halfOfBtcAmountToSpend.multiply(new BigDecimal("10000"));
+    logger.log("quarterOfBtcAmountToSpend: " + quarterOfBtcAmountToSpend);
+    BigDecimal fibonacciAmount = quarterOfBtcAmountToSpend.multiply(new BigDecimal("10000"));
     logger.log("fibonacciAmount: " + fibonacciAmount);
     BigDecimal fibonacciNumber = Stream.of(FIBONACCI_SEQUENCE)
                                        .filter(number -> number.compareTo(fibonacciAmount) < 0)

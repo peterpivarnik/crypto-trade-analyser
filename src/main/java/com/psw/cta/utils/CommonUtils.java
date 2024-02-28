@@ -171,13 +171,7 @@ public class CommonUtils {
    * @return Avewrage prices
    */
   public static List<BigDecimal> getAveragePrices(List<Candlestick> threeMonthsCandleStickData) {
-    Candlestick maxHighCandlestick = threeMonthsCandleStickData.stream()
-                                                               .max(comparing(candle -> new BigDecimal(
-                                                                   candle.getHigh())))
-                                                               .orElseThrow();
     return threeMonthsCandleStickData.parallelStream()
-                                     .filter(candle -> candle.getOpenTime()
-                                                       > maxHighCandlestick.getOpenTime())
                                      .map(CommonUtils::getAveragePrice)
                                      .collect(Collectors.toList());
   }

@@ -1,6 +1,7 @@
 package com.psw.cta.dto;
 
 import static com.psw.cta.utils.CommonUtils.getQuantity;
+import static java.lang.String.format;
 
 import com.binance.api.client.domain.account.Order;
 import java.math.BigDecimal;
@@ -108,17 +109,16 @@ public class OrderWrapper {
   @Override
   public String toString() {
     return "OrderWrapper{"
-           + "symbol=" + order.getSymbol()
-           + ", orderBtcAmount=" + orderBtcAmount
-           + ", currentBtcAmount=" + currentBtcAmount
-           + ", quantity=" + getQuantity(order)
-           + ", currentPrice=" + currentPrice
-           + ", orderPrice=" + orderPrice
-           + ", priceToSell=" + priceToSell
-           + ", orderPricePercentage=" + orderPricePercentage
-           + ", priceToSellPercentage=" + priceToSellPercentage
-           + ", remainWaitingTime=" + getRemainWaitingTime().toPlainString()
-           + ", actualWaitingTime=" + actualWaitingTime.toPlainString()
-           + '}';
+           + format("symbol=%-9s", order.getSymbol() + ",")
+           + format("orderBtcAmount=%-14s", orderBtcAmount.stripTrailingZeros() + ",")
+           + format("currentBtcAmount=%-14s", currentBtcAmount.stripTrailingZeros() + ",")
+           + format("quantity=%-9s", getQuantity(order).stripTrailingZeros() + ",")
+           + format("currentPrice=%-12s", currentPrice.stripTrailingZeros() + ",")
+           + format("orderPrice=%-12s", orderPrice.stripTrailingZeros() + ",")
+           + format("priceToSell=%-12s",  priceToSell.stripTrailingZeros() + ",")
+           + format("orderPricePercentage=%-13s",  orderPricePercentage.stripTrailingZeros() + ",")
+           + format("priceToSellPercentage=%-13s",  priceToSellPercentage.stripTrailingZeros() + ",")
+           + format("remainWaitingTime=%-9s",  getRemainWaitingTime().stripTrailingZeros() + ",")
+           + format("actualWaitingTime=%-1s",  actualWaitingTime.stripTrailingZeros() + "}");
   }
 }

@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Main service for start trading crypto.
@@ -83,10 +82,10 @@ public class CryptoTradeService {
     logger.log("ordersAmount: " + ordersAmount);
     BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
-    logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount);
+    logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
     BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
     BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
-    logger.log("totalAmount: " + totalAmount);
+    logger.log("totalAmount: " + totalAmount.stripTrailingZeros());
     int minOpenOrders = calculateMinNumberOfOrders(myBtcBalance);
     logger.log("Min open orders: " + minOpenOrders);
 
@@ -97,7 +96,7 @@ public class CryptoTradeService {
                                           .count();
     logger.log("Unique open orders: " + uniqueOpenOrdersSize);
     BigDecimal actualBalance = binanceApiService.getMyActualBalance();
-    logger.log("actualBalance: " + actualBalance);
+    logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
 
     tradeService.trade(openOrders,
                        totalAmounts,
@@ -130,7 +129,7 @@ public class CryptoTradeService {
                          exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
                          myBtcBalance,
                          myActualBalance))
-                     .collect(Collectors.toList());
+                     .toList();
     boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
                                                        .map(OrderWrapper::getRemainWaitingTime)
                                                        .allMatch(time -> time.compareTo(ZERO) < 0);

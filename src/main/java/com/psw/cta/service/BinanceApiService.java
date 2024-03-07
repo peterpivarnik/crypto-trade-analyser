@@ -164,13 +164,14 @@ public class BinanceApiService {
       return pair.getLeft();
     } else {
       try {
-        BigDecimal price = getOrderBook(pair.getRight() + ASSET_BTC).getBids()
-                                                                    .parallelStream()
-                                                                    .map(OrderBookEntry::getPrice)
-                                                                    .map(BigDecimal::new)
-                                                                    .max(BigDecimal::compareTo)
-                                                                    .orElse(ZERO);
-        return price.multiply(pair.getLeft());
+        return getOrderBook(pair.getRight() + ASSET_BTC)
+            .getBids()
+            .parallelStream()
+            .map(OrderBookEntry::getPrice)
+            .map(BigDecimal::new)
+            .max(BigDecimal::compareTo)
+            .orElse(ZERO)
+            .multiply(pair.getLeft());
       } catch (BinanceApiException e) {
         return ZERO;
       }

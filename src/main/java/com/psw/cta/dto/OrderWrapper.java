@@ -109,7 +109,7 @@ public class OrderWrapper {
   @Override
   public String toString() {
     return "OrderWrapper{"
-           + format("symbol=%-9s", order.getSymbol() + ",")
+           + format("symbol=%-12s", order.getSymbol() + ",")
            + format("orderBtcAmount=%-14s", orderBtcAmount.stripTrailingZeros() + ",")
            + format("currentBtcAmount=%-14s", currentBtcAmount.stripTrailingZeros() + ",")
            + format("quantity=%-9s", getQuantity(order).stripTrailingZeros() + ",")

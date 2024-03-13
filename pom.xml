@@ -17,8 +17,7 @@
         <com.squareup.retrofit2.converter-jackson.version>2.9.0</com.squareup.retrofit2.converter-jackson.version>
         <com.squareup.okhttp3.version>5.0.0-alpha.12
         </com.squareup.okhttp3.version>
-        <com.fasterxml.jackson.core.jackson-databind.version>2.16.1
-        </com.fasterxml.jackson.core.jackson-databind.version>
+        <com.fasterxml.jackson.core.jackson-databind.version>2.17.0</com.fasterxml.jackson.core.jackson-databind.version>
         <commons.codec.commons-codec.version>1.16.1</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.14.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
@@ -28,17 +27,18 @@
         <com.google.code.gson.gson.version>2.10.1</com.google.code.gson.gson.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.10.2</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>3.25.3</org.assertj.assertj-core.version>
-        <org.mockito.version>5.10.0</org.mockito.version>
+        <org.mockito.version>5.11.0</org.mockito.version>
 
         <maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.5.2</maven-shade-plugin.version>
         <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
         <maven-checkstyle-plugin.version>3.3.1</maven-checkstyle-plugin.version>
-        <checkstyle.version>10.13.0</checkstyle.version>
+        <checkstyle.version>10.14.1</checkstyle.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <openapi-generator-maven-plugin.version>7.3.0</openapi-generator-maven-plugin.version>
+        <openapi-generator-maven-plugin.version>7.4.0</openapi-generator-maven-plugin.version>
+        <versions-maven-plugin.version>2.16.2</versions-maven-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -261,6 +261,23 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${versions-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>update-properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <allowMajorUpdates>true</allowMajorUpdates>
+                    <ignoredVersions>20041127.091804</ignoredVersions>
+                </configuration>
             </plugin>
         </plugins>
     </build>

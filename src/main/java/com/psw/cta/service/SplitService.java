@@ -47,10 +47,10 @@ public class SplitService {
   /**
    * Split big order to smaller orders.
    *
-   * @param orderToCancel            Order to split
-   * @param cryptos                  Cryptos to new orders
-   * @param totalAmounts             Total amount
-   * @param exchangeInfo             Current exchange trading rules and symbol information
+   * @param orderToCancel Order to split
+   * @param cryptos       Cryptos to new orders
+   * @param totalAmounts  Total amount
+   * @param exchangeInfo  Current exchange trading rules and symbol information
    */
   public void split(OrderWrapper orderToCancel,
                     List<Crypto> cryptos,
@@ -121,9 +121,7 @@ public class SplitService {
     logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
     BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
     logger.log("minBtcAmountToTrade: " + minBtcAmountToTrade);
-    BigDecimal quarterOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("4"),
-                                                                8,
-                                                                CEILING);
+    BigDecimal quarterOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("4"), 8, CEILING);
     logger.log("quarterOfBtcAmountToSpend: " + quarterOfBtcAmountToSpend);
     BigDecimal fibonacciAmount = quarterOfBtcAmountToSpend.multiply(new BigDecimal("10000"));
     logger.log("fibonacciAmount: " + fibonacciAmount);
@@ -136,14 +134,18 @@ public class SplitService {
     logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
     Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
     logger.log("cryptoToBuy: " + cryptoToBuy);
-    if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size()) {
+    if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
       buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy);
       buyAndSellWithFibonacci(orderToCancel,
                               cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
                               cryptoToBuyIndex + 1);
-    } else {
+    }
+    if (fibonacciNumber.compareTo(ZERO) <= 0) {
       buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
+    }
+    if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
+      buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
     }
   }
 

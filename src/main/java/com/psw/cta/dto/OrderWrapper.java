@@ -110,15 +110,15 @@ public class OrderWrapper {
   public String toString() {
     return "OrderWrapper{"
            + format("symbol=%-12s", order.getSymbol() + ",")
-           + format("orderBtcAmount=%-14s", orderBtcAmount.stripTrailingZeros() + ",")
-           + format("currentBtcAmount=%-14s", currentBtcAmount.stripTrailingZeros() + ",")
-           + format("quantity=%-9s", getQuantity(order).stripTrailingZeros() + ",")
-           + format("currentPrice=%-12s", currentPrice.stripTrailingZeros() + ",")
-           + format("orderPrice=%-12s", orderPrice.stripTrailingZeros() + ",")
-           + format("priceToSell=%-12s",  priceToSell.stripTrailingZeros() + ",")
-           + format("orderPricePercentage=%-13s",  orderPricePercentage.stripTrailingZeros() + ",")
-           + format("priceToSellPercentage=%-13s",  priceToSellPercentage.stripTrailingZeros() + ",")
-           + format("remainWaitingTime=%-9s",  getRemainWaitingTime().stripTrailingZeros() + ",")
-           + format("actualWaitingTime=%-1s",  actualWaitingTime.stripTrailingZeros() + "}");
+           + format("orderBtcAmount=%-14s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("currentBtcAmount=%-14s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("quantity=%-9s", getQuantity(order).stripTrailingZeros().toPlainString() + ",")
+           + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
+           + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")
+           + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")
+           + format("orderPricePercentage=%-13s", orderPricePercentage.stripTrailingZeros().toPlainString() + ",")
+           + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
+           + format("remainWaitingTime=%-9s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
+           + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
   }
 }

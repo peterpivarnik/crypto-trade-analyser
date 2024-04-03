@@ -178,6 +178,6 @@ public class SplitService {
     logger.log("roundedPriceToSell: " + roundedPriceToSell);
     roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
     logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-    binanceApiService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity, CommonUtils::roundPrice);
+    binanceApiService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity, CommonUtils::roundPrice);
   }
 }

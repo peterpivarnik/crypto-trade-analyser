@@ -2,10 +2,8 @@ package com.binance.api.client.domain.general;
 
 import static com.binance.api.client.constant.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
 
-import com.binance.api.client.domain.OrderType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -17,18 +15,6 @@ public class SymbolInfo {
   private String symbol;
 
   private SymbolStatus status;
-
-  private String baseAsset;
-
-  private Integer baseAssetPrecision;
-
-  private String quoteAsset;
-
-  private Integer quotePrecision;
-
-  private List<OrderType> orderTypes;
-
-  private boolean icebergAllowed;
 
   private List<SymbolFilter> filters;
 
@@ -48,54 +34,6 @@ public class SymbolInfo {
     this.status = status;
   }
 
-  public String getBaseAsset() {
-    return baseAsset;
-  }
-
-  public void setBaseAsset(String baseAsset) {
-    this.baseAsset = baseAsset;
-  }
-
-  public Integer getBaseAssetPrecision() {
-    return baseAssetPrecision;
-  }
-
-  public void setBaseAssetPrecision(Integer baseAssetPrecision) {
-    this.baseAssetPrecision = baseAssetPrecision;
-  }
-
-  public String getQuoteAsset() {
-    return quoteAsset;
-  }
-
-  public void setQuoteAsset(String quoteAsset) {
-    this.quoteAsset = quoteAsset;
-  }
-
-  public Integer getQuotePrecision() {
-    return quotePrecision;
-  }
-
-  public void setQuotePrecision(Integer quotePrecision) {
-    this.quotePrecision = quotePrecision;
-  }
-
-  public List<OrderType> getOrderTypes() {
-    return orderTypes;
-  }
-
-  public void setOrderTypes(List<OrderType> orderTypes) {
-    this.orderTypes = orderTypes;
-  }
-
-  public boolean isIcebergAllowed() {
-    return icebergAllowed;
-  }
-
-  public void setIcebergAllowed(boolean icebergAllowed) {
-    this.icebergAllowed = icebergAllowed;
-  }
-
   public List<SymbolFilter> getFilters() {
     return filters;
   }
@@ -104,29 +42,11 @@ public class SymbolInfo {
     this.filters = filters;
   }
 
-  /**
-   * Returns symbol filter.
-   *
-   * @param filterType filter type to filter for.
-   * @return symbol filter information for the provided filter type.
-   */
-  public Optional<SymbolFilter> getSymbolFilter(FilterType filterType) {
-    return filters.stream()
-                  .filter(symbolFilter -> symbolFilter.getFilterType() == filterType)
-                  .findFirst();
-  }
-
   @Override
   public String toString() {
     return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
         .append("symbol", symbol)
         .append("status", status)
-        .append("baseAsset", baseAsset)
-        .append("baseAssetPrecision", baseAssetPrecision)
-        .append("quoteAsset", quoteAsset)
-        .append("quotePrecision", quotePrecision)
-        .append("orderTypes", orderTypes)
-        .append("icebergAllowed", icebergAllowed)
         .append("filters", filters)
         .toString();
   }

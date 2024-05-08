@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.processor;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
@@ -20,6 +20,7 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
@@ -34,12 +35,12 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * Service to split crypto to cryptos with small amount.
  */
-public class SplitService {
+public class SplitProcessor {
 
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
 
-  public SplitService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public SplitProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.binanceApiService = binanceApiService;
     this.logger = logger;
   }

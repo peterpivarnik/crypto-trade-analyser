@@ -1,6 +1,7 @@
 package com.binance.api.client.domain.general;
 
-import com.binance.api.client.constant.BinanceApiConstants;
+import static com.binance.api.client.constant.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
+
 import com.binance.api.client.exception.BinanceApiException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
@@ -13,46 +14,10 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExchangeInfo {
 
-  private String timezone;
-
-  private Long serverTime;
-
-  private List<RateLimit> rateLimits;
-
-  // private List<String> exchangeFilters;
-
   private List<SymbolInfo> symbols;
-
-  public String getTimezone() {
-    return timezone;
-  }
-
-  public void setTimezone(String timezone) {
-    this.timezone = timezone;
-  }
-
-  public Long getServerTime() {
-    return serverTime;
-  }
-
-  public void setServerTime(Long serverTime) {
-    this.serverTime = serverTime;
-  }
-
-  public List<RateLimit> getRateLimits() {
-    return rateLimits;
-  }
-
-  public void setRateLimits(List<RateLimit> rateLimits) {
-    this.rateLimits = rateLimits;
-  }
 
   public List<SymbolInfo> getSymbols() {
     return symbols;
-  }
-
-  public void setSymbols(List<SymbolInfo> symbols) {
-    this.symbols = symbols;
   }
 
   /**
@@ -71,16 +36,8 @@ public class ExchangeInfo {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("timezone",
-                                                                                         timezone)
-                                                                                 .append(
-                                                                                     "serverTime",
-                                                                                     serverTime)
-                                                                                 .append(
-                                                                                     "rateLimits",
-                                                                                     rateLimits)
-                                                                                 .append("symbols",
-                                                                                         symbols)
-                                                                                 .toString();
+    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
+        .append("symbols", symbols)
+        .toString();
   }
 }

@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta;
 
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
@@ -14,6 +14,11 @@ import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.exception.BinanceApiException;
 import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.facade.LambdaTradeFacade;
+import com.psw.cta.facade.LocalTradeFacade;
+import com.psw.cta.facade.TradeFacade;
+import com.psw.cta.processor.BnbTradeProcessor;
+import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -23,44 +28,44 @@ import java.util.Map;
 /**
  * Main service for start trading crypto.
  */
-public class CryptoTradeService {
+public class CryptoTrader {
 
-  private final BnbService bnbService;
+  private final BnbTradeProcessor bnbTradeProcessor;
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
-  private final TradeService tradeService;
+  private final TradeFacade tradeFacade;
 
   /**
-   * Constructor of {@link CryptoTradeService} for local environment.
+   * Constructor of {@link CryptoTrader} for local environment.
    *
    * @param apiKey    ApiKey to be used for trading
    * @param apiSecret ApiSecret to be used for trading
    * @param logger    Logger
    */
-  public CryptoTradeService(String apiKey,
-                            String apiSecret,
-                            LambdaLogger logger) {
+  public CryptoTrader(String apiKey,
+                      String apiSecret,
+                      LambdaLogger logger) {
     this.binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-    this.bnbService = new BnbService(binanceApiService, logger);
-    this.tradeService = new LocalTradeService(binanceApiService, logger);
+    this.bnbTradeProcessor = new BnbTradeProcessor(binanceApiService, logger);
+    this.tradeFacade = new LocalTradeFacade(binanceApiService, logger);
     this.logger = logger;
   }
 
   /**
-   * Constructor of {@link CryptoTradeService} for AWS environment.
+   * Constructor of {@link CryptoTrader} for AWS environment.
    *
    * @param apiKey         ApiKey to be used for trading
    * @param apiSecret      ApiSecret to be used for trading
    * @param forbiddenPairs Forbidden trading pairs
    * @param logger         Logger
    */
-  public CryptoTradeService(String apiKey,
-                            String apiSecret,
-                            List<String> forbiddenPairs,
-                            LambdaLogger logger) {
+  public CryptoTrader(String apiKey,
+                      String apiSecret,
+                      List<String> forbiddenPairs,
+                      LambdaLogger logger) {
     this.binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-    this.bnbService = new BnbService(binanceApiService, logger);
-    this.tradeService = new LambdaTradeService(binanceApiService, forbiddenPairs, logger);
+    this.bnbTradeProcessor = new BnbTradeProcessor(binanceApiService, logger);
+    this.tradeFacade = new LambdaTradeFacade(binanceApiService, forbiddenPairs, logger);
     this.logger = logger;
   }
 
@@ -71,7 +76,7 @@ public class CryptoTradeService {
     logger.log("***** ***** Start of trading ***** *****");
     String implementationVersion = Manifests.read("Implementation-Version");
     logger.log("Crypto trader with version " + implementationVersion + " started.");
-    BigDecimal bnbBalance = bnbService.buyBnB();
+    BigDecimal bnbBalance = bnbTradeProcessor.buyBnB();
     List<Order> openOrders = binanceApiService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
@@ -83,7 +88,7 @@ public class CryptoTradeService {
     BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
     logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
-    BigDecimal bnbAmount = bnbBalance.multiply(bnbService.getCurrentBnbBtcPrice());
+    BigDecimal bnbAmount = bnbBalance.multiply(bnbTradeProcessor.getCurrentBnbBtcPrice());
     BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
     logger.log("totalAmount: " + totalAmount.stripTrailingZeros());
     int minOpenOrders = calculateMinNumberOfOrders(myBtcBalance);
@@ -98,14 +103,14 @@ public class CryptoTradeService {
     BigDecimal actualBalance = binanceApiService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
 
-    tradeService.trade(openOrders,
-                       totalAmounts,
-                       myBtcBalance,
-                       totalAmount,
-                       minOpenOrders,
-                       exchangeInfo,
-                       uniqueOpenOrdersSize,
-                       actualBalance);
+    tradeFacade.trade(openOrders,
+                      totalAmounts,
+                      myBtcBalance,
+                      totalAmount,
+                      minOpenOrders,
+                      exchangeInfo,
+                      uniqueOpenOrdersSize,
+                      actualBalance);
     List<Order> newOpenOrders = binanceApiService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logger.log("newTotalAmounts: " + newTotalAmounts);
@@ -137,7 +142,7 @@ public class CryptoTradeService {
     if (allRemainWaitingTimeLessThanZero) {
       tradeCancelled = wrappers.stream()
                                .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
-                               .map(orderWrapper -> tradeService.cancelTrade(orderWrapper, exchangeInfo))
+                               .map(orderWrapper -> tradeFacade.cancelTrade(orderWrapper, exchangeInfo))
                                .orElse(false);
     }
     return tradeCancelled;

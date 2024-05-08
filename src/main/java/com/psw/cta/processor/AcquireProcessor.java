@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.processor;
 
 import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
@@ -14,18 +14,19 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 
 /**
  * Service for acquire crypto.
  */
-public class AcquireService {
+public class AcquireProcessor {
 
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
 
-  public AcquireService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public AcquireProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.binanceApiService = binanceApiService;
     this.logger = logger;
   }

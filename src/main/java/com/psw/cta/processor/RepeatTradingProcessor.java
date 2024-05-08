@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.processor;
 
 import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
 import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
@@ -17,6 +17,7 @@ import com.binance.api.client.domain.account.Trade;
 import com.binance.api.client.domain.general.SymbolFilter;
 import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,12 +28,12 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * Service to rebuy crypto.
  */
-public class RepeatTradingService {
+public class RepeatTradingProcessor {
 
   private final BinanceApiService binanceApiService;
   private final LambdaLogger logger;
 
-  public RepeatTradingService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public RepeatTradingProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.binanceApiService = binanceApiService;
     this.logger = logger;
   }

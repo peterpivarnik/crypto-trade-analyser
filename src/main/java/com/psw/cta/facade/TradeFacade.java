@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.facade;
 
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
@@ -7,6 +7,7 @@ import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,15 +18,15 @@ import java.util.stream.Stream;
 /**
  * Trade service.
  */
-public abstract class TradeService {
+public abstract class TradeFacade {
 
   protected final BinanceApiService binanceApiService;
 
-  protected TradeService(BinanceApiService binanceApiService) {
+  protected TradeFacade(BinanceApiService binanceApiService) {
     this.binanceApiService = binanceApiService;
   }
 
-  abstract void trade(List<Order> openOrders,
+  public abstract void trade(List<Order> openOrders,
                       Map<String, BigDecimal> totalAmounts,
                       BigDecimal myBtcBalance,
                       BigDecimal totalAmount,

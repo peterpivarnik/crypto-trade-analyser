@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.processor;
 
 import static com.binance.api.client.domain.OrderSide.BUY;
 import static com.psw.cta.utils.Constants.ASSET_BNB;
@@ -10,12 +10,13 @@ import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.binance.api.client.domain.market.OrderBookEntry;
+import com.psw.cta.service.BinanceApiService;
 import java.math.BigDecimal;
 
 /**
  * Service for handling with BNB.
  */
-public class BnbService {
+public class BnbTradeProcessor {
 
   public static final BigDecimal MIN_BNB_BALANCE = new BigDecimal("2");
   public static final BigDecimal MAX_BNB_BALANCE_TO_BUY = ONE;
@@ -23,7 +24,7 @@ public class BnbService {
   private final LambdaLogger logger;
   private final BinanceApiService binanceApiService;
 
-  public BnbService(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public BnbTradeProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
     this.logger = logger;
     this.binanceApiService = binanceApiService;
   }

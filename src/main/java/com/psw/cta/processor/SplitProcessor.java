@@ -136,12 +136,14 @@ public class SplitProcessor {
     Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
     logger.log("cryptoToBuy: " + cryptoToBuy);
     if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
+      logger.log("Splitting normal");
       buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy);
       buyAndSellWithFibonacci(orderToCancel,
                               cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
                               cryptoToBuyIndex + 1);
     } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0) {
+      logger.log("Splitting for remaining BTC");
       BigDecimal amountToSpend = minBtcAmountToTrade.multiply(new BigDecimal("2"));
       buyAndSell(orderToCancel, amountToSpend, cryptoToBuy);
       buyAndSellWithFibonacci(orderToCancel,
@@ -149,8 +151,10 @@ public class SplitProcessor {
                               btcAmountToSpend.subtract(amountToSpend),
                               cryptoToBuyIndex + 1);
     } else if (fibonacciNumber.compareTo(ZERO) <= 0) {
+      logger.log("Splitting for last fibonacci");
       buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
     } else if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
+      logger.log("Splitting for last cryptoToBuy");
       buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
     }
   }

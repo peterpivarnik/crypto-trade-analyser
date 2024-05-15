@@ -1,8 +1,8 @@
 package com.psw.cta.dto;
 
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.OrderBook;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.OrderBook;
+import com.psw.cta.dto.binance.SymbolInfo;
 import java.math.BigDecimal;
 import java.util.List;
 

@@ -11,11 +11,11 @@ import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences10h
 import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences1h;
 import static com.psw.cta.utils.CryptoUtils.getVolume;
 
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.OrderBook;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.dto.binance.TickerStatistics;
 import java.math.BigDecimal;
 import java.util.List;
 

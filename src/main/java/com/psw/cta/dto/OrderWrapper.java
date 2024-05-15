@@ -3,7 +3,7 @@ package com.psw.cta.dto;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static java.lang.String.format;
 
-import com.binance.api.client.domain.account.Order;
+import com.psw.cta.dto.binance.Order;
 import java.math.BigDecimal;
 
 /**

@@ -1,6 +1,6 @@
 package com.psw.cta.processor;
 
-import static com.binance.api.client.domain.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
 import static com.psw.cta.utils.Constants.ASSET_BNB;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
@@ -9,7 +9,7 @@ import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.market.OrderBookEntry;
+import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.service.BinanceApiService;
 import java.math.BigDecimal;
 

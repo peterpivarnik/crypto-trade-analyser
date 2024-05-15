@@ -9,10 +9,10 @@ import static com.psw.cta.utils.CryptoUtils.getVolume;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
 import java.util.ArrayList;

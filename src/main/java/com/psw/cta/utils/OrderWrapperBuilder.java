@@ -9,10 +9,10 @@ import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
 import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.OrderBook;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.OrderBook;
+import com.psw.cta.dto.binance.SymbolInfo;
 import java.math.BigDecimal;
 import java.util.Map;
 

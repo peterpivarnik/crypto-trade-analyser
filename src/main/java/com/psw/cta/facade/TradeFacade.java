@@ -4,9 +4,9 @@ import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.ExchangeInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;

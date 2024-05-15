@@ -1,9 +1,9 @@
 package com.psw.cta.utils;
 
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
@@ -25,13 +25,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.FilterType;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.FilterType;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.OrderBook;
+import com.psw.cta.dto.binance.OrderBookEntry;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
 import java.util.ArrayList;

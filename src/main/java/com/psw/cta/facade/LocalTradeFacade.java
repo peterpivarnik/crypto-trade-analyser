@@ -4,9 +4,9 @@ import static java.lang.Boolean.FALSE;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.ExchangeInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceApiService;
 import java.math.BigDecimal;
 import java.util.List;

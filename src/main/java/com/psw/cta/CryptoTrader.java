@@ -9,11 +9,11 @@ import static java.lang.Boolean.FALSE;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.ExchangeInfo;
-import com.binance.api.client.exception.BinanceApiException;
 import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.facade.LambdaTradeFacade;
 import com.psw.cta.facade.LocalTradeFacade;
 import com.psw.cta.facade.TradeFacade;

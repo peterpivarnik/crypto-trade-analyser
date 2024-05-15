@@ -5,8 +5,8 @@ import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.naturalOrder;
 
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.TickerStatistics;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
 import java.util.List;

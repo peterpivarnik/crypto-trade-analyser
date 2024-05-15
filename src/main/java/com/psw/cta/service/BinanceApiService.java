@@ -1,12 +1,12 @@
 package com.psw.cta.service;
 
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.OrderSide.SELL;
-import static com.binance.api.client.domain.OrderType.LIMIT;
-import static com.binance.api.client.domain.OrderType.MARKET;
-import static com.binance.api.client.domain.TimeInForce.GTC;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.OrderType.MARKET;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -15,28 +15,26 @@ import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.BinanceApiClientFactory;
-import com.binance.api.client.BinanceApiRestClient;
-import com.binance.api.client.domain.OrderSide;
-import com.binance.api.client.domain.account.Account;
-import com.binance.api.client.domain.account.AssetBalance;
-import com.binance.api.client.domain.account.NewOrder;
-import com.binance.api.client.domain.account.NewOrderResponse;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.account.Trade;
-import com.binance.api.client.domain.account.request.CancelOrderRequest;
-import com.binance.api.client.domain.account.request.OrderRequest;
-import com.binance.api.client.domain.account.request.OrderStatusRequest;
-import com.binance.api.client.domain.general.ExchangeInfo;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.Candlestick;
-import com.binance.api.client.domain.market.CandlestickInterval;
-import com.binance.api.client.domain.market.OrderBook;
-import com.binance.api.client.domain.market.OrderBookEntry;
-import com.binance.api.client.domain.market.TickerStatistics;
-import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Account;
+import com.psw.cta.dto.binance.AssetBalance;
+import com.psw.cta.dto.binance.CancelOrderRequest;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.CandlestickInterval;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.NewOrder;
+import com.psw.cta.dto.binance.NewOrderResponse;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.OrderBook;
+import com.psw.cta.dto.binance.OrderBookEntry;
+import com.psw.cta.dto.binance.OrderRequest;
+import com.psw.cta.dto.binance.OrderSide;
+import com.psw.cta.dto.binance.OrderStatusRequest;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.dto.binance.TickerStatistics;
+import com.psw.cta.dto.binance.Trade;
+import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -50,7 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class BinanceApiService {
 
-  private final BinanceApiRestClient binanceApiRestClient;
+  private final BinanceService binanceService;
   private final LambdaLogger logger;
 
   /**
@@ -61,8 +59,7 @@ public class BinanceApiService {
    * @param logger    logger
    */
   public BinanceApiService(String apiKey, String apiSecret, LambdaLogger logger) {
-    this.binanceApiRestClient = BinanceApiClientFactory.newInstance(apiKey, apiSecret)
-                                                       .newRestClient();
+    this.binanceService = new BinanceService(apiKey, apiSecret);
     this.logger = logger;
   }
 
@@ -72,7 +69,7 @@ public class BinanceApiService {
    * @return Open orders
    */
   public List<Order> getOpenOrders() {
-    return binanceApiRestClient.getOpenOrders(new OrderRequest(null));
+    return binanceService.getOpenOrders(new OrderRequest(null));
   }
 
   /**
@@ -81,7 +78,7 @@ public class BinanceApiService {
    * @return Exchange info
    */
   public ExchangeInfo getExchangeInfo() {
-    return binanceApiRestClient.getExchangeInfo();
+    return binanceService.getExchangeInfo();
   }
 
   /**
@@ -90,7 +87,7 @@ public class BinanceApiService {
    * @return Statistics
    */
   public List<TickerStatistics> getAll24hTickers() {
-    return binanceApiRestClient.getAll24HrPriceStatistics();
+    return binanceService.getAll24HrPriceStatistics();
   }
 
   /**
@@ -100,7 +97,7 @@ public class BinanceApiService {
    * @return Order book
    */
   public OrderBook getOrderBook(String symbol) {
-    return binanceApiRestClient.getOrderBook(symbol, 20);
+    return binanceService.getOrderBook(symbol, 20);
   }
 
   /**
@@ -118,11 +115,11 @@ public class BinanceApiService {
                                               ChronoUnit chronoUnit) {
     Instant endTime = Instant.now();
     Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
-    return binanceApiRestClient.getCandlestickBars(symbol,
-                                                   interval,
-                                                   null,
-                                                   startTime.toEpochMilli(),
-                                                   endTime.toEpochMilli());
+    return binanceService.getCandlestickBars(symbol,
+                                             interval,
+                                             null,
+                                             startTime.toEpochMilli(),
+                                             endTime.toEpochMilli());
   }
 
   /**
@@ -132,11 +129,11 @@ public class BinanceApiService {
    * @return OrderBookEntry with min price
    */
   public OrderBookEntry getMinOrderBookEntry(String symbol) {
-    return binanceApiRestClient.getOrderBook(symbol, 20)
-                               .getAsks()
-                               .parallelStream()
-                               .min(comparing(OrderBookEntry::getPrice))
-                               .orElseThrow(RuntimeException::new);
+    return binanceService.getOrderBook(symbol, 20)
+                         .getAsks()
+                         .parallelStream()
+                         .min(comparing(OrderBookEntry::getPrice))
+                         .orElseThrow(RuntimeException::new);
   }
 
   /**
@@ -145,13 +142,13 @@ public class BinanceApiService {
    * @return Actual balance
    */
   public BigDecimal getMyActualBalance() {
-    return binanceApiRestClient.getAccount()
-                               .getBalances()
-                               .parallelStream()
-                               .map(this::mapToAssetAndBalance)
-                               .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
-                               .map(this::mapToBtcBalance)
-                               .reduce(ZERO, BigDecimal::add);
+    return binanceService.getAccount()
+                         .getBalances()
+                         .parallelStream()
+                         .map(this::mapToAssetAndBalance)
+                         .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
+                         .map(this::mapToBtcBalance)
+                         .reduce(ZERO, BigDecimal::add);
   }
 
   private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
@@ -185,7 +182,7 @@ public class BinanceApiService {
    * @return Actual balance
    */
   public BigDecimal getMyBalance(String asset) {
-    Account account = binanceApiRestClient.getAccount();
+    Account account = binanceService.getAccount();
     BigDecimal myBalance = account.getBalances()
                                   .parallelStream()
                                   .filter(balance -> balance.getAsset().equals(asset))
@@ -204,11 +201,11 @@ public class BinanceApiService {
    */
   public void cancelRequest(OrderWrapper orderToCancel) {
     CancelOrderRequest cancelOrderRequest = new CancelOrderRequest(orderToCancel.getOrder()
-                                                                                .getSymbol(),
-                                                                   orderToCancel.getOrder()
+                                                                                             .getSymbol(),
+                                                                                orderToCancel.getOrder()
                                                                                 .getClientOrderId());
     logger.log("New cancelOrderRequest: " + cancelOrderRequest);
-    binanceApiRestClient.cancelOrder(cancelOrderRequest);
+    binanceService.cancelOrder(cancelOrderRequest);
   }
 
   /**
@@ -282,16 +279,16 @@ public class BinanceApiService {
    */
   public NewOrderResponse createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
     NewOrder buyOrder = new NewOrder(symbol,
-                                     orderSide,
-                                     MARKET,
-                                     null,
-                                     roundedMyQuatity.toPlainString());
+                                                                             orderSide,
+                                                                             MARKET,
+                                                                             null,
+                                                                             roundedMyQuatity.toPlainString());
     return createNewOrder(buyOrder);
   }
 
   private NewOrderResponse createNewOrder(NewOrder newOrder) {
     logger.log("My new order: " + newOrder);
-    return binanceApiRestClient.newOrder(newOrder);
+    return binanceService.newOrder(newOrder);
   }
 
   private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
@@ -309,11 +306,11 @@ public class BinanceApiService {
   }
 
   public List<Trade> getMyTrades(String symbol, String orderId) {
-    return binanceApiRestClient.getMyTrades(symbol, orderId);
+    return binanceService.getMyTrades(symbol, orderId);
   }
 
   public void checkOrderStatus(String symbol, Long orderId) {
     OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
-    binanceApiRestClient.getOrderStatus(orderStatusRequest);
+    binanceService.getOrderStatus(orderStatusRequest);
   }
 }

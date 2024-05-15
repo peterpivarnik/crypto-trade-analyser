@@ -18,9 +18,9 @@ import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneId.systemDefault;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.SymbolInfo;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;

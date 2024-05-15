@@ -1,8 +1,8 @@
 package com.psw.cta.processor;
 
-import static com.binance.api.client.domain.general.FilterType.LOT_SIZE;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
@@ -14,12 +14,12 @@ import static java.math.RoundingMode.DOWN;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.general.ExchangeInfo;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.exception.BinanceApiException;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.CryptoBuilder;

@@ -1,8 +1,8 @@
 package com.psw.cta.facade;
 
-import static com.binance.api.client.domain.general.SymbolStatus.TRADING;
-import static com.binance.api.client.domain.market.CandlestickInterval.DAILY;
-import static com.binance.api.client.domain.market.CandlestickInterval.FIFTEEN_MINUTES;
+import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
+import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
+import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
@@ -22,12 +22,12 @@ import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.ExchangeInfo;
-import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.TickerStatistics;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.AcquireProcessor;
 import com.psw.cta.processor.RepeatTradingProcessor;
 import com.psw.cta.processor.SplitProcessor;

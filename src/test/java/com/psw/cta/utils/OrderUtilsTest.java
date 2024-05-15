@@ -1,13 +1,13 @@
 package com.psw.cta.utils;
 
-import static com.binance.api.client.domain.general.FilterType.PRICE_FILTER;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.binance.api.client.domain.account.Order;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.general.SymbolInfo;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;

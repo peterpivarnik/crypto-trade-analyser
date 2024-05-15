@@ -1,8 +1,8 @@
 package com.psw.cta.processor;
 
-import static com.binance.api.client.domain.OrderSide.BUY;
-import static com.binance.api.client.domain.general.FilterType.MIN_NOTIONAL;
-import static com.binance.api.client.domain.general.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
@@ -11,9 +11,9 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.binance.api.client.domain.general.SymbolFilter;
-import com.binance.api.client.domain.market.OrderBookEntry;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.dto.binance.OrderBookEntry;
+import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.service.BinanceApiService;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;

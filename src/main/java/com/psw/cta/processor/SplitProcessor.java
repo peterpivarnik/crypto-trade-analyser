@@ -141,11 +141,16 @@ public class SplitProcessor {
                               cryptosToBuy,
                               btcAmountToSpend.subtract(fibonacciAmountToSpend),
                               cryptoToBuyIndex + 1);
-    }
-    if (fibonacciNumber.compareTo(ZERO) <= 0) {
+    } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0) {
+      BigDecimal amountToSpend = minBtcAmountToTrade.multiply(new BigDecimal("2"));
+      buyAndSell(orderToCancel, amountToSpend, cryptoToBuy);
+      buyAndSellWithFibonacci(orderToCancel,
+                              cryptosToBuy,
+                              btcAmountToSpend.subtract(amountToSpend),
+                              cryptoToBuyIndex + 1);
+    } else if (fibonacciNumber.compareTo(ZERO) <= 0) {
       buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
-    }
-    if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
+    } else if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
       buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
     }
   }

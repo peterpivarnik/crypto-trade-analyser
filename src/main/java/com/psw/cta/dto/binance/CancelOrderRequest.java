@@ -1,6 +1,8 @@
-package com.binance.api.client.domain.account.request;
+package com.psw.cta.dto.binance;
 
-import com.binance.api.client.constant.BinanceApiConstants;
+
+import static com.psw.cta.utils.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -55,14 +57,14 @@ public class CancelOrderRequest extends OrderRequest {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("orderId",
-                                                                                         orderId)
-                                                                                 .append(
-                                                                                     "origClientOrderId",
-                                                                                     origClientOrderId)
-                                                                                 .append(
-                                                                                     "newClientOrderId",
-                                                                                     newClientOrderId)
-                                                                                 .toString();
+    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE).append("orderId",
+                                                                     orderId)
+                                                             .append(
+                                                                 "origClientOrderId",
+                                                                 origClientOrderId)
+                                                             .append(
+                                                                 "newClientOrderId",
+                                                                 newClientOrderId)
+                                                             .toString();
   }
 }

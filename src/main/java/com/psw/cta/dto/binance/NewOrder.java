@@ -1,10 +1,9 @@
-package com.binance.api.client.domain.account;
+package com.psw.cta.dto.binance;
 
-import com.binance.api.client.constant.BinanceApiConstants;
-import com.binance.api.client.domain.OrderSide;
-import com.binance.api.client.domain.OrderType;
-import com.binance.api.client.domain.TimeInForce;
+import static com.psw.cta.utils.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.psw.cta.utils.BinanceApiConstants;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -256,35 +255,19 @@ public class NewOrder {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, BinanceApiConstants.TO_STRING_BUILDER_STYLE).append("symbol",
-                                                                                         symbol)
-                                                                                 .append("side",
-                                                                                         side)
-                                                                                 .append("type",
-                                                                                         type)
-                                                                                 .append(
-                                                                                     "timeInForce",
-                                                                                     timeInForce)
-                                                                                 .append("quantity",
-                                                                                         quantity)
-                                                                                 .append("price",
-                                                                                         price)
-                                                                                 .append(
-                                                                                     "newClientOrderId",
-                                                                                     newClientOrderId)
-                                                                                 .append("stopPrice",
-                                                                                         stopPrice)
-                                                                                 .append(
-                                                                                     "icebergQty",
-                                                                                     icebergQty)
-                                                                                 .append(
-                                                                                     "newOrderRespType",
-                                                                                     newOrderRespType)
-                                                                                 .append(
-                                                                                     "recvWindow",
-                                                                                     recvWindow)
-                                                                                 .append("timestamp",
-                                                                                         timestamp)
-                                                                                 .toString();
+    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
+        .append("symbol", symbol)
+        .append("side", side)
+        .append("type", type)
+        .append("timeInForce", timeInForce)
+        .append("quantity", quantity)
+        .append("price", price)
+        .append("newClientOrderId", newClientOrderId)
+        .append("stopPrice", stopPrice)
+        .append("icebergQty", icebergQty)
+        .append("newOrderRespType", newOrderRespType)
+        .append("recvWindow", recvWindow)
+        .append("timestamp", timestamp)
+        .toString();
   }
 }

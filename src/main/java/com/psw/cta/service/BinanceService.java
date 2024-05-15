@@ -224,7 +224,7 @@ public class BinanceService {
     if (response.isSuccessful()) {
       return response.body();
     } else {
-      throw new BinanceApiException(response.message());
+      throw new BinanceApiException(response.toString());
     }
   }
 }

@@ -145,6 +145,7 @@ public class BinanceApiService {
     return binanceService.getAccount()
                          .getBalances()
                          .parallelStream()
+                         .filter(assetBalance -> !assetBalance.getAsset().equals("NFT"))
                          .map(this::mapToAssetAndBalance)
                          .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
                          .map(this::mapToBtcBalance)
@@ -152,8 +153,8 @@ public class BinanceApiService {
   }
 
   private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
-    return Pair.of(new BigDecimal(assetBalance.getFree()).add(new BigDecimal(assetBalance.getLocked())),
-                   assetBalance.getAsset());
+    BigDecimal balance = new BigDecimal(assetBalance.getFree()).add(new BigDecimal(assetBalance.getLocked()));
+    return Pair.of(balance, assetBalance.getAsset());
   }
 
   private BigDecimal mapToBtcBalance(Pair<BigDecimal, String> pair) {

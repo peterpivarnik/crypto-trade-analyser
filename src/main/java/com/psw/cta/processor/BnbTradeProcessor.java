@@ -1,6 +1,7 @@
 package com.psw.cta.processor;
 
 import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.Constants.ASSET_BNB;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
@@ -9,7 +10,9 @@ import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.OrderBookEntry;
+import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceApiService;
 import java.math.BigDecimal;
 
@@ -34,24 +37,25 @@ public class BnbTradeProcessor {
    *
    * @return Actual amount of BNB
    */
-  public BigDecimal buyBnB() {
+  public BigDecimal buyBnB(ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Buying BNB ***** *****");
     BigDecimal myBnbBalance = binanceApiService.getMyBalance(ASSET_BNB);
     if (myBnbBalance.compareTo(MIN_BNB_BALANCE) < 0) {
-      BigDecimal quantityToBuy = getBnbQuantityToBuy();
+      BigDecimal quantityToBuy = getBnbQuantityToBuy(exchangeInfo.getSymbolInfo(SYMBOL_BNB_BTC));
       binanceApiService.createNewOrder(SYMBOL_BNB_BTC, BUY, quantityToBuy);
       return binanceApiService.getMyBalance(ASSET_BNB);
     }
     return myBnbBalance;
   }
 
-  private BigDecimal getBnbQuantityToBuy() {
+  private BigDecimal getBnbQuantityToBuy(SymbolInfo symbolInfo) {
     BigDecimal currentBnbBtcPrice = getCurrentBnbBtcPrice();
     logger.log("currentBnbBtcPrice: " + currentBnbBtcPrice);
     BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
     BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
     logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
-    return MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
+    BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
+    return roundAmount(symbolInfo, min);
   }
 
   /**

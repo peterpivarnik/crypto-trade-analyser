@@ -76,7 +76,8 @@ public class CryptoTrader {
     logger.log("***** ***** Start of trading ***** *****");
     String implementationVersion = Manifests.read("Implementation-Version");
     logger.log("Crypto trader with version " + implementationVersion + " started.");
-    BigDecimal bnbBalance = bnbTradeProcessor.buyBnB();
+    ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
+    BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(exchangeInfo);
     List<Order> openOrders = binanceApiService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
@@ -94,7 +95,6 @@ public class CryptoTrader {
     int minOpenOrders = calculateMinNumberOfOrders(myBtcBalance);
     logger.log("Min open orders: " + minOpenOrders);
 
-    ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
     long uniqueOpenOrdersSize = openOrders.parallelStream()
                                           .map(Order::getSymbol)
                                           .distinct()

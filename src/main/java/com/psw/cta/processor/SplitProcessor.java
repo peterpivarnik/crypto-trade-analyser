@@ -20,7 +20,7 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CommonUtils;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
@@ -37,11 +37,11 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class SplitProcessor {
 
-  private final BinanceApiService binanceApiService;
+  private final BinanceService binanceService;
   private final LambdaLogger logger;
 
-  public SplitProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
-    this.binanceApiService = binanceApiService;
+  public SplitProcessor(BinanceService binanceService, LambdaLogger logger) {
+    this.binanceService = binanceService;
     this.logger = logger;
   }
 
@@ -61,8 +61,8 @@ public class SplitProcessor {
 
     //0. Check order still exist
     try {
-      binanceApiService.checkOrderStatus(orderToCancel.getOrder().getSymbol(),
-                                         orderToCancel.getOrder().getOrderId());
+      binanceService.checkOrderStatus(orderToCancel.getOrder().getSymbol(),
+                                      orderToCancel.getOrder().getOrderId());
     } catch (BinanceApiException exception) {
       logger.log("Order do not exist anymore: " + orderToCancel.getOrder().getSymbol());
       return;
@@ -88,7 +88,7 @@ public class SplitProcessor {
    */
   public void cancelRequest(OrderWrapper orderToCancel) {
     logger.log("orderToCancel: " + orderToCancel);
-    binanceApiService.cancelRequest(orderToCancel);
+    binanceService.cancelRequest(orderToCancel);
   }
 
   /**
@@ -99,7 +99,7 @@ public class SplitProcessor {
    */
   public void sellAvailableBalance(SymbolInfo symbolInfoOfSellOrder, BigDecimal currentQuantity) {
     logger.log("currentQuantity: " + currentQuantity);
-    binanceApiService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+    binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
   }
 
   private List<Crypto> getCryptosToBuy(List<Crypto> cryptos, Map<String, BigDecimal> totalAmounts) {
@@ -175,7 +175,7 @@ public class SplitProcessor {
     logger.log("minAddition: " + minAddition);
     BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
     logger.log("btcAmount: " + btcAmount);
-    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
+    Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
     BigDecimal boughtQuantity = pair.getRight();
     logger.log("boughtQuantity: " + boughtQuantity);
 
@@ -188,6 +188,6 @@ public class SplitProcessor {
     logger.log("roundedPriceToSell: " + roundedPriceToSell);
     roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
     logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-    binanceApiService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity, CommonUtils::roundPrice);
+    binanceService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity, CommonUtils::roundPrice);
   }
 }

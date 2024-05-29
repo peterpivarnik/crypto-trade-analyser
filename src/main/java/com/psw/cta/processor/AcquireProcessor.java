@@ -14,7 +14,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.dto.binance.SymbolFilter;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 
@@ -23,11 +23,11 @@ import java.math.BigDecimal;
  */
 public class AcquireProcessor {
 
-  private final BinanceApiService binanceApiService;
+  private final BinanceService binanceService;
   private final LambdaLogger logger;
 
-  public AcquireProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
-    this.binanceApiService = binanceApiService;
+  public AcquireProcessor(BinanceService binanceService, LambdaLogger logger) {
+    this.binanceService = binanceService;
     this.logger = logger;
   }
 
@@ -40,10 +40,10 @@ public class AcquireProcessor {
     // 1. get balance on account
     logger.log("Trading crypto " + crypto);
     String symbol = crypto.getSymbolInfo().getSymbol();
-    BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
 
     // 2. get max possible buy
-    OrderBookEntry orderBookEntry = binanceApiService.getMinOrderBookEntry(symbol);
+    OrderBookEntry orderBookEntry = binanceService.getMinOrderBookEntry(symbol);
     logger.log("OrderBookEntry: " + orderBookEntry);
 
     // 3. calculate quantity to buy
@@ -59,7 +59,7 @@ public class AcquireProcessor {
                          btcAmount,
                          minNotionalFromMinNotionalFilter)) {
       // 4. buy
-      binanceApiService.createNewOrder(symbol, BUY, quantity);
+      binanceService.createNewOrder(symbol, BUY, quantity);
       // 5. place sell order
       placeSellOrder(crypto, quantity);
     }
@@ -95,17 +95,17 @@ public class AcquireProcessor {
 
   private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
     try {
-      binanceApiService.placeSellOrder(crypto.getSymbolInfo(),
-                                       crypto.getPriceToSell(),
-                                       quantity,
-                                       CommonUtils::roundPrice);
+      binanceService.placeSellOrder(crypto.getSymbolInfo(),
+                                    crypto.getPriceToSell(),
+                                    quantity,
+                                    CommonUtils::roundPrice);
     } catch (Exception e) {
       logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
       sleep(61000, logger);
-      binanceApiService.placeSellOrder(crypto.getSymbolInfo(),
-                                       crypto.getPriceToSell(),
-                                       quantity,
-                                       CommonUtils::roundPrice);
+      binanceService.placeSellOrder(crypto.getSymbolInfo(),
+                                    crypto.getPriceToSell(),
+                                    quantity,
+                                    CommonUtils::roundPrice);
     }
   }
 }

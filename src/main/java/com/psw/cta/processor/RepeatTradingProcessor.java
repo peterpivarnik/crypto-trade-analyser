@@ -17,7 +17,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.Trade;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,11 +30,11 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class RepeatTradingProcessor {
 
-  private final BinanceApiService binanceApiService;
+  private final BinanceService binanceService;
   private final LambdaLogger logger;
 
-  public RepeatTradingProcessor(BinanceApiService binanceApiService, LambdaLogger logger) {
-    this.binanceApiService = binanceApiService;
+  public RepeatTradingProcessor(BinanceService binanceService, LambdaLogger logger) {
+    this.binanceService = binanceService;
     this.logger = logger;
   }
 
@@ -47,14 +47,14 @@ public class RepeatTradingProcessor {
   public synchronized void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
-    BigDecimal mybtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal mybtcBalance = binanceService.getMyBalance(ASSET_BTC);
     Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(mybtcBalance);
     if (!orderWrapperPredicate.test(orderWrapper)) {
       logger.log("Conditions to rebuy crypto not valid.");
       return;
     }
     // 1. cancel existing order
-    binanceApiService.cancelRequest(orderWrapper);
+    binanceService.cancelRequest(orderWrapper);
     // 2. buy
     BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
     BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo,
@@ -72,18 +72,18 @@ public class RepeatTradingProcessor {
     BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount,
                                            minAddition,
                                            minValueFromMinNotionalFilter);
-    Pair<Long, BigDecimal> pair = binanceApiService.buy(symbolInfo, btcAmount, orderPrice);
+    Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, orderPrice);
     Long orderId = pair.getLeft();
-    List<Trade> myTrades = binanceApiService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
+    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
     BigDecimal newPriceToSell = getNewPriceToSell(orderWrapper, myTrades);
 
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-    binanceApiService.placeSellOrder(symbolInfo,
-                                     newPriceToSell,
-                                     completeQuantityToSell,
-                                     CommonUtils::roundPriceUp);
+    binanceService.placeSellOrder(symbolInfo,
+                                  newPriceToSell,
+                                  completeQuantityToSell,
+                                  CommonUtils::roundPriceUp);
   }
 
   private BigDecimal getNewPriceToSell(OrderWrapper orderWrapper, List<Trade> myTrades) {

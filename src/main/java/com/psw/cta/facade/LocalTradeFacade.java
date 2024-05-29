@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ public class LocalTradeFacade extends TradeFacade {
 
   private final LambdaLogger logger;
 
-  public LocalTradeFacade(BinanceApiService binanceApiService, LambdaLogger logger) {
+  public LocalTradeFacade(BinanceService binanceApiService, LambdaLogger logger) {
     super(binanceApiService);
     this.logger = logger;
   }

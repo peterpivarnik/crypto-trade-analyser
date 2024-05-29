@@ -18,7 +18,7 @@ import com.psw.cta.facade.LambdaTradeFacade;
 import com.psw.cta.facade.LocalTradeFacade;
 import com.psw.cta.facade.TradeFacade;
 import com.psw.cta.processor.BnbTradeProcessor;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -31,7 +31,7 @@ import java.util.Map;
 public class CryptoTrader {
 
   private final BnbTradeProcessor bnbTradeProcessor;
-  private final BinanceApiService binanceApiService;
+  private final BinanceService binanceService;
   private final LambdaLogger logger;
   private final TradeFacade tradeFacade;
 
@@ -45,9 +45,9 @@ public class CryptoTrader {
   public CryptoTrader(String apiKey,
                       String apiSecret,
                       LambdaLogger logger) {
-    this.binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-    this.bnbTradeProcessor = new BnbTradeProcessor(binanceApiService, logger);
-    this.tradeFacade = new LocalTradeFacade(binanceApiService, logger);
+    this.binanceService = new BinanceService(apiKey, apiSecret, logger);
+    this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
+    this.tradeFacade = new LocalTradeFacade(binanceService, logger);
     this.logger = logger;
   }
 
@@ -63,9 +63,9 @@ public class CryptoTrader {
                       String apiSecret,
                       List<String> forbiddenPairs,
                       LambdaLogger logger) {
-    this.binanceApiService = new BinanceApiService(apiKey, apiSecret, logger);
-    this.bnbTradeProcessor = new BnbTradeProcessor(binanceApiService, logger);
-    this.tradeFacade = new LambdaTradeFacade(binanceApiService, forbiddenPairs, logger);
+    this.binanceService = new BinanceService(apiKey, apiSecret, logger);
+    this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
+    this.tradeFacade = new LambdaTradeFacade(binanceService, forbiddenPairs, logger);
     this.logger = logger;
   }
 
@@ -76,9 +76,9 @@ public class CryptoTrader {
     logger.log("***** ***** Start of trading ***** *****");
     String implementationVersion = Manifests.read("Implementation-Version");
     logger.log("Crypto trader with version " + implementationVersion + " started.");
-    ExchangeInfo exchangeInfo = binanceApiService.getExchangeInfo();
+    ExchangeInfo exchangeInfo = binanceService.getExchangeInfo();
     BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(exchangeInfo);
-    List<Order> openOrders = binanceApiService.getOpenOrders();
+    List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
     logger.log("totalAmounts: " + totalAmounts);
@@ -86,7 +86,7 @@ public class CryptoTrader {
                                           .stream()
                                           .reduce(ZERO, BigDecimal::add);
     logger.log("ordersAmount: " + ordersAmount);
-    BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
     logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
     BigDecimal bnbAmount = bnbBalance.multiply(bnbTradeProcessor.getCurrentBnbBtcPrice());
@@ -100,7 +100,7 @@ public class CryptoTrader {
                                           .distinct()
                                           .count();
     logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-    BigDecimal actualBalance = binanceApiService.getMyActualBalance();
+    BigDecimal actualBalance = binanceService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
 
     tradeFacade.trade(openOrders,
@@ -111,7 +111,7 @@ public class CryptoTrader {
                       exchangeInfo,
                       uniqueOpenOrdersSize,
                       actualBalance);
-    List<Order> newOpenOrders = binanceApiService.getOpenOrders();
+    List<Order> newOpenOrders = binanceService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logger.log("newTotalAmounts: " + newTotalAmounts);
     Boolean tradeCancelled = cancelTrade(newTotalAmounts, exchangeInfo, newOpenOrders);
@@ -122,15 +122,15 @@ public class CryptoTrader {
   private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,
                               ExchangeInfo exchangeInfo,
                               List<Order> newOpenOrders) {
-    BigDecimal myBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
-    BigDecimal myActualBalance = binanceApiService.getMyActualBalance();
+    BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+    BigDecimal myActualBalance = binanceService.getMyActualBalance();
     List<OrderWrapper> wrappers =
         newOpenOrders.stream()
                      .map(OrderWrapperBuilder::build)
                      .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                      .map(orderWrapper -> withPrices(
                          orderWrapper,
-                         binanceApiService.getOrderBook(orderWrapper.getOrder().getSymbol()),
+                         binanceService.getOrderBook(orderWrapper.getOrder().getSymbol(), 20),
                          exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
                          myBtcBalance,
                          myActualBalance))
@@ -153,7 +153,7 @@ public class CryptoTrader {
     BigDecimal newOrdersAmount = newTotalAmounts.values()
                                                 .stream()
                                                 .reduce(ZERO, BigDecimal::add);
-    BigDecimal myNewBtcBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal myNewBtcBalance = binanceService.getMyBalance(ASSET_BTC);
     BigDecimal newOrdersAndBtcAmount = newOrdersAmount.add(myNewBtcBalance);
     logger.log("newOrdersAndBtcAmount: " + newOrdersAndBtcAmount);
     BigDecimal ordersAndBtcAmountDifference = newOrdersAndBtcAmount.subtract(ordersAndBtcAmount);

@@ -31,7 +31,7 @@ import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.AcquireProcessor;
 import com.psw.cta.processor.RepeatTradingProcessor;
 import com.psw.cta.processor.SplitProcessor;
-import com.psw.cta.service.BinanceApiService;
+import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -57,15 +57,15 @@ public class LambdaTradeFacade extends TradeFacade {
   /**
    * Default constructor.
    *
-   * @param binanceApiService Service providing functionality for Binance API
+   * @param binanceService Service providing functionality for Binance API
    * @param forbiddenPairs    forbidden pairs
    * @param logger            logger
    */
-  public LambdaTradeFacade(BinanceApiService binanceApiService, List<String> forbiddenPairs, LambdaLogger logger) {
-    super(binanceApiService);
-    this.acquireProcessor = new AcquireProcessor(binanceApiService, logger);
-    this.repeatTradingProcessor = new RepeatTradingProcessor(binanceApiService, logger);
-    this.splitProcessor = new SplitProcessor(binanceApiService, logger);
+  public LambdaTradeFacade(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
+    super(binanceService);
+    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
+    this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
+    this.splitProcessor = new SplitProcessor(binanceService, logger);
     this.logger = logger;
     this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
   }
@@ -192,7 +192,7 @@ public class LambdaTradeFacade extends TradeFacade {
                                    actualBalance,
                                    orderWrapper -> orderWrapper.getOrderPricePercentage()
                                                                .compareTo(new BigDecimal("20")) < 0);
-    BigDecimal myBalance = binanceApiService.getMyBalance(ASSET_BTC);
+    BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
     if (haveBalanceForInitialTrading(myBalance)) {
       initTrading(() -> getCryptos(exchangeInfo));
     }
@@ -206,13 +206,13 @@ public class LambdaTradeFacade extends TradeFacade {
            && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
   }
 
-  private static boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance,
-                                                                     BigDecimal actualBalance) {
+  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance,
+                                                              BigDecimal actualBalance) {
     return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
   }
 
-  private static boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
-                                                                           BigDecimal totalAmount) {
+  private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
+                                                                    BigDecimal totalAmount) {
     return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
   }
 
@@ -240,7 +240,7 @@ public class LambdaTradeFacade extends TradeFacade {
     logger.log("Sleep for 1 minute before get all cryptos");
     sleep(1000 * 60, logger);
     logger.log("Get all cryptos");
-    List<TickerStatistics> tickers = binanceApiService.getAll24hTickers();
+    List<TickerStatistics> tickers = binanceService.getAll24hTickers();
     List<Crypto> cryptos = exchangeInfo.getSymbols()
                                        .parallelStream()
                                        .map(CryptoBuilder::build)
@@ -251,14 +251,15 @@ public class LambdaTradeFacade extends TradeFacade {
                                        .map(crypto -> withVolume(crypto, tickers))
                                        .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
                                        .map(crypto -> crypto.setThreeMonthsCandleStickData(
-                                           binanceApiService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
-                                                                                DAILY,
-                                                                                90L,
-                                                                                DAYS)))
+                                           binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
+                                                                             DAILY,
+                                                                             90L,
+                                                                             DAYS)))
                                        .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
                                        .map(crypto -> withCurrentPrice(crypto,
-                                                                       binanceApiService.getOrderBook(
-                                                                           crypto.getSymbolInfo().getSymbol())))
+                                                                       binanceService.getOrderBook(
+                                                                           crypto.getSymbolInfo().getSymbol(),
+                                                                           20)))
                                        .filter(crypto -> crypto.getCurrentPrice()
                                                                .compareTo(new BigDecimal("0.000001")) > 0)
                                        .collect(Collectors.toList());
@@ -271,11 +272,11 @@ public class LambdaTradeFacade extends TradeFacade {
     cryptosSupplier.get()
                    .stream()
                    .map(crypto -> withLeastMaxAverage(crypto,
-                                                      binanceApiService.getCandleStickData(crypto.getSymbolInfo()
-                                                                                                 .getSymbol(),
-                                                                                           FIFTEEN_MINUTES,
-                                                                                           96L * 15L,
-                                                                                           MINUTES)))
+                                                      binanceService.getCandleStickData(crypto.getSymbolInfo()
+                                                                                              .getSymbol(),
+                                                                                        FIFTEEN_MINUTES,
+                                                                                        96L * 15L,
+                                                                                        MINUTES)))
                    .filter(crypto -> crypto.getLastThreeHighAverage()
                                            .compareTo(crypto.getPreviousThreeHighAverage()) > 0)
                    .map(CryptoBuilder::withPrices)

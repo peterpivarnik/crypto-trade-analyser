@@ -1,12 +1,28 @@
 package com.psw.cta.service;
 
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.OrderType.MARKET;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
+import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.roundAmount;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.lang.System.currentTimeMillis;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Account;
-import com.psw.cta.dto.binance.CancelOrderRequest;
+import com.psw.cta.dto.binance.AssetBalance;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.CandlestickInterval;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -14,17 +30,26 @@ import com.psw.cta.dto.binance.NewOrder;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.OrderBook;
-import com.psw.cta.dto.binance.OrderRequest;
+import com.psw.cta.dto.binance.OrderBookEntry;
+import com.psw.cta.dto.binance.OrderSide;
 import com.psw.cta.dto.binance.OrderStatusRequest;
-import com.psw.cta.dto.binance.TickerPrice;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.security.AuthenticationInterceptor;
+import com.psw.cta.utils.BinanceApiConstants;
+import com.psw.cta.utils.CommonUtils;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.BiFunction;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
+import org.apache.commons.lang3.tuple.Pair;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -36,6 +61,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 public class BinanceService {
 
   private final BinanceApi binanceApi;
+  private final LambdaLogger logger;
 
   /**
    * Default constructor.
@@ -43,12 +69,13 @@ public class BinanceService {
    * @param apiKey Api key
    * @param secret Api secret
    */
-  public BinanceService(String apiKey, String secret) {
-    binanceApi = new Retrofit.Builder().baseUrl(API_BASE_URL)
-                                       .client(getOkHttpClient(apiKey, secret))
-                                       .addConverterFactory(JacksonConverterFactory.create())
-                                       .build()
-                                       .create(BinanceApi.class);
+  public BinanceService(String apiKey, String secret, LambdaLogger logger) {
+    this.binanceApi = new Retrofit.Builder().baseUrl(API_BASE_URL)
+                                            .client(getOkHttpClient(apiKey, secret))
+                                            .addConverterFactory(JacksonConverterFactory.create())
+                                            .build()
+                                            .create(BinanceApi.class);
+    this.logger = logger;
   }
 
   private OkHttpClient getOkHttpClient(String apiKey, String secret) {
@@ -86,50 +113,109 @@ public class BinanceService {
   }
 
   /**
-   * Kline/candlestick bars for a symbol. Klines are uniquely identified by their open time.
+   * Returns order book entry with min price.
    *
-   * @param symbol    symbol to aggregate (mandatory)
-   * @param interval  candlestick interval (mandatory)
-   * @param limit     Default 500; max 1000 (optional)
-   * @param startTime Timestamp in ms to get candlestick bars from INCLUSIVE (optional).
-   * @param endTime   Timestamp in ms to get candlestick bars until INCLUSIVE (optional).
-   * @return a candlestick bar for the given symbol and interval
+   * @param symbol Order symbol
+   * @return OrderBookEntry with min price
    */
-  public List<Candlestick> getCandlestickBars(String symbol,
+  public OrderBookEntry getMinOrderBookEntry(String symbol) {
+    return getOrderBook(symbol, 20)
+        .getAsks()
+        .parallelStream()
+        .min(comparing(OrderBookEntry::getPrice))
+        .orElseThrow(RuntimeException::new);
+  }
+
+
+  /**
+   * Returns Kline/Candlestick bars for a symbol.
+   *
+   * @param symbol            Order symbol
+   * @param interval          Interval for Candlestick
+   * @param numberOfTimeUnits number of time intervals
+   * @param chronoUnit        the unit of the amount to subtract
+   * @return List of candlestick data
+   */
+  public List<Candlestick> getCandleStickData(String symbol,
                                               CandlestickInterval interval,
-                                              Integer limit,
-                                              Long startTime,
-                                              Long endTime) {
+                                              long numberOfTimeUnits,
+                                              ChronoUnit chronoUnit) {
+    Instant endTime = Instant.now();
+    Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
     return executeCall(binanceApi.getCandlestickBars(symbol,
                                                      interval.getIntervalId(),
-                                                     limit,
-                                                     startTime,
-                                                     endTime));
+                                                     null,
+                                                     startTime.toEpochMilli(),
+                                                     endTime.toEpochMilli()));
   }
 
   /**
    * Get 24 hour price change statistics for all symbols.
    */
-  public List<TickerStatistics> getAll24HrPriceStatistics() {
+  public List<TickerStatistics> getAll24hTickers() {
     return executeCall(binanceApi.getAll24HrPriceStatistics());
   }
 
+
   /**
-   * Get latest price for <code>symbol</code>.
+   * Sell available balance.
    *
-   * @param symbol ticker symbol (e.g. ETHBTC)
+   * @param symbolInfo Symbol information
+   * @param quantity   Quantity to sell
    */
-  public TickerPrice getPrice(String symbol) {
-    return executeCall(binanceApi.getLatestPrice(symbol));
+  public void sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
+    logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
+    String asset = getAssetFromSymbolInfo(symbolInfo);
+    BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
+    createNewOrder(symbolInfo.getSymbol(), SELL, roundedBidQuantity);
   }
 
   /**
-   * Send in a new order.
+   * Place sell order with new price.
    *
-   * @param order the new order to submit.
-   * @return a response containing details about the newly placed order.
+   * @param symbolInfo  Symbol information
+   * @param priceToSell Price of new sell order
+   * @param quantity    Quantity of new sell order
+   * @param roundPrice  Function for rounding price
    */
-  public NewOrderResponse newOrder(NewOrder order) {
+  public void placeSellOrder(SymbolInfo symbolInfo,
+                             BigDecimal priceToSell,
+                             BigDecimal quantity,
+                             BiFunction<SymbolInfo, BigDecimal, BigDecimal> roundPrice) {
+    logger.log("Place sell order: " + symbolInfo.getSymbol() + ", priceToSell=" + priceToSell);
+    String asset = getAssetFromSymbolInfo(symbolInfo);
+    BigDecimal balance = waitUntilHaveBalance(asset, quantity);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
+    BigDecimal roundedPriceToSell = roundPrice.apply(symbolInfo, priceToSell);
+    NewOrder sellOrder = new NewOrder(symbolInfo.getSymbol(),
+                                      SELL,
+                                      LIMIT,
+                                      GTC,
+                                      roundedBidQuantity.toPlainString(),
+                                      roundedPriceToSell.toPlainString());
+    createNewOrder(sellOrder);
+  }
+
+  /**
+   * Creates new sell/buy order.
+   *
+   * @param symbol           Symbol information
+   * @param orderSide        Buy or sell
+   * @param roundedMyQuatity Quantity of new order
+   * @return New Order response
+   */
+  public NewOrderResponse createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
+    NewOrder buyOrder = new NewOrder(symbol,
+                                     orderSide,
+                                     MARKET,
+                                     null,
+                                     roundedMyQuatity.toPlainString());
+    return createNewOrder(buyOrder);
+  }
+
+  private NewOrderResponse createNewOrder(NewOrder order) {
+    logger.log("My new order: " + order);
     return executeCall(binanceApi.newOrder(order.getSymbol(),
                                            order.getSide(),
                                            order.getType(),
@@ -144,44 +230,57 @@ public class BinanceService {
                                            order.getTimestamp()));
   }
 
+
+
+  private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
+    return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
+  }
+
+  private BigDecimal waitUntilHaveBalance(String asset, BigDecimal quantity) {
+    BigDecimal myBalance = getMyBalance(asset);
+    if (myBalance.compareTo(quantity) >= 0) {
+      return myBalance;
+    } else {
+      CommonUtils.sleep(500, logger);
+      return waitUntilHaveBalance(asset, quantity);
+    }
+  }
+
   /**
    * Check an order's status.
-   *
-   * @param orderStatusRequest order status request options/filters
-   * @return an order
    */
-  public Order getOrderStatus(OrderStatusRequest orderStatusRequest) {
-    return executeCall(binanceApi.getOrderStatus(orderStatusRequest.getSymbol(),
-                                                 orderStatusRequest.getOrderId(),
-                                                 orderStatusRequest.getOrigClientOrderId(),
-                                                 orderStatusRequest.getRecvWindow(),
-                                                 orderStatusRequest.getTimestamp()));
+  public void checkOrderStatus(String symbol, Long orderId) {
+    OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
+    executeCall(binanceApi.getOrderStatus(orderStatusRequest.getSymbol(),
+                                          orderStatusRequest.getOrderId(),
+                                          orderStatusRequest.getOrigClientOrderId(),
+                                          orderStatusRequest.getRecvWindow(),
+                                          orderStatusRequest.getTimestamp()));
   }
 
   /**
    * Cancel an active order.
    *
-   * @param cancelOrderRequest order status request parameters
+   * @param orderWrapper order status request parameters
    */
-  public void cancelOrder(CancelOrderRequest cancelOrderRequest) {
-    executeCall(binanceApi.cancelOrder(cancelOrderRequest.getSymbol(),
-                                       cancelOrderRequest.getOrderId(),
-                                       cancelOrderRequest.getOrigClientOrderId(),
-                                       cancelOrderRequest.getNewClientOrderId(),
-                                       cancelOrderRequest.getRecvWindow(),
-                                       cancelOrderRequest.getTimestamp()));
+  public void cancelRequest(OrderWrapper orderWrapper) {
+    executeCall(binanceApi.cancelOrder(orderWrapper.getOrder().getSymbol(),
+                                       null,
+                                       orderWrapper.getOrder().getClientOrderId(),
+                                       null,
+                                       BinanceApiConstants.DEFAULT_RECEIVING_WINDOW,
+                                       currentTimeMillis()));
   }
 
   /**
    * Get all open orders on a symbol.
    *
-   * @param orderRequest order request parameters
    * @return a list of all account open orders on a symbol.
    */
-  public List<Order> getOpenOrders(OrderRequest orderRequest) {
-    return executeCall(binanceApi.getOpenOrders(orderRequest.getSymbol(),
-                                                orderRequest.getRecvWindow(),
-                                                orderRequest.getTimestamp()));
+  public List<Order> getOpenOrders() {
+    return executeCall(binanceApi.getOpenOrders(null,
+                                                DEFAULT_RECEIVING_WINDOW,
+                                                currentTimeMillis()));
   }
 
   /**
@@ -192,10 +291,83 @@ public class BinanceService {
   }
 
   /**
-   * Get current account information using default parameters.
+   * Returns actual balance per asset.
+   *
+   * @param asset Asset of the crypto
+   * @return Actual balance
    */
-  public Account getAccount() {
-    return getAccount(DEFAULT_RECEIVING_WINDOW, System.currentTimeMillis());
+  public BigDecimal getMyBalance(String asset) {
+    Account account = getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis());
+    BigDecimal myBalance = account.getBalances()
+                                  .parallelStream()
+                                  .filter(balance -> balance.getAsset().equals(asset))
+                                  .map(AssetBalance::getFree)
+                                  .map(BigDecimal::new)
+                                  .findFirst()
+                                  .orElse(ZERO);
+    logger.log("My balance in currency: " + asset + ", is: " + myBalance);
+    return myBalance;
+  }
+
+  /**
+   * Returns actual balance.
+   *
+   * @return Actual balance
+   */
+  public BigDecimal getMyActualBalance() {
+    return getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis())
+        .getBalances()
+        .parallelStream()
+        .filter(assetBalance -> !assetBalance.getAsset().equals("NFT"))
+        .map(this::mapToAssetAndBalance)
+        .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
+        .map(this::mapToBtcBalance)
+        .reduce(ZERO, BigDecimal::add);
+  }
+
+  private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
+    BigDecimal balance = new BigDecimal(assetBalance.getFree()).add(new BigDecimal(assetBalance.getLocked()));
+    return Pair.of(balance, assetBalance.getAsset());
+  }
+
+  private BigDecimal mapToBtcBalance(Pair<BigDecimal, String> pair) {
+    if (pair.getRight().equals(ASSET_BTC)) {
+      return pair.getLeft();
+    } else {
+      try {
+        return getOrderBook(pair.getRight() + ASSET_BTC, 20)
+            .getBids()
+            .parallelStream()
+            .map(OrderBookEntry::getPrice)
+            .map(BigDecimal::new)
+            .max(BigDecimal::compareTo)
+            .orElse(ZERO)
+            .multiply(pair.getLeft());
+      } catch (BinanceApiException e) {
+        return ZERO;
+      }
+    }
+  }
+
+  /**
+   * Buy order.
+   *
+   * @param symbolInfo Symbol information
+   * @param btcAmount  BTC amount
+   * @param price      price of new order
+   * @return bought quantity
+   */
+  public Pair<Long, BigDecimal> buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+    BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
+    BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                     SymbolFilter::getMinNotional,
+                                                                     MIN_NOTIONAL,
+                                                                     NOTIONAL);
+    BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
+    BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
+    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
+
+    return Pair.of(newOrder.getOrderId(), roundedQuantity);
   }
 
   /**
@@ -211,7 +383,7 @@ public class BinanceService {
                                               null,
                                               null,
                                               DEFAULT_RECEIVING_WINDOW,
-                                              System.currentTimeMillis()));
+                                              currentTimeMillis()));
   }
 
   private <T> T executeCall(Call<T> call) {

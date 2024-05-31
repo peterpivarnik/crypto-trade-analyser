@@ -32,14 +32,12 @@ import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.dto.binance.OrderSide;
-import com.psw.cta.dto.binance.OrderStatusRequest;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.security.AuthenticationInterceptor;
-import com.psw.cta.utils.BinanceApiConstants;
 import com.psw.cta.utils.CommonUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -250,12 +248,11 @@ public class BinanceService {
    * Check an order's status.
    */
   public void checkOrderStatus(String symbol, Long orderId) {
-    OrderStatusRequest orderStatusRequest = new OrderStatusRequest(symbol, orderId);
-    executeCall(binanceApi.getOrderStatus(orderStatusRequest.getSymbol(),
-                                          orderStatusRequest.getOrderId(),
-                                          orderStatusRequest.getOrigClientOrderId(),
-                                          orderStatusRequest.getRecvWindow(),
-                                          orderStatusRequest.getTimestamp()));
+    executeCall(binanceApi.getOrderStatus(symbol,
+                                          orderId,
+                                          null,
+                                          DEFAULT_RECEIVING_WINDOW,
+                                          currentTimeMillis()));
   }
 
   /**
@@ -268,7 +265,7 @@ public class BinanceService {
                                        null,
                                        orderWrapper.getOrder().getClientOrderId(),
                                        null,
-                                       BinanceApiConstants.DEFAULT_RECEIVING_WINDOW,
+                                       DEFAULT_RECEIVING_WINDOW,
                                        currentTimeMillis()));
   }
 
@@ -284,27 +281,20 @@ public class BinanceService {
   }
 
   /**
-   * Get current account information.
-   */
-  public Account getAccount(Long recvWindow, Long timestamp) {
-    return executeCall(binanceApi.getAccount(recvWindow, timestamp));
-  }
-
-  /**
    * Returns actual balance per asset.
    *
    * @param asset Asset of the crypto
    * @return Actual balance
    */
   public BigDecimal getMyBalance(String asset) {
-    Account account = getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis());
-    BigDecimal myBalance = account.getBalances()
-                                  .parallelStream()
-                                  .filter(balance -> balance.getAsset().equals(asset))
-                                  .map(AssetBalance::getFree)
-                                  .map(BigDecimal::new)
-                                  .findFirst()
-                                  .orElse(ZERO);
+    BigDecimal myBalance = getAccount()
+        .getBalances()
+        .parallelStream()
+        .filter(balance -> balance.getAsset().equals(asset))
+        .map(AssetBalance::getFree)
+        .map(BigDecimal::new)
+        .findFirst()
+        .orElse(ZERO);
     logger.log("My balance in currency: " + asset + ", is: " + myBalance);
     return myBalance;
   }
@@ -315,7 +305,7 @@ public class BinanceService {
    * @return Actual balance
    */
   public BigDecimal getMyActualBalance() {
-    return getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis())
+    return getAccount()
         .getBalances()
         .parallelStream()
         .filter(assetBalance -> !assetBalance.getAsset().equals("NFT"))
@@ -323,6 +313,10 @@ public class BinanceService {
         .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
         .map(this::mapToBtcBalance)
         .reduce(ZERO, BigDecimal::add);
+  }
+
+  private Account getAccount() {
+    return executeCall(binanceApi.getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
   }
 
   private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {

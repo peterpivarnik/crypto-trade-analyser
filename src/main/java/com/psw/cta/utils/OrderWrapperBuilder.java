@@ -8,6 +8,7 @@ import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
 import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
+import static java.math.RoundingMode.CEILING;
 
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Order;
@@ -82,7 +83,9 @@ public class OrderWrapperBuilder {
     orderWrapper.setPriceToSell(priceToSell);
     orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
-    orderWrapper.setCurrentBtcAmount(getQuantity(orderWrapper.getOrder()).multiply(currentPrice));
+    orderWrapper.setCurrentBtcAmount(getQuantity(orderWrapper.getOrder())
+                                         .multiply(currentPrice)
+                                         .setScale(8, CEILING));
     return orderWrapper;
   }
 

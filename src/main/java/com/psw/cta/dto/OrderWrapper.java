@@ -110,8 +110,8 @@ public class OrderWrapper {
   public String toString() {
     return "OrderWrapper{"
            + format("symbol=%-12s", order.getSymbol() + ",")
-           + format("orderBtcAmount=%-14s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
-           + format("currentBtcAmount=%-14s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
            + format("quantity=%-9s", getQuantity(order).stripTrailingZeros().toPlainString() + ",")
            + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
            + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")

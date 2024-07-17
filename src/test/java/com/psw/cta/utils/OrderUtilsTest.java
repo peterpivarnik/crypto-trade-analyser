@@ -37,7 +37,7 @@ class OrderUtilsTest {
 
     BigDecimal orderBtcAmount = OrderUtils.calculateOrderBtcAmount(order, orderPrice);
 
-    assertThat(orderBtcAmount).isEqualTo(new BigDecimal("5.00"));
+    assertThat(orderBtcAmount).isEqualTo(new BigDecimal("5.00000000"));
   }
 
   @Test

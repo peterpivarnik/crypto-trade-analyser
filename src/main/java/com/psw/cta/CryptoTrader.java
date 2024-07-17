@@ -6,6 +6,7 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
 import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
 import static java.lang.Boolean.FALSE;
+import static java.lang.String.format;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -21,9 +22,11 @@ import com.psw.cta.processor.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Main service for start trading crypto.
@@ -76,12 +79,10 @@ public class CryptoTrader {
     logger.log("***** ***** Start of trading ***** *****");
     String implementationVersion = Manifests.read("Implementation-Version");
     logger.log("Crypto trader with version " + implementationVersion + " started.");
-    ExchangeInfo exchangeInfo = binanceService.getExchangeInfo();
-    BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(exchangeInfo);
     List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
-    logger.log("totalAmounts: " + totalAmounts);
+    logTotalAmounts(totalAmounts);
     BigDecimal ordersAmount = totalAmounts.values()
                                           .stream()
                                           .reduce(ZERO, BigDecimal::add);
@@ -89,6 +90,8 @@ public class CryptoTrader {
     BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
     logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
+    ExchangeInfo exchangeInfo = binanceService.getExchangeInfo();
+    BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(exchangeInfo);
     BigDecimal bnbAmount = bnbBalance.multiply(bnbTradeProcessor.getCurrentBnbBtcPrice());
     BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
     logger.log("totalAmount: " + totalAmount.stripTrailingZeros());
@@ -113,10 +116,31 @@ public class CryptoTrader {
                       actualBalance);
     List<Order> newOpenOrders = binanceService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
-    logger.log("newTotalAmounts: " + newTotalAmounts);
+    logTotalAmounts(newTotalAmounts);
     Boolean tradeCancelled = cancelTrade(newTotalAmounts, exchangeInfo, newOpenOrders);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
     logger.log("Finished trading.");
+  }
+
+  private void logTotalAmounts(Map<String, BigDecimal> totalAmounts) {
+    logger.log("totalAmounts: ");
+    List<Map.Entry<String, BigDecimal>> entryList = totalAmounts.entrySet()
+                                                                .stream()
+                                                                .toList();
+    int numberOfTens = entryList.size() / 10;
+    List<List<Map.Entry<String, BigDecimal>>> listOfLists = new ArrayList<>();
+    for (int i = 0; i < numberOfTens; i++) {
+      listOfLists.add(entryList.subList(i * 10, (i + 1) * 10));
+    }
+    listOfLists.add(entryList.subList(numberOfTens * 10, entryList.size()));
+    listOfLists.forEach(subList -> {
+      String sublistString = subList.stream()
+                              .map(stringBigDecimalEntry -> format("%10s=%-10s",
+                                                                   stringBigDecimalEntry.getKey(),
+                                                                   stringBigDecimalEntry.getValue()))
+                              .collect(Collectors.joining());
+      logger.log(sublistString);
+    });
   }
 
   private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,

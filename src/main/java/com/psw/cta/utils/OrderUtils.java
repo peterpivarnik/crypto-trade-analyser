@@ -58,7 +58,7 @@ public class OrderUtils {
    */
   public static BigDecimal calculateOrderBtcAmount(Order order, BigDecimal orderPrice) {
     BigDecimal orderAltAmount = getQuantity(order);
-    return orderAltAmount.multiply(orderPrice);
+    return orderAltAmount.multiply(orderPrice).setScale(8, CEILING);
   }
 
   /**

@@ -29,9 +29,7 @@ public class CryptoUtils {
                   .map(TickerStatistics::getVolume)
                   .map(BigDecimal::new)
                   .findAny()
-                  .orElseThrow(() -> new CryptoTraderException("Ticker with symbol: "
-                                                               + symbol
-                                                               + " not found."));
+                  .orElseThrow(() -> new CryptoTraderException("Ticker with symbol: " + symbol + " not found."));
   }
 
   public static BigDecimal calculateLastThreeHighAverage(List<Candlestick> fifteenMinutesCandleStickData) {
@@ -42,8 +40,7 @@ public class CryptoUtils {
     return calculateHighAverage(fifteenMinutesCandleStickData, 6);
   }
 
-  private static BigDecimal calculateHighAverage(List<Candlestick> fifteenMinutesCandleStickData,
-                                                 int notSkipped) {
+  private static BigDecimal calculateHighAverage(List<Candlestick> fifteenMinutesCandleStickData, int notSkipped) {
     int skipSize = fifteenMinutesCandleStickData.size() - notSkipped;
     return fifteenMinutesCandleStickData.stream()
                                         .skip(skipSize)
@@ -71,9 +68,7 @@ public class CryptoUtils {
     if (size - numberOfDataToKeep < 0) {
       return ZERO;
     }
-    return sumPercentageDifferences(size - numberOfDataToKeep,
-                                    fifteenMinutesCandleStickData,
-                                    currentPrice);
+    return sumPercentageDifferences(size - numberOfDataToKeep, fifteenMinutesCandleStickData, currentPrice);
   }
 
   private static BigDecimal sumPercentageDifferences(int size,

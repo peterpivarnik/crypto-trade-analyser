@@ -53,11 +53,7 @@ public class AcquireProcessor {
                                                                      SymbolFilter::getMinNotional,
                                                                      MIN_NOTIONAL,
                                                                      NOTIONAL);
-    if (shouldBuyAndSell(crypto,
-                         myBtcBalance,
-                         orderBookEntry,
-                         btcAmount,
-                         minNotionalFromMinNotionalFilter)) {
+    if (shouldBuyAndSell(crypto, myBtcBalance, orderBookEntry, btcAmount, minNotionalFromMinNotionalFilter)) {
       // 4. buy
       binanceService.createNewOrder(symbol, BUY, quantity);
       // 5. place sell order
@@ -65,9 +61,7 @@ public class AcquireProcessor {
     }
   }
 
-  private BigDecimal getQuantityToBuy(Crypto crypto,
-                                      BigDecimal myBtcBalance,
-                                      OrderBookEntry orderBookEntry) {
+  private BigDecimal getQuantityToBuy(Crypto crypto, BigDecimal myBtcBalance, OrderBookEntry orderBookEntry) {
     BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
     BigDecimal myMaxQuantity = maxBtcBalanceToBuy.divide(new BigDecimal(orderBookEntry.getPrice()), 8, CEILING);
     BigDecimal min = myMaxQuantity.min(new BigDecimal(orderBookEntry.getQty()));
@@ -88,24 +82,17 @@ public class AcquireProcessor {
     return new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice());
   }
 
-  private boolean isMoreThanMinValue(BigDecimal btcAmount,
-                                     BigDecimal minNotionalFromMinNotionalFilter) {
+  private boolean isMoreThanMinValue(BigDecimal btcAmount, BigDecimal minNotionalFromMinNotionalFilter) {
     return btcAmount.compareTo(minNotionalFromMinNotionalFilter) >= 0;
   }
 
   private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
     try {
-      binanceService.placeSellOrder(crypto.getSymbolInfo(),
-                                    crypto.getPriceToSell(),
-                                    quantity,
-                                    CommonUtils::roundPrice);
+      binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity, CommonUtils::roundPrice);
     } catch (Exception e) {
       logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
       sleep(61000, logger);
-      binanceService.placeSellOrder(crypto.getSymbolInfo(),
-                                    crypto.getPriceToSell(),
-                                    quantity,
-                                    CommonUtils::roundPrice);
+      binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity, CommonUtils::roundPrice);
     }
   }
 }

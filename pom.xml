@@ -17,20 +17,20 @@
         <com.squareup.retrofit2.converter-jackson.version>2.11.0</com.squareup.retrofit2.converter-jackson.version>
         <com.squareup.okhttp3.version>5.0.0-alpha.14</com.squareup.okhttp3.version>
         <commons.codec.commons-codec.version>1.17.1</commons.codec.commons-codec.version>
-        <org.apache.commons.commons-lang3.version>3.14.0</org.apache.commons.commons-lang3.version>
+        <org.apache.commons.commons-lang3.version>3.17.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
-        <org.junit.jupiter.junit-jupiter-api.version>5.11.0-M2</org.junit.jupiter.junit-jupiter-api.version>
+        <org.junit.jupiter.junit-jupiter-api.version>5.11.3</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>3.26.3</org.assertj.assertj-core.version>
-        <org.mockito.version>5.12.0</org.mockito.version>
+        <org.mockito.version>5.14.2</org.mockito.version>
 
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
-        <maven-checkstyle-plugin.version>3.4.0</maven-checkstyle-plugin.version>
-        <checkstyle.version>10.17.0</checkstyle.version>
-        <maven-surefire-plugin.version>3.3.1</maven-surefire-plugin.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <checkstyle.version>10.20.1</checkstyle.version>
+        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <openapi-generator-maven-plugin.version>7.5.0</openapi-generator-maven-plugin.version>
         <versions-maven-plugin.version>2.17.1</versions-maven-plugin.version>

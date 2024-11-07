@@ -1,8 +1,10 @@
 package com.psw.cta.security;
 
-import com.psw.cta.utils.BinanceApiConstants;
+import static com.psw.cta.utils.BinanceApiConstants.API_KEY_HEADER;
+import static com.psw.cta.utils.BinanceApiConstants.ENDPOINT_SECURITY_TYPE_APIKEY;
+import static com.psw.cta.utils.BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNED;
+
 import java.io.IOException;
-import java.util.Objects;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -26,53 +28,39 @@ public class AuthenticationInterceptor implements Interceptor {
   @NotNull
   @Override
   public Response intercept(Chain chain) throws IOException {
-    Request original = chain.request();
-    Request.Builder newRequestBuilder = original.newBuilder();
+    Request request = getRequest(chain.request());
+    return chain.proceed(request);
+  }
 
-    boolean isApiKeyRequired = original.header(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_APIKEY)
-                               != null;
-    boolean isSignatureRequired = original.header(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNED)
-                                  != null;
-    newRequestBuilder.removeHeader(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_APIKEY)
-                     .removeHeader(BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNED);
-
-    // Endpoint requires sending a valid API-KEY
+  @NotNull
+  private Request getRequest(Request originalRequest) {
+    boolean isApiKeyRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_APIKEY) != null;
+    boolean isSignatureRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_SIGNED) != null;
+    String query = originalRequest.url().query();
+    Request.Builder newRequestBuilder =
+        originalRequest.newBuilder()
+                       .removeHeader(ENDPOINT_SECURITY_TYPE_APIKEY)
+                       .removeHeader(ENDPOINT_SECURITY_TYPE_SIGNED)
+                       .url(getUrl(isSignatureRequired, query, originalRequest.url()));
     if (isApiKeyRequired || isSignatureRequired) {
-      newRequestBuilder.addHeader(BinanceApiConstants.API_KEY_HEADER, apiKey);
+      newRequestBuilder.addHeader(API_KEY_HEADER, apiKey);
     }
-
-    // Endpoint requires signing the payload
-    if (isSignatureRequired) {
-      String payload = original.url().query();
-      if (!StringUtils.isEmpty(payload)) {
-        String signature = HmacSha256Signer.sign(payload, secret);
-        HttpUrl signedUrl = original.url()
-                                    .newBuilder()
-                                    .addQueryParameter("signature", signature)
-                                    .build();
-        newRequestBuilder.url(signedUrl);
-      }
-    }
-
-    // Build new request after adding the necessary authentication information
-    Request newRequest = newRequestBuilder.build();
-    return chain.proceed(newRequest);
+    return newRequestBuilder.build();
   }
 
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
+  @NotNull
+  private HttpUrl getUrl(boolean isSignatureRequired, String query, HttpUrl url) {
+    if (isSignatureRequired && !StringUtils.isEmpty(query)) {
+      return getSignedUrl(query, url);
     }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    final AuthenticationInterceptor that = (AuthenticationInterceptor) o;
-    return Objects.equals(apiKey, that.apiKey) && Objects.equals(secret, that.secret);
+    return url;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(apiKey, secret);
+  @NotNull
+  private HttpUrl getSignedUrl(String query, HttpUrl url) {
+    String signature = HmacSha256Signer.sign(query, secret);
+    return url.newBuilder()
+              .addQueryParameter("signature", signature)
+              .build();
   }
 }

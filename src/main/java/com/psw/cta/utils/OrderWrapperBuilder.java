@@ -44,8 +44,7 @@ public class OrderWrapperBuilder {
    * @param orderWrapper {@link OrderWrapper} to update
    * @return Updated {@link OrderWrapper}
    */
-  public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts,
-                                              OrderWrapper orderWrapper) {
+  public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
     BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()),
                                                         orderWrapper.getOrderBtcAmount());
     BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
@@ -79,13 +78,14 @@ public class OrderWrapperBuilder {
                                                   actualBalance);
     BigDecimal priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
     BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
+    BigDecimal currentBtcAmount = getQuantity(orderWrapper.getOrder())
+        .multiply(currentPrice)
+        .setScale(8, CEILING);
     orderWrapper.setCurrentPrice(currentPrice);
     orderWrapper.setPriceToSell(priceToSell);
     orderWrapper.setPriceToSellPercentage(priceToSellPercentage);
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
-    orderWrapper.setCurrentBtcAmount(getQuantity(orderWrapper.getOrder())
-                                         .multiply(currentPrice)
-                                         .setScale(8, CEILING));
+    orderWrapper.setCurrentBtcAmount(currentBtcAmount);
     return orderWrapper;
   }
 

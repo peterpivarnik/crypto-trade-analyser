@@ -57,9 +57,7 @@ public class RepeatTradingProcessor {
     binanceService.cancelRequest(orderWrapper);
     // 2. buy
     BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo,
-                                                              SymbolFilter::getMinQty,
-                                                              LOT_SIZE);
+    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
     logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                   SymbolFilter::getMinNotional,
@@ -69,9 +67,7 @@ public class RepeatTradingProcessor {
     BigDecimal orderPrice = orderWrapper.getOrderPrice();
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);
     logger.log("minAddition: " + minAddition);
-    BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount,
-                                           minAddition,
-                                           minValueFromMinNotionalFilter);
+    BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
     Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, orderPrice);
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
@@ -80,10 +76,7 @@ public class RepeatTradingProcessor {
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-    binanceService.placeSellOrder(symbolInfo,
-                                  newPriceToSell,
-                                  completeQuantityToSell,
-                                  CommonUtils::roundPriceUp);
+    binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell, CommonUtils::roundPriceUp);
   }
 
   private BigDecimal getNewPriceToSell(OrderWrapper orderWrapper, List<Trade> myTrades) {

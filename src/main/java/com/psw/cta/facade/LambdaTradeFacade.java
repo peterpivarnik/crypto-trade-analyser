@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Trade service for AWS.
+ * Trade service for AWS lambda.
  */
 public class LambdaTradeFacade extends TradeFacade {
 
@@ -58,8 +58,8 @@ public class LambdaTradeFacade extends TradeFacade {
    * Default constructor.
    *
    * @param binanceService Service providing functionality for Binance API
-   * @param forbiddenPairs    forbidden pairs
-   * @param logger            logger
+   * @param forbiddenPairs forbidden pairs
+   * @param logger         logger
    */
   public LambdaTradeFacade(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
     super(binanceService);
@@ -110,11 +110,7 @@ public class LambdaTradeFacade extends TradeFacade {
       repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     }
     if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
-      splitOrderWithLowestOrderPricePercentage(openOrders,
-                                               totalAmounts,
-                                               myBtcBalance,
-                                               exchangeInfo,
-                                               actualBalance);
+      splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
     }
     if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
@@ -160,7 +156,8 @@ public class LambdaTradeFacade extends TradeFacade {
                                                    orderWrapperPredicate);
     wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
     wrappers.forEach(orderWrapper -> repeatTradingProcessor.rebuySingleOrder(
-        exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
+        exchangeInfo.getSymbolInfo(orderWrapper.getOrder()
+                                               .getSymbol()),
         orderWrapper));
   }
 
@@ -206,13 +203,11 @@ public class LambdaTradeFacade extends TradeFacade {
            && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
   }
 
-  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance,
-                                                              BigDecimal actualBalance) {
+  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
     return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
   }
 
-  private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
-                                                                    BigDecimal totalAmount) {
+  private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize, BigDecimal totalAmount) {
     return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
   }
 

@@ -135,7 +135,7 @@ public class CryptoTrader {
     listOfLists.add(entryList.subList(numberOfTens * 10, entryList.size()));
     listOfLists.forEach(subList -> {
       String sublistString = subList.stream()
-                              .map(stringBigDecimalEntry -> format("%10s=%-10s",
+                              .map(stringBigDecimalEntry -> format("%10s=%-11s",
                                                                    stringBigDecimalEntry.getKey(),
                                                                    stringBigDecimalEntry.getValue()))
                               .collect(Collectors.joining());

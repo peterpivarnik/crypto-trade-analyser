@@ -60,11 +60,12 @@ public class SplitProcessor {
     logger.log("***** ***** Splitting amounts ***** *****");
 
     //0. Check order still exist
+    String symbol = orderToCancel.getOrder().getSymbol();
     try {
-      binanceService.checkOrderStatus(orderToCancel.getOrder().getSymbol(),
-                                      orderToCancel.getOrder().getOrderId());
+      Long orderId = orderToCancel.getOrder().getOrderId();
+      binanceService.checkOrderStatus(symbol, orderId);
     } catch (BinanceApiException exception) {
-      logger.log("Order do not exist anymore: " + orderToCancel.getOrder().getSymbol());
+      logger.log("Order do not exist anymore: " + symbol);
       return;
     }
 
@@ -72,7 +73,7 @@ public class SplitProcessor {
     cancelRequest(orderToCancel);
 
     // 2. sell cancelled order
-    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
+    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
     BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
     sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 

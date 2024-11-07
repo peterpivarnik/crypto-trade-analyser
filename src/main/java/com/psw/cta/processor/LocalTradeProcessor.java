@@ -1,4 +1,4 @@
-package com.psw.cta.facade;
+package com.psw.cta.processor;
 
 import static java.lang.Boolean.FALSE;
 import static java.util.Comparator.comparing;
@@ -15,11 +15,11 @@ import java.util.Map;
 /**
  * Trade service for local environment.
  */
-public class LocalTradeFacade extends TradeFacade {
+public class LocalTradeProcessor extends MainTradeProcessor {
 
   private final LambdaLogger logger;
 
-  public LocalTradeFacade(BinanceService binanceApiService, LambdaLogger logger) {
+  public LocalTradeProcessor(BinanceService binanceApiService, LambdaLogger logger) {
     super(binanceApiService);
     this.logger = logger;
   }

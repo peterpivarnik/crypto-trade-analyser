@@ -1,4 +1,4 @@
-package com.psw.cta.facade;
+package com.psw.cta.processor;
 
 import static com.psw.cta.utils.CommonUtils.getOrderComparator;
 import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
@@ -18,11 +18,11 @@ import java.util.stream.Stream;
 /**
  * Trade service.
  */
-public abstract class TradeFacade {
+public abstract class MainTradeProcessor {
 
   protected final BinanceService binanceService;
 
-  protected TradeFacade(BinanceService binanceService) {
+  protected MainTradeProcessor(BinanceService binanceService) {
     this.binanceService = binanceService;
   }
 

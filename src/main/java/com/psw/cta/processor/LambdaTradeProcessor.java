@@ -1,4 +1,4 @@
-package com.psw.cta.facade;
+package com.psw.cta.processor;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
@@ -28,9 +28,9 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
-import com.psw.cta.processor.AcquireProcessor;
-import com.psw.cta.processor.RepeatTradingProcessor;
-import com.psw.cta.processor.SplitProcessor;
+import com.psw.cta.processor.trade.AcquireProcessor;
+import com.psw.cta.processor.trade.RepeatTradingProcessor;
+import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 /**
  * Trade service for AWS lambda.
  */
-public class LambdaTradeFacade extends TradeFacade {
+public class LambdaTradeProcessor extends MainTradeProcessor {
 
   private final LambdaLogger logger;
   private final RepeatTradingProcessor repeatTradingProcessor;
@@ -61,7 +61,7 @@ public class LambdaTradeFacade extends TradeFacade {
    * @param forbiddenPairs forbidden pairs
    * @param logger         logger
    */
-  public LambdaTradeFacade(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
+  public LambdaTradeProcessor(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
     super(binanceService);
     this.acquireProcessor = new AcquireProcessor(binanceService, logger);
     this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);

@@ -1,4 +1,4 @@
-package com.psw.cta.processor;
+package com.psw.cta.processor.trade;
 
 import static com.psw.cta.dto.binance.OrderSide.BUY;
 import static com.psw.cta.utils.CommonUtils.roundAmount;

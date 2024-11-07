@@ -1,4 +1,4 @@
-package com.psw.cta.processor;
+package com.psw.cta.processor.trade;
 
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;

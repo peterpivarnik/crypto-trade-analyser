@@ -15,10 +15,10 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.exception.BinanceApiException;
-import com.psw.cta.facade.LambdaTradeFacade;
-import com.psw.cta.facade.LocalTradeFacade;
-import com.psw.cta.facade.TradeFacade;
-import com.psw.cta.processor.BnbTradeProcessor;
+import com.psw.cta.processor.LambdaTradeProcessor;
+import com.psw.cta.processor.LocalTradeProcessor;
+import com.psw.cta.processor.MainTradeProcessor;
+import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
@@ -36,7 +36,7 @@ public class CryptoTrader {
   private final BnbTradeProcessor bnbTradeProcessor;
   private final BinanceService binanceService;
   private final LambdaLogger logger;
-  private final TradeFacade tradeFacade;
+  private final MainTradeProcessor tradeFacade;
 
   /**
    * Constructor of {@link CryptoTrader} for local environment.
@@ -50,7 +50,7 @@ public class CryptoTrader {
                       LambdaLogger logger) {
     this.binanceService = new BinanceService(apiKey, apiSecret, logger);
     this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeFacade = new LocalTradeFacade(binanceService, logger);
+    this.tradeFacade = new LocalTradeProcessor(binanceService, logger);
     this.logger = logger;
   }
 
@@ -68,7 +68,7 @@ public class CryptoTrader {
                       LambdaLogger logger) {
     this.binanceService = new BinanceService(apiKey, apiSecret, logger);
     this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeFacade = new LambdaTradeFacade(binanceService, forbiddenPairs, logger);
+    this.tradeFacade = new LambdaTradeProcessor(binanceService, forbiddenPairs, logger);
     this.logger = logger;
   }
 

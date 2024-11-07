@@ -22,7 +22,6 @@ import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CommonUtils;
-import com.psw.cta.utils.CryptoBuilder;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -107,7 +106,8 @@ public class SplitProcessor {
     Set<String> existingSymbols = totalAmounts.keySet();
     return cryptos.stream()
                   .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
-                  .map(CryptoBuilder::withSlopeData)
+                  .map(Crypto::setPriceCountToSlope)
+                  .map(Crypto::setNumberOfCandles)
                   .filter(crypto -> crypto.getPriceCountToSlope().compareTo(ZERO) < 0)
                   .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
                   .sorted(comparing(Crypto::getPriceCountToSlope).reversed())

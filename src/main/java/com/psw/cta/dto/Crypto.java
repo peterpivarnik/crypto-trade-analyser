@@ -1,8 +1,17 @@
 package com.psw.cta.dto;
 
+import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
+import static com.psw.cta.utils.CommonUtils.getAveragePrices;
+import static com.psw.cta.utils.CryptoUtils.calculateLastThreeHighAverage;
+import static com.psw.cta.utils.CryptoUtils.calculatePreviousThreeHighAverage;
+import static com.psw.cta.utils.CryptoUtils.calculatePriceToSell;
+import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences10h;
+import static com.psw.cta.utils.CryptoUtils.calculateSumPercentageDifferences1h;
+
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -34,24 +43,24 @@ public class Crypto {
     return numberOfCandles;
   }
 
-  public void setNumberOfCandles(BigDecimal numberOfCandles) {
-    this.numberOfCandles = numberOfCandles;
+  public Crypto setNumberOfCandles() {
+    this.numberOfCandles = new BigDecimal(threeMonthsCandleStickData.size());
+    return this;
   }
 
   public BigDecimal getPriceCountToSlope() {
     return priceCountToSlope;
   }
 
-  public void setPriceCountToSlope(BigDecimal priceCountToSlope) {
-    this.priceCountToSlope = priceCountToSlope;
+  public Crypto setPriceCountToSlope() {
+    List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
+    this.priceCountToSlope = CommonUtils.getPriceCountToSlope(averagePrices);
+    return this;
   }
 
-  public List<Candlestick> getFifteenMinutesCandleStickData() {
-    return fifteenMinutesCandleStickData;
-  }
-
-  public void setFifteenMinutesCandleStickData(List<Candlestick> fifteenMinutesCandleStickData) {
+  public Crypto setFifteenMinutesCandleStickData(List<Candlestick> fifteenMinutesCandleStickData) {
     this.fifteenMinutesCandleStickData = fifteenMinutesCandleStickData;
+    return this;
   }
 
   public List<Candlestick> getThreeMonthsCandleStickData() {
@@ -63,12 +72,9 @@ public class Crypto {
     return this;
   }
 
-  public OrderBook getOrderBook() {
-    return orderBook;
-  }
-
-  public void setOrderBook(OrderBook orderBook) {
+  public Crypto setOrderBook(OrderBook orderBook) {
     this.orderBook = orderBook;
+    return this;
   }
 
   public SymbolInfo getSymbolInfo() {
@@ -79,64 +85,74 @@ public class Crypto {
     return currentPrice;
   }
 
-  public void setCurrentPrice(BigDecimal currentPrice) {
-    this.currentPrice = currentPrice;
+  public Crypto setCurrentPrice() {
+    this.currentPrice = CommonUtils.getCurrentPrice(orderBook);
+    return this;
   }
 
   public BigDecimal getVolume() {
     return volume;
   }
 
-  public void setVolume(BigDecimal volume) {
+  public Crypto setVolume(BigDecimal volume) {
     this.volume = volume;
+    return this;
   }
 
   public BigDecimal getSumPercentageDifferences1h() {
     return sumPercentageDifferences1h;
   }
 
-  public void setSumPercentageDifferences1h(BigDecimal sumPercentageDifferences1h) {
-    this.sumPercentageDifferences1h = sumPercentageDifferences1h;
+  public Crypto setSumPercentageDifferences1h() {
+    this.sumPercentageDifferences1h = calculateSumPercentageDifferences1h(fifteenMinutesCandleStickData,
+                                                                          currentPrice);
+    return this;
   }
 
   public BigDecimal getSumPercentageDifferences10h() {
     return sumPercentageDifferences10h;
   }
 
-  public void setSumPercentageDifferences10h(BigDecimal sumPercentageDifferences10h) {
-    this.sumPercentageDifferences10h = sumPercentageDifferences10h;
+  public Crypto setSumPercentageDifferences10h() {
+    this.sumPercentageDifferences10h = calculateSumPercentageDifferences10h(fifteenMinutesCandleStickData,
+                                                                            currentPrice);
+    return this;
   }
 
   public BigDecimal getPriceToSell() {
     return priceToSell;
   }
 
-  public void setPriceToSell(BigDecimal priceToSell) {
-    this.priceToSell = priceToSell;
+  public Crypto setPriceToSell() {
+    this.priceToSell = calculatePriceToSell(fifteenMinutesCandleStickData, currentPrice);
+    return this;
   }
 
   public BigDecimal getPriceToSellPercentage() {
     return priceToSellPercentage;
   }
 
-  public void setPriceToSellPercentage(BigDecimal priceToSellPercentage) {
-    this.priceToSellPercentage = priceToSellPercentage;
+  public Crypto setPriceToSellPercentage() {
+    this.priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
+    return this;
   }
 
   public BigDecimal getLastThreeHighAverage() {
     return lastThreeHighAverage;
   }
 
-  public void setLastThreeHighAverage(BigDecimal lastThreeHighAverage) {
-    this.lastThreeHighAverage = lastThreeHighAverage;
+  public Crypto setLastThreeHighAverage() {
+    this.lastThreeHighAverage = calculateLastThreeHighAverage(fifteenMinutesCandleStickData);
+    return this;
   }
 
   public BigDecimal getPreviousThreeHighAverage() {
     return previousThreeHighAverage;
   }
 
-  public void setPreviousThreeHighAverage(BigDecimal previousThreeHighAverage) {
-    this.previousThreeHighAverage = previousThreeHighAverage;
+  public Crypto setPreviousThreeHighAverage() {
+    this.previousThreeHighAverage = calculatePreviousThreeHighAverage(fifteenMinutesCandleStickData);
+    return this;
   }
 
   @Override

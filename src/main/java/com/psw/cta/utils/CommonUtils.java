@@ -2,12 +2,10 @@ package com.psw.cta.utils;
 
 import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
-import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.LeastSquares.getSlope;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.FLOOR;
-import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 
@@ -247,18 +245,7 @@ public class CommonUtils {
                     .orElseThrow(() -> new CryptoTraderException("No price found!"));
   }
 
-  /**
-   * Calculates percentage price.
-   *
-   * @param lowestPrice  Price
-   * @param highestPrice Base price
-   * @return Price percentage
-   */
-  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
-                                                    BigDecimal highestPrice) {
-    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
-    return HUNDRED_PERCENT.subtract(percentage);
-  }
+
 
   /**
    * Returns whether BTC balance is higher than minimal balance for trading.

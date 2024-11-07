@@ -106,8 +106,7 @@ public class SplitProcessor {
     Set<String> existingSymbols = totalAmounts.keySet();
     return cryptos.stream()
                   .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
-                  .map(Crypto::setPriceCountToSlope)
-                  .map(Crypto::setNumberOfCandles)
+                  .map(Crypto::calculateSlopeData)
                   .filter(crypto -> crypto.getPriceCountToSlope().compareTo(ZERO) < 0)
                   .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
                   .sorted(comparing(Crypto::getPriceCountToSlope).reversed())

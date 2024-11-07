@@ -5,7 +5,6 @@ import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
-import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.CommonUtils.getAveragePrice;
 import static com.psw.cta.utils.CommonUtils.getAveragePrices;
@@ -369,16 +368,6 @@ class CommonUtilsTest {
     OrderBookEntry orderBookEntry = new OrderBookEntry();
     orderBookEntry.setPrice(price);
     return orderBookEntry;
-  }
-
-  @Test
-  void shouldCalculatePriceToSellPercentage() {
-    BigDecimal orderPrice = new BigDecimal("50");
-    BigDecimal priceToSell = new BigDecimal("40");
-
-    BigDecimal priceToSellPercentage = calculatePricePercentage(priceToSell, orderPrice);
-
-    assertThat(priceToSellPercentage.stripTrailingZeros().toPlainString()).isEqualTo("20");
   }
 
   @Test

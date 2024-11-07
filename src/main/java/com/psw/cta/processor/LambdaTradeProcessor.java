@@ -10,7 +10,6 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
-import static com.psw.cta.utils.CryptoUtils.getVolume;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.lang.Boolean.TRUE;
 import static java.math.RoundingMode.CEILING;
@@ -241,8 +240,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                        .filter(crypto -> !allForbiddenPairs.contains(crypto.getSymbolInfo()
                                                                                            .getSymbol()))
                                        .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
-                                       .map(crypto -> crypto.setVolume(getVolume(crypto.getSymbolInfo().getSymbol(),
-                                                                                 tickers)))
+                                       .map(crypto -> crypto.calculateVolume(tickers))
                                        .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
                                        .map(crypto -> crypto.setThreeMonthsCandleStickData(
                                            binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
@@ -250,10 +248,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                              90L,
                                                                              DAYS)))
                                        .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
-                                       .map(crypto -> crypto.setOrderBook(binanceService.getOrderBook(
+                                       .map(crypto -> crypto.calculateCurrentPrice(binanceService.getOrderBook(
                                            crypto.getSymbolInfo().getSymbol(),
                                            20)))
-                                       .map(Crypto::setCurrentPrice)
                                        .filter(crypto -> crypto.getCurrentPrice()
                                                                .compareTo(new BigDecimal("0.000001")) > 0)
                                        .collect(Collectors.toList());
@@ -261,33 +258,22 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return cryptos;
   }
 
-  private void initTrading(Supplier<List<Crypto>> cryptosSupplier) {
+  private void initTrading(Supplier<List<Crypto>> supplier) {
     logger.log("***** ***** Initial trading ***** *****");
-    cryptosSupplier.get()
-                   .stream()
-                   .map(crypto -> {
-                     List<Candlestick> candleStickData = binanceService.getCandleStickData(crypto.getSymbolInfo()
-                                                                                                 .getSymbol(),
-                                                                                           FIFTEEN_MINUTES,
-                                                                                           96L * 15L,
-                                                                                           MINUTES);
-                    return crypto.setFifteenMinutesCandleStickData(candleStickData);
-                   })
-                   .map(Crypto::setLastThreeHighAverage)
-                   .map(Crypto::setPreviousThreeHighAverage)
-                   .filter(crypto -> crypto.getLastThreeHighAverage()
-                                           .compareTo(crypto.getPreviousThreeHighAverage()) > 0)
-                   .map(Crypto::setPriceToSell)
-                   .map(Crypto::setPriceToSellPercentage)
-                   .filter(crypto -> crypto.getPriceToSellPercentage()
-                                           .compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
-                   .map(Crypto::setSumPercentageDifferences1h)
-                   .map(Crypto::setSumPercentageDifferences10h)
-                   .filter(crypto -> crypto.getSumPercentageDifferences1h()
-                                           .compareTo(new BigDecimal("4")) < 0)
-                   .filter(crypto -> crypto.getSumPercentageDifferences10h()
-                                           .compareTo(new BigDecimal("400")) < 0)
-                   .forEach(acquireProcessor::acquireCrypto);
+    supplier.get()
+            .stream()
+            .map(crypto -> {
+              List<Candlestick> candleStickData = binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
+                                                                                    FIFTEEN_MINUTES,
+                                                                                    96L * 15L,
+                                                                                    MINUTES);
+              return crypto.calculateDataFromCandlesticks(candleStickData);
+            })
+            .filter(crypto -> crypto.getLastThreeHighAverage().compareTo(crypto.getPreviousThreeHighAverage()) > 0)
+            .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
+            .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
+            .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
+            .forEach(acquireProcessor::acquireCrypto);
   }
 
   private void splitOrderWithLowestOrderPricePercentage(List<Order> openOrders,

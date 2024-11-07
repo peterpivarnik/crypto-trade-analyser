@@ -1,14 +1,15 @@
 package com.psw.cta.utils;
 
-import static com.psw.cta.utils.CommonUtils.calculatePricePercentage;
 import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
+import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.OrderUtils.calculateActualWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateMinWaitingTime;
 import static com.psw.cta.utils.OrderUtils.calculateOrderBtcAmount;
 import static com.psw.cta.utils.OrderUtils.calculateOrderPrice;
 import static com.psw.cta.utils.OrderUtils.calculatePriceToSell;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Order;
@@ -87,6 +88,12 @@ public class OrderWrapperBuilder {
     orderWrapper.setOrderPricePercentage(orderPricePercentage);
     orderWrapper.setCurrentBtcAmount(currentBtcAmount);
     return orderWrapper;
+  }
+
+  private static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
+                                                     BigDecimal highestPrice) {
+    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
+    return HUNDRED_PERCENT.subtract(percentage);
   }
 
   private OrderWrapperBuilder() {

@@ -97,6 +97,7 @@ public class BinanceService {
    * @return Current exchange trading rules and symbol information
    */
   public ExchangeInfo getExchangeInfo() {
+    logger.log("Get exchange info.");
     return executeCall(binanceApi.getExchangeInfo());
   }
 
@@ -107,6 +108,7 @@ public class BinanceService {
    * @param limit  depth of the order book (max 100)
    */
   public OrderBook getOrderBook(String symbol, Integer limit) {
+    logger.log("Get order book for " + symbol);
     return executeCall(binanceApi.getOrderBook(symbol, limit));
   }
 
@@ -117,6 +119,7 @@ public class BinanceService {
    * @return OrderBookEntry with min price
    */
   public OrderBookEntry getMinOrderBookEntry(String symbol) {
+    logger.log("Get min order book entry for " + symbol);
     return getOrderBook(symbol, 20)
         .getAsks()
         .parallelStream()
@@ -138,6 +141,7 @@ public class BinanceService {
                                               CandlestickInterval interval,
                                               long numberOfTimeUnits,
                                               ChronoUnit chronoUnit) {
+    logger.log("Get candle stick data for " + symbol);
     Instant endTime = Instant.now();
     Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
     return executeCall(binanceApi.getCandlestickBars(symbol,
@@ -151,6 +155,7 @@ public class BinanceService {
    * Get 24 hour price change statistics for all symbols.
    */
   public List<TickerStatistics> getAll24hTickers() {
+    logger.log("Get 24 h Tickers");
     return executeCall(binanceApi.getAll24HrPriceStatistics());
   }
 
@@ -162,7 +167,7 @@ public class BinanceService {
    * @param quantity   Quantity to sell
    */
   public void sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
-    logger.log("Sell order: " + symbolInfo.getSymbol() + ", quantity=" + quantity);
+    logger.log("Sell available balance for " + symbolInfo.getSymbol() + ", quantity=" + quantity);
     String asset = getAssetFromSymbolInfo(symbolInfo);
     BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
@@ -204,6 +209,7 @@ public class BinanceService {
    * @return New Order response
    */
   public NewOrderResponse createNewOrder(String symbol, OrderSide orderSide, BigDecimal roundedMyQuatity) {
+    logger.log("Create new order for " + symbol + ", and side=" + orderSide + ", and quantity=" + roundedMyQuatity);
     NewOrder buyOrder = new NewOrder(symbol,
                                      orderSide,
                                      MARKET,
@@ -248,6 +254,7 @@ public class BinanceService {
    * Check an order's status.
    */
   public void checkOrderStatus(String symbol, Long orderId) {
+    logger.log("Check order status for " + symbol + ", orderId=" + orderId);
     executeCall(binanceApi.getOrderStatus(symbol,
                                           orderId,
                                           null,
@@ -261,6 +268,7 @@ public class BinanceService {
    * @param orderWrapper order status request parameters
    */
   public void cancelRequest(OrderWrapper orderWrapper) {
+    logger.log("Cancel request for " + orderWrapper);
     executeCall(binanceApi.cancelOrder(orderWrapper.getOrder().getSymbol(),
                                        null,
                                        orderWrapper.getOrder().getClientOrderId(),
@@ -275,6 +283,7 @@ public class BinanceService {
    * @return a list of all account open orders on a symbol.
    */
   public List<Order> getOpenOrders() {
+    logger.log("Get open orders");
     return executeCall(binanceApi.getOpenOrders(null,
                                                 DEFAULT_RECEIVING_WINDOW,
                                                 currentTimeMillis()));
@@ -287,6 +296,7 @@ public class BinanceService {
    * @return Actual balance
    */
   public BigDecimal getMyBalance(String asset) {
+    logger.log("Get my balance for " + asset);
     BigDecimal myBalance = getAccount()
         .getBalances()
         .parallelStream()
@@ -305,6 +315,7 @@ public class BinanceService {
    * @return Actual balance
    */
   public BigDecimal getMyActualBalance() {
+    logger.log("Get my actual balance");
     return getAccount()
         .getBalances()
         .parallelStream()
@@ -352,6 +363,7 @@ public class BinanceService {
    * @return bought quantity
    */
   public Pair<Long, BigDecimal> buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+    logger.log("Buy " + symbolInfo.getSymbol() + ", btcAmount=" + btcAmount + ", price=" + price);
     BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
     BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                      SymbolFilter::getMinNotional,
@@ -372,6 +384,7 @@ public class BinanceService {
    * @return a list of trades
    */
   public List<Trade> getMyTrades(String symbol, String orderId) {
+    logger.log("Get my trades for " + symbol + ", orderId=" + orderId);
     return executeCall(binanceApi.getMyTrades(symbol,
                                               orderId,
                                               null,

@@ -108,7 +108,6 @@ public class BinanceService {
    * @param limit  depth of the order book (max 100)
    */
   public OrderBook getOrderBook(String symbol, Integer limit) {
-    logger.log("Get order book for " + symbol);
     return executeCall(binanceApi.getOrderBook(symbol, limit));
   }
 

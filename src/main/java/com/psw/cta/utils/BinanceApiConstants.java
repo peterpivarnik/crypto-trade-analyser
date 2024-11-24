@@ -10,7 +10,7 @@ public class BinanceApiConstants {
   /**
    * REST API base URL.
    */
-  public static final String API_BASE_URL = "https://api.binance.com";
+  public static final String API_BASE_URL = "https://api1.binance.com";
 
   /**
    * HTTP Header to be used for API-KEY authentication.

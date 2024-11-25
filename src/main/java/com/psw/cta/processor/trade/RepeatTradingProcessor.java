@@ -70,9 +70,9 @@ public class RepeatTradingProcessor {
     BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
     Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, orderPrice);
     logger.log("Bought: " + pair.getRight());
-    logger.log("OrderId: " + pair.getLeft());
+    logger.log("Transaction time: " + pair.getLeft());
     Long orderId = pair.getLeft();
-    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), String.valueOf(orderId));
+    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
     BigDecimal newPriceToSell = getNewPriceToSell(orderWrapper, myTrades);
 
     // 3. create new order

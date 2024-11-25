@@ -57,6 +57,7 @@ public class CommonUtils {
    */
   @SuppressWarnings("java:S2142")
   public static void sleep(int millis, LambdaLogger logger) {
+    logger.log("Sleeping for " + millis / 1000 + " seconds");
     try {
       Thread.sleep(millis);
     } catch (InterruptedException e) {
@@ -244,7 +245,6 @@ public class CommonUtils {
                     .min(Comparator.naturalOrder())
                     .orElseThrow(() -> new CryptoTraderException("No price found!"));
   }
-
 
 
   /**

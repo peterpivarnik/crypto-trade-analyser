@@ -229,7 +229,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   }
 
   private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
-    logger.log("Sleep for 1 minute before get all cryptos");
     sleep(1000 * 60, logger);
     logger.log("Get all cryptos");
     List<TickerStatistics> tickers = binanceService.getAll24hTickers();
@@ -281,7 +280,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                         BigDecimal myBtcBalance,
                                                         ExchangeInfo exchangeInfo,
                                                         BigDecimal actualBalance) {
-    logger.log("Sleep for 1 minute before splitting");
     sleep(1000 * 60, logger);
     List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
                                                         myBtcBalance,

@@ -11,6 +11,7 @@ import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
+import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.lang.System.currentTimeMillis;
 import static java.math.BigDecimal.ZERO;
@@ -385,6 +386,7 @@ public class BinanceService {
    */
   public List<Trade> getMyTrades(String symbol, Long startTime) {
     logger.log("Get my trades for " + symbol + ", orderId=" + startTime);
+    sleep(1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol,
                                               null,
                                               startTime,

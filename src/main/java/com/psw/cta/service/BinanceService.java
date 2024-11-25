@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 import org.apache.commons.lang3.tuple.Pair;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -397,11 +398,27 @@ public class BinanceService {
     try {
       response = call.execute();
     } catch (IOException e) {
+      logger.log("Exception during execution of request: " + e);
       throw new BinanceApiException(e);
     }
     if (response.isSuccessful()) {
       return response.body();
     } else {
+      logger.log("Call failed: " + response);
+      logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
+      if (response.body() != null) {
+        logger.log("Call failed with body  " + response.body());
+      }
+      try(ResponseBody errorBody = response.errorBody()) {
+        if (errorBody != null) {
+          try {
+            logger.log("Call failed with errorBody  " + errorBody.string());
+          } catch (IOException e) {
+            logger.log("Exception during parsing response: " + e);
+            throw new BinanceApiException(e);
+          }
+        }
+      }
       throw new BinanceApiException(response.toString());
     }
   }

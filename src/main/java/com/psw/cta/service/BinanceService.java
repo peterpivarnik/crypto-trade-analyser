@@ -389,7 +389,7 @@ public class BinanceService {
                                               orderId,
                                               null,
                                               null,
-                                              DEFAULT_RECEIVING_WINDOW,
+                                              null,
                                               currentTimeMillis()));
   }
 

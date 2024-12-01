@@ -142,7 +142,6 @@ public class BinanceService {
                                               CandlestickInterval interval,
                                               long numberOfTimeUnits,
                                               ChronoUnit chronoUnit) {
-    logger.log("Get candle stick data for " + symbol);
     Instant endTime = Instant.now();
     Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
     return executeCall(binanceApi.getCandlestickBars(symbol,

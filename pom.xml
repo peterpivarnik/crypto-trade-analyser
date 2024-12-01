@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.psw.cta</groupId>
     <artifactId>crypto-trader</artifactId>
-    <version>1.10.35-SNAPSHOT</version>
+    <version>1.10.35</version>
     <packaging>jar</packaging>
     <name>Crypto trader</name>
     <description>Crypto trader</description>
@@ -29,7 +29,7 @@
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-        <checkstyle.version>10.20.1</checkstyle.version>
+        <checkstyle.version>10.20.2</checkstyle.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <openapi-generator-maven-plugin.version>7.5.0</openapi-generator-maven-plugin.version>
@@ -234,7 +234,7 @@
     </build>
     <scm>
         <developerConnection>scm:git:https://github.com/peterpivarnik/crypto-trade-analyser/</developerConnection>
-        <tag>HEAD</tag>
+        <tag>crypto-trader-1.10.35-SNAPSHOT</tag>
     </scm>
     <organization>
         <name>PSoftware, s.r.o.</name>

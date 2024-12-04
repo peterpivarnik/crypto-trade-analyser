@@ -75,24 +75,24 @@ public class RepeatTradingProcessor {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal baughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-    if (baughtQuantity.compareTo(ZERO) == 0) {
+    BigDecimal boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+    if (boughtQuantity.compareTo(ZERO) == 0) {
       sleep(50 * 1000, logger);
       myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
       myTrades.forEach(trade -> logger.log(trade.toString()));
-      baughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-      logger.log("Baught quantity after waiting: " + baughtQuantity);
+      boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+      logger.log("Bought quantity after waiting: " + boughtQuantity);
     }
-    if (baughtQuantity.compareTo(ZERO) == 0) {
-      baughtQuantity = btcAmount.divide(orderPrice, 8, UP);
-      logger.log("Baught quantity after still not having: " + baughtQuantity);
+    if (boughtQuantity.compareTo(ZERO) == 0) {
+      boughtQuantity = btcAmount.divide(orderPrice, 8, UP);
+      logger.log("Bought quantity after still not having: " + boughtQuantity);
     }
-    logger.log("baughtQuantity: " + baughtQuantity);
+    logger.log("boughtQuantity: " + boughtQuantity);
     BigDecimal earnedBtcs = getSumFromTrades(myTrades,
                                              trade -> new BigDecimal(trade.getQty())
                                                  .multiply(new BigDecimal(trade.getPrice())));
     logger.log("earnedBtcs: " + earnedBtcs);
-    BigDecimal soldPrice = earnedBtcs.divide(baughtQuantity, 8, CEILING);
+    BigDecimal soldPrice = earnedBtcs.divide(boughtQuantity, 8, CEILING);
     logger.log("soldPrice: " + soldPrice);
     BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
     BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);

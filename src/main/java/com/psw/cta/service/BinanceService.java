@@ -385,7 +385,7 @@ public class BinanceService {
    */
   public List<Trade> getMyTrades(String symbol, Long startTime) {
     logger.log("Get my trades for " + symbol + ", orderId=" + startTime);
-    sleep(1000, logger);
+    sleep(60 * 1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol,
                                               null,
                                               startTime,

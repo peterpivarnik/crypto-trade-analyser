@@ -6,10 +6,12 @@ import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
@@ -73,18 +75,24 @@ public class RepeatTradingProcessor {
     Long orderId = pair.getLeft();
     List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
     myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-    while (soldQuantity.compareTo(ZERO) == 0) {
+    BigDecimal baughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+    if (baughtQuantity.compareTo(ZERO) == 0) {
+      sleep(50 * 1000, logger);
       myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
       myTrades.forEach(trade -> logger.log(trade.toString()));
-      soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+      baughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
+      logger.log("Baught quantity after waiting: " + baughtQuantity);
     }
-    logger.log("soldQuantity: " + soldQuantity);
+    if (baughtQuantity.compareTo(ZERO) == 0) {
+      baughtQuantity = btcAmount.divide(orderPrice, 8, UP);
+      logger.log("Baught quantity after still not having: " + baughtQuantity);
+    }
+    logger.log("baughtQuantity: " + baughtQuantity);
     BigDecimal earnedBtcs = getSumFromTrades(myTrades,
                                              trade -> new BigDecimal(trade.getQty())
                                                  .multiply(new BigDecimal(trade.getPrice())));
     logger.log("earnedBtcs: " + earnedBtcs);
-    BigDecimal soldPrice = earnedBtcs.divide(soldQuantity, 8, CEILING);
+    BigDecimal soldPrice = earnedBtcs.divide(baughtQuantity, 8, CEILING);
     logger.log("soldPrice: " + soldPrice);
     BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
     BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
@@ -98,7 +106,6 @@ public class RepeatTradingProcessor {
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell, CommonUtils::roundPriceUp);
   }
-
 
 
   private BigDecimal getSumFromTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {

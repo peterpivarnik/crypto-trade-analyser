@@ -1,11 +1,8 @@
 package com.psw.cta.dto.binance;
 
-import static com.psw.cta.utils.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Represents an executed trade.
@@ -176,19 +173,19 @@ public class Trade {
 
   @Override
   public String toString() {
-    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
-        .append("id", id)
-        .append("symbol", symbol)
-        .append("price", price)
-        .append("qty", qty)
-        .append("quoteQty", quoteQty)
-        .append("commission", commission)
-        .append("commissionAsset", commissionAsset)
-        .append("time", time)
-        .append("buyer", buyer)
-        .append("maker", maker)
-        .append("bestMatch", bestMatch)
-        .append("orderId", orderId)
-        .toString();
+    return "Trade{"
+           + "id=" + id
+           + ", price='" + price
+           + ", qty='" + qty
+           + ", quoteQty='" + quoteQty
+           + ", commission='" + commission
+           + ", commissionAsset='" + commissionAsset
+           + ", time=" + time
+           + ", symbol='" + symbol
+           + ", buyer=" + buyer
+           + ", maker=" + maker
+           + ", bestMatch=" + bestMatch
+           + ", orderId='" + orderId
+           + '}';
   }
 }

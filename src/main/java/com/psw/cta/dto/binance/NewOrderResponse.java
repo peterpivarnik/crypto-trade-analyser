@@ -1,13 +1,7 @@
 package com.psw.cta.dto.binance;
 
-import static com.psw.cta.utils.BinanceApiConstants.TO_STRING_BUILDER_STYLE;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Response returned when placing a new order on the system.
@@ -161,26 +155,23 @@ public class NewOrderResponse {
     this.fills = fills;
   }
 
+
   @Override
   public String toString() {
-    String joinedFills = ofNullable(fills)
-        .orElse(emptyList())
-        .stream()
-        .map(Object::toString)
-        .collect(Collectors.joining(", "));
-    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
-        .append("symbol", symbol)
-        .append("orderId", orderId)
-        .append("clientOrderId", clientOrderId)
-        .append("transactTime", transactTime)
-        .append("price", price)
-        .append("origQty", origQty)
-        .append("executedQty", executedQty)
-        .append("status", status)
-        .append("timeInForce", timeInForce)
-        .append("type", type)
-        .append("side", side)
-        .append("fills", joinedFills)
-        .toString();
+    return "NewOrderResponse{"
+           + "symbol='" + symbol
+           + ", orderId=" + orderId
+           + ", clientOrderId='" + clientOrderId
+           + ", price='" + price
+           + ", origQty='" + origQty
+           + ", executedQty='" + executedQty
+           + ", cummulativeQuoteQty='" + cummulativeQuoteQty
+           + ", status=" + status
+           + ", timeInForce=" + timeInForce
+           + ", type=" + type
+           + ", side=" + side
+           + ", fills=" + fills
+           + ", transactTime=" + transactTime
+           + '}';
   }
 }

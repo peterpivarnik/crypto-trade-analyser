@@ -371,23 +371,23 @@ public class BinanceService {
     BigDecimal myQuantityToBuy = myQuantity.max(minNotionalFromMinNotionalFilter);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, roundedQuantity);
-
-    return Pair.of(newOrder.getTransactTime(), roundedQuantity);
+    logger.log("response: " + newOrder);
+    return Pair.of(newOrder.getOrderId(), roundedQuantity);
   }
 
   /**
    * Get trades for a specific account and symbol.
    *
    * @param symbol    symbol to get trades from
-   * @param startTime id of the order
+   * @param orderId id of the order
    * @return a list of trades
    */
-  public List<Trade> getMyTrades(String symbol, Long startTime) {
-    logger.log("Get my trades for " + symbol + ", startTime=" + startTime);
+  public List<Trade> getMyTrades(String symbol, Long orderId) {
+    logger.log("Get my trades for " + symbol + ", orderId=" + orderId);
     sleep(5 * 1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol,
+                                              orderId + "",
                                               null,
-                                              startTime,
                                               null,
                                               null,
                                               null,

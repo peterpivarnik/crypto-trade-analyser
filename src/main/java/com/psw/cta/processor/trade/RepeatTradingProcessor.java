@@ -6,7 +6,6 @@ import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.BigDecimal.ZERO;
@@ -76,7 +75,6 @@ public class RepeatTradingProcessor {
     myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     while (soldQuantity.compareTo(ZERO) == 0) {
-      sleep(10 * 1000, logger);
       myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), transactionTime);
       myTrades.forEach(trade -> logger.log(trade.toString()));
       soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));

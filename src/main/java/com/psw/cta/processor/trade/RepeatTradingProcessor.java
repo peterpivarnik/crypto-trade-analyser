@@ -71,13 +71,13 @@ public class RepeatTradingProcessor {
     Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, orderPrice);
     logger.log("Bought: " + pair.getRight());
     logger.log("Transaction time: " + pair.getLeft());
-    Long orderId = pair.getLeft();
-    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
+    Long transactionTime = pair.getLeft() - 10000;
+    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), transactionTime);
     myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     while (soldQuantity.compareTo(ZERO) == 0) {
       sleep(10 * 1000, logger);
-      myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
+      myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), transactionTime);
       myTrades.forEach(trade -> logger.log(trade.toString()));
       soldQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     }

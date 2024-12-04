@@ -383,7 +383,7 @@ public class BinanceService {
    * @return a list of trades
    */
   public List<Trade> getMyTrades(String symbol, Long startTime) {
-    logger.log("Get my trades for " + symbol + ", orderId=" + startTime);
+    logger.log("Get my trades for " + symbol + ", startTime=" + startTime);
     sleep(5 * 1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol,
                                               null,

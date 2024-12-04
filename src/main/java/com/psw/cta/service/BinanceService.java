@@ -235,7 +235,6 @@ public class BinanceService {
   }
 
 
-
   private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
     return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
   }
@@ -379,13 +378,13 @@ public class BinanceService {
   /**
    * Get trades for a specific account and symbol.
    *
-   * @param symbol  symbol to get trades from
+   * @param symbol    symbol to get trades from
    * @param startTime id of the order
    * @return a list of trades
    */
   public List<Trade> getMyTrades(String symbol, Long startTime) {
     logger.log("Get my trades for " + symbol + ", orderId=" + startTime);
-    sleep(60 * 1000, logger);
+    sleep(5 * 1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol,
                                               null,
                                               startTime,
@@ -411,7 +410,7 @@ public class BinanceService {
       if (response.body() != null) {
         logger.log("Call failed with body  " + response.body());
       }
-      try(ResponseBody errorBody = response.errorBody()) {
+      try (ResponseBody errorBody = response.errorBody()) {
         if (errorBody != null) {
           try {
             logger.log("Call failed with errorBody  " + errorBody.string());

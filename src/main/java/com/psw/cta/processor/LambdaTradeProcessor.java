@@ -112,14 +112,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
           .forEach(order -> splitCancelledOrder(order, myBtcBalance, actualBalance, totalAmounts, exchangeInfo));
     } else if (myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0) {
       logger.log("***** ***** Rebuy all orders ***** *****");
-      repeatTrading(openOrders,
-                    myBtcBalance,
-                    totalAmounts,
-                    exchangeInfo,
-                    actualBalance,
-                    orderWrapper -> orderWrapper.getOrderPricePercentage()
-                                                .subtract(orderWrapper.getPriceToSellPercentage())
-                                                .compareTo(MIN_PROFIT_PERCENTAGE) > 0);
+      rebuyOrders(openOrders,
+                  myBtcBalance,
+                  totalAmounts,
+                  exchangeInfo,
+                  actualBalance);
     } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
       splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
     } else if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
@@ -148,12 +145,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         initTrading(() -> getCryptos(exchangeInfo));
       }
     } else {
-      repeatTrading(openOrders,
-                    myBtcBalance,
-                    totalAmounts,
-                    exchangeInfo,
-                    actualBalance,
-                    getOrderWrapperPredicate(myBtcBalance));
+      rebuyOrdersWithPredicateCheck(openOrders,
+                                    myBtcBalance,
+                                    totalAmounts,
+                                    exchangeInfo,
+                                    actualBalance);
     }
   }
 
@@ -173,17 +169,38 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     splitProcessor.split(orderToCancel, cryptos, totalAmounts, exchangeInfo);
   }
 
-  private void repeatTrading(List<Order> openOrders,
-                             BigDecimal myBtcBalance,
-                             Map<String, BigDecimal> totalAmounts,
-                             ExchangeInfo exchangeInfo,
-                             BigDecimal actualBalance,
-                             Predicate<OrderWrapper> orderWrapperPredicate) {
+  private void rebuyOrdersWithPredicateCheck(List<Order> openOrders,
+                                             BigDecimal myBtcBalance,
+                                             Map<String, BigDecimal> totalAmounts,
+                                             ExchangeInfo exchangeInfo,
+                                             BigDecimal actualBalance) {
+    Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(myBtcBalance);
     getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance, orderWrapperPredicate)
-        .forEach(orderWrapper ->
-                     repeatTradingProcessor.rebuySingleOrder(exchangeInfo.getSymbolInfo(orderWrapper.getOrder()
-                                                                                                    .getSymbol()),
-                                                             orderWrapper));
+        .forEach(orderWrapper -> {
+          BigDecimal newBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+          Predicate<OrderWrapper> predicate = getOrderWrapperPredicate(newBtcBalance);
+          if (!predicate.test(orderWrapper)) {
+            logger.log("Conditions to rebuy crypto not valid.");
+            return;
+          }
+          SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
+          repeatTradingProcessor.rebuySingleOrder(symbolInfo, orderWrapper);
+        });
+  }
+
+  private void rebuyOrders(List<Order> openOrders,
+                           BigDecimal myBtcBalance,
+                           Map<String, BigDecimal> totalAmounts,
+                           ExchangeInfo exchangeInfo,
+                           BigDecimal actualBalance) {
+    Predicate<OrderWrapper> orderWrapperPredicate = orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                                                .subtract(orderWrapper.getPriceToSellPercentage())
+                                                                                .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
+    getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance, orderWrapperPredicate)
+        .forEach(orderWrapper -> {
+          SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
+          repeatTradingProcessor.rebuySingleOrder(symbolInfo, orderWrapper);
+        });
   }
 
   private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,

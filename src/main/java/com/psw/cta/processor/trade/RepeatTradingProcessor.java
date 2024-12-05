@@ -7,8 +7,6 @@ import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
@@ -23,7 +21,6 @@ import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -48,12 +45,6 @@ public class RepeatTradingProcessor {
   public synchronized void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
-    BigDecimal mybtcBalance = binanceService.getMyBalance(ASSET_BTC);
-    Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(mybtcBalance);
-    if (!orderWrapperPredicate.test(orderWrapper)) {
-      logger.log("Conditions to rebuy crypto not valid.");
-      return;
-    }
     // 1. cancel existing order
     binanceService.cancelRequest(orderWrapper);
     // 2. buy

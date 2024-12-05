@@ -8,10 +8,12 @@ import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
+import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
 import static java.lang.Boolean.TRUE;
+import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -101,10 +103,29 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     openOrders.stream()
               .filter(order -> allForbiddenPairs.contains(order.getSymbol()))
               .forEach(order -> splitCancelledOrder(order, myBtcBalance, actualBalance, totalAmounts, exchangeInfo));
+    BigDecimal ordersAmount = totalAmounts.values()
+                                          .stream()
+                                          .reduce(ZERO, BigDecimal::add);
+    if (myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0) {
+      logger.log("***** ***** Rebuy all orders ***** *****");
+      repeatTrading(openOrders,
+                    myBtcBalance,
+                    totalAmounts,
+                    exchangeInfo,
+                    actualBalance,
+                    orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                .subtract(orderWrapper.getPriceToSellPercentage())
+                                                .compareTo(MIN_PROFIT_PERCENTAGE) > 0);
+    }
     if (canHaveMoreOrders(minOpenOrders, uniqueOpenOrdersSize)) {
       expandOrders(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
     } else {
-      repeatTrading(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance);
+      repeatTrading(openOrders,
+                    myBtcBalance,
+                    totalAmounts,
+                    exchangeInfo,
+                    actualBalance,
+                    getOrderWrapperPredicate(myBtcBalance));
     }
     if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
       splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
@@ -143,19 +164,13 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                              BigDecimal myBtcBalance,
                              Map<String, BigDecimal> totalAmounts,
                              ExchangeInfo exchangeInfo,
-                             BigDecimal actualBalance) {
-    Predicate<OrderWrapper> orderWrapperPredicate = getOrderWrapperPredicate(myBtcBalance);
-    List<OrderWrapper> wrappers = getOrderWrappers(openOrders,
-                                                   myBtcBalance,
-                                                   totalAmounts,
-                                                   exchangeInfo,
-                                                   actualBalance,
-                                                   orderWrapperPredicate);
-    wrappers.forEach(orderWrapper -> logger.log(orderWrapper.toString()));
-    wrappers.forEach(orderWrapper -> repeatTradingProcessor.rebuySingleOrder(
-        exchangeInfo.getSymbolInfo(orderWrapper.getOrder()
-                                               .getSymbol()),
-        orderWrapper));
+                             BigDecimal actualBalance,
+                             Predicate<OrderWrapper> orderWrapperPredicate) {
+    getOrderWrappers(openOrders, myBtcBalance, totalAmounts, exchangeInfo, actualBalance, orderWrapperPredicate)
+        .forEach(orderWrapper ->
+                     repeatTradingProcessor.rebuySingleOrder(exchangeInfo.getSymbolInfo(orderWrapper.getOrder()
+                                                                                                    .getSymbol()),
+                                                             orderWrapper));
   }
 
   private List<OrderWrapper> getOrderWrappers(List<Order> openOrders,

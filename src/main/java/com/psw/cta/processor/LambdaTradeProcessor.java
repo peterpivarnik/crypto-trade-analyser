@@ -118,9 +118,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                   totalAmounts,
                   exchangeInfo,
                   actualBalance);
-    } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
-      logger.log("***** ***** Splitting trade with lowest orderPricePercentage ***** *****");
-      splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
+    //    } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
+    //      logger.log("***** ***** Splitting trade with lowest orderPricePercentage ***** *****");
+    //      splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
     } else if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =

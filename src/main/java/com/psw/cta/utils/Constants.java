@@ -11,7 +11,6 @@ public class Constants {
 
   public static final BigDecimal TWO = new BigDecimal("2");
   public static final BigDecimal HUNDRED_PERCENT = new BigDecimal("100");
-  public static final BigDecimal TIME_CONSTANT = TWO;
   public static final String SYMBOL_BNB_BTC = "BNBBTC";
   public static final String SYMBOL_WBTC_BTC = "WBTCBTC";
   public static final String ASSET_BNB = "BNB";

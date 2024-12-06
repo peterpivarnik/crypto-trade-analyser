@@ -48,13 +48,13 @@ public abstract class MainTradeProcessor {
                                               .min(getOrderComparator()))
                      .map(Optional::orElseThrow)
                      .map(OrderWrapperBuilder::build)
-                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                      .map(orderWrapper -> withPrices(orderWrapper,
                                                      binanceService.getOrderBook(orderWrapper.getOrder().getSymbol(),
                                                                                  20),
                                                      exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
                                                      myBtcBalance,
-                                                     actualBalance));
+                                                     actualBalance))
+                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper));
   }
 
   public abstract Boolean cancelTrade(OrderWrapper orderWrapper, ExchangeInfo exchangeInfo);

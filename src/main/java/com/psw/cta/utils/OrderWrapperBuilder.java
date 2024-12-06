@@ -47,7 +47,8 @@ public class OrderWrapperBuilder {
    */
   public static OrderWrapper withWaitingTimes(Map<String, BigDecimal> totalAmounts, OrderWrapper orderWrapper) {
     BigDecimal minWaitingTime = calculateMinWaitingTime(totalAmounts.get(orderWrapper.getOrder().getSymbol()),
-                                                        orderWrapper.getOrderBtcAmount());
+                                                        orderWrapper.getOrderBtcAmount(),
+                                                        orderWrapper.getOrderPricePercentage());
     BigDecimal actualWaitingTime = calculateActualWaitingTime(orderWrapper.getOrder());
     orderWrapper.setMinWaitingTime(minWaitingTime);
     orderWrapper.setActualWaitingTime(actualWaitingTime);

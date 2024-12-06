@@ -151,13 +151,13 @@ public class CryptoTrader {
     List<OrderWrapper> wrappers =
         newOpenOrders.stream()
                      .map(OrderWrapperBuilder::build)
-                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                      .map(orderWrapper -> withPrices(
                          orderWrapper,
                          binanceService.getOrderBook(orderWrapper.getOrder().getSymbol(), 20),
                          exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
                          myBtcBalance,
                          myActualBalance))
+                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
                      .toList();
     boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
                                                        .map(OrderWrapper::getRemainWaitingTime)

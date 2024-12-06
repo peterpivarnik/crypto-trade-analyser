@@ -118,7 +118,7 @@ public class OrderWrapper {
            + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")
            + format("orderPricePercentage=%-13s", orderPricePercentage.stripTrailingZeros().toPlainString() + ",")
            + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
-           + format("remainWaitingTime=%-9s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
+           + format("remainWaitingTime=%-12s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
            + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
   }
 }

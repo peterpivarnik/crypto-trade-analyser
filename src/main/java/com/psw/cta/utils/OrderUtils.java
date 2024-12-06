@@ -3,7 +3,6 @@ package com.psw.cta.utils;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
-import static com.psw.cta.utils.Constants.TIME_CONSTANT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
@@ -139,21 +138,36 @@ public class OrderUtils {
   /**
    * Calculate minimal waiting time.
    *
-   * @param totalSymbolAmount Total amount from all orders for specific symbol
-   * @param orderBtcAmount    Amount from order
+   * @param totalSymbolAmount    Total amount from all orders for specific symbol
+   * @param orderBtcAmount       Amount from order
+   * @param orderPricePercentage Percentual difference between current price and order price
    * @return Minimal waiting time
    */
   public static BigDecimal calculateMinWaitingTime(BigDecimal totalSymbolAmount,
-                                                   BigDecimal orderBtcAmount) {
+                                                   BigDecimal orderBtcAmount,
+                                                   BigDecimal orderPricePercentage) {
     BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
     BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
     BigDecimal waitingTime = totalWaitingTime.add(orderWaitingTime);
-    return waitingTime.multiply(TIME_CONSTANT);
+    BigDecimal timeVariable = getTimeVariable(orderPricePercentage);
+    return waitingTime.multiply(timeVariable).round(MathContext.DECIMAL32);
   }
 
   private static BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
     double totalTime = 100 * sqrt(totalAmount.doubleValue());
     return new BigDecimal(String.valueOf(totalTime), new MathContext(3));
+  }
+
+  /*
+   * Returns result of f(x)=-0.0008 * x * x + 0.15 * x + 0.5
+   */
+  private static BigDecimal getTimeVariable(BigDecimal orderPricePercentage) {
+    BigDecimal a = new BigDecimal("-0.0008");
+    BigDecimal b = new BigDecimal("0.15");
+    BigDecimal c = new BigDecimal("0.5");
+    BigDecimal firstElement = a.multiply(orderPricePercentage).multiply(orderPricePercentage);
+    BigDecimal secondElement = b.multiply(orderPricePercentage);
+    return firstElement.add(secondElement.add(c));
   }
 
   /**

@@ -108,6 +108,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                           .stream()
                                           .reduce(ZERO, BigDecimal::add);
     if (!ordersToSplit.isEmpty()) {
+      logger.log("***** ***** Splitting cancelled trades ***** *****");
       ordersToSplit
           .forEach(order -> splitCancelledOrder(order, myBtcBalance, actualBalance, totalAmounts, exchangeInfo));
     } else if (myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0) {
@@ -118,6 +119,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                   exchangeInfo,
                   actualBalance);
     } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
+      logger.log("***** ***** Splitting trade with lowest orderPricePercentage ***** *****");
       splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
     } else if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
@@ -145,6 +147,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         initTrading(() -> getCryptos(exchangeInfo));
       }
     } else {
+      logger.log("***** ***** Rebuy orders ***** *****");
       rebuyOrdersWithPredicateCheck(openOrders,
                                     myBtcBalance,
                                     totalAmounts,

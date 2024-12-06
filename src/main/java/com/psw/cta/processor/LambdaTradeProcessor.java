@@ -107,6 +107,20 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     BigDecimal ordersAmount = totalAmounts.values()
                                           .stream()
                                           .reduce(ZERO, BigDecimal::add);
+    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
+                                                        myBtcBalance,
+                                                        totalAmounts,
+                                                        exchangeInfo,
+                                                        actualBalance,
+                                                        orderWrapper -> true);
+    boolean allOlderThanDay = orderWrappers.stream()
+                                           .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
+                                                                                 .compareTo(new BigDecimal("24")) > 0);
+    List<OrderWrapper> filteredOrderWrappers =
+        orderWrappers.stream()
+                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                         .compareTo(new BigDecimal("0.001")) > 0)
+                     .toList();
     if (!ordersToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");
       ordersToSplit
@@ -118,9 +132,15 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                   totalAmounts,
                   exchangeInfo,
                   actualBalance);
-    //    } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)) {
-    //      logger.log("***** ***** Splitting trade with lowest orderPricePercentage ***** *****");
-    //      splitOrderWithLowestOrderPricePercentage(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance);
+    } else if (uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
+               && allOlderThanDay
+               && !filteredOrderWrappers.isEmpty()) {
+      logger.log("***** ***** Splitting amounts with lowest order price percentage ***** *****");
+      sleep(1000 * 60, logger);
+      OrderWrapper orderToSplit = Collections.min(filteredOrderWrappers,
+                                                  comparing(OrderWrapper::getOrderPricePercentage));
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      splitProcessor.split(orderToSplit, cryptos, totalAmounts, exchangeInfo);
     } else if (shouldSplit(myBtcBalance, actualBalance, totalAmount, uniqueOpenOrdersSize)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
@@ -303,35 +323,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
             .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
             .forEach(acquireProcessor::acquireCrypto);
-  }
-
-  private void splitOrderWithLowestOrderPricePercentage(List<Order> openOrders,
-                                                        Map<String, BigDecimal> totalAmounts,
-                                                        BigDecimal myBtcBalance,
-                                                        ExchangeInfo exchangeInfo,
-                                                        BigDecimal actualBalance) {
-    sleep(1000 * 60, logger);
-    List<OrderWrapper> orderWrappers = getOrderWrappers(openOrders,
-                                                        myBtcBalance,
-                                                        totalAmounts,
-                                                        exchangeInfo,
-                                                        actualBalance,
-                                                        orderWrapper -> true);
-    boolean allOlderThanDay = orderWrappers.stream()
-                                           .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
-                                                                                 .compareTo(new BigDecimal("24")) > 0);
-    List<OrderWrapper> filteredOrderWrappers =
-        orderWrappers.stream()
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                         .compareTo(new BigDecimal("0.001")) > 0)
-                     .toList();
-    if (allOlderThanDay && !filteredOrderWrappers.isEmpty()) {
-      OrderWrapper orderToSplit = Collections.min(filteredOrderWrappers,
-                                                  comparing(OrderWrapper::getOrderPricePercentage));
-      logger.log("***** ***** Splitting amounts with lowest order price percentage ***** *****");
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
-      splitProcessor.split(orderToSplit, cryptos, totalAmounts, exchangeInfo);
-    }
   }
 
   @Override

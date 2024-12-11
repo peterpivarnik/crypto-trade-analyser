@@ -196,15 +196,20 @@ public class OrderUtils {
     return orderWrapper -> {
       boolean orderPricePercentageLessThan10 = orderWrapper.getOrderPricePercentage().compareTo(TEN) < 0;
       boolean haveEnoughAmount = orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0;
+      boolean orderPricePercentageLessThan15 = orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("15"))
+                                               < 0;
       boolean haveDoubleAmount = orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2"))
                                              .compareTo(myBtcBalance) < 0;
+      boolean orderBtcAmountLess001 = orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) < 0;
       boolean hasMinProfit = orderWrapper.getOrderPricePercentage()
                                          .subtract(orderWrapper.getPriceToSellPercentage())
                                          .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
       boolean remainingTimeGreaterZero = orderWrapper.getActualWaitingTime()
                                                      .compareTo(orderWrapper.getMinWaitingTime()) > 0;
       return ((orderPricePercentageLessThan10 && haveEnoughAmount)
-              || (!orderPricePercentageLessThan10 && haveDoubleAmount)) && hasMinProfit && remainingTimeGreaterZero;
+              || (!orderPricePercentageLessThan10 && orderPricePercentageLessThan15 && haveDoubleAmount)
+              || (!orderPricePercentageLessThan15 && haveDoubleAmount && orderBtcAmountLess001))
+             && hasMinProfit && remainingTimeGreaterZero;
     };
   }
 }

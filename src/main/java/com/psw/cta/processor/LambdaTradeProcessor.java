@@ -34,7 +34,7 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,22 +110,22 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                              exchangeInfo,
                                                              actualBalance)
         .collect(Collectors.toList());
-    List<OrderWrapper> orderWrappersWithMinimalBtcAmount = filterForMinimalBtcAmount(orderWrappers);
     if (!orderSymbolsToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");
       orderSymbolsToSplit.forEach(symbol -> splitCancelledOrder(orderWrappers, symbol, exchangeInfo, totalAmounts));
     } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
       logger.log("***** ***** Rebuy all orders ***** *****");
       rebuyAllOrders(orderWrappers, exchangeInfo);
-    } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize,
-                                                    totalAmount,
-                                                    orderWrappers,
-                                                    orderWrappersWithMinimalBtcAmount)) {
+    } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       logger.log("***** ***** Splitting order with lowest order price percentage ***** *****");
-      OrderWrapper orderToSplit = Collections.min(orderWrappersWithMinimalBtcAmount,
-                                                  comparing(OrderWrapper::getOrderPricePercentage));
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
-      splitProcessor.split(orderToSplit, cryptos, totalAmounts, exchangeInfo);
+      orderWrappers.stream()
+                   .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                       .compareTo(new BigDecimal("0.001")) > 0)
+                   .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
+                   .ifPresent(orderToSplit -> splitProcessor.split(orderToSplit,
+                                                                   getCryptos(exchangeInfo),
+                                                                   totalAmounts,
+                                                                   exchangeInfo));
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
@@ -152,13 +152,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                      .map(Order::getSymbol)
                      .filter(allForbiddenPairs::contains)
                      .collect(Collectors.toSet());
-  }
-
-  private List<OrderWrapper> filterForMinimalBtcAmount(List<OrderWrapper> orderWrappers) {
-    return orderWrappers.stream()
-                        .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                            .compareTo(new BigDecimal("0.001")) > 0)
-                        .toList();
   }
 
   private void splitCancelledOrder(List<OrderWrapper> orderWrappers,
@@ -194,11 +187,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
   private boolean shouldSplitOrderWithLowestOrderPrice(long uniqueOpenOrdersSize,
                                                        BigDecimal totalAmount,
-                                                       List<OrderWrapper> orderWrappers,
-                                                       List<OrderWrapper> orderWrappersWithMinimalBtcAmount) {
+                                                       List<OrderWrapper> orderWrappers) {
     return uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
-           && allOlderThanDay(orderWrappers)
-           && !orderWrappersWithMinimalBtcAmount.isEmpty();
+           && allOlderThanDay(orderWrappers);
   }
 
   private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {

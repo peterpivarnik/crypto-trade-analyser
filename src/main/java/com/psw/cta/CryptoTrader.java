@@ -109,15 +109,16 @@ public class CryptoTrader {
     tradeFacade.trade(openOrders,
                       totalAmounts,
                       myBtcBalance,
-                      totalAmount,
-                      minOpenOrders,
                       exchangeInfo,
+                      actualBalance,
                       uniqueOpenOrdersSize,
-                      actualBalance);
+                      totalAmount,
+                      minOpenOrders
+                     );
     List<Order> newOpenOrders = binanceService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logTotalAmounts(newTotalAmounts);
-    Boolean tradeCancelled = cancelTrade(newTotalAmounts, exchangeInfo, newOpenOrders);
+    Boolean tradeCancelled = cancelTrade(newOpenOrders, exchangeInfo, newTotalAmounts);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
     logger.log("Finished trading.");
   }
@@ -143,9 +144,9 @@ public class CryptoTrader {
     });
   }
 
-  private Boolean cancelTrade(Map<String, BigDecimal> totalAmounts,
+  private Boolean cancelTrade(List<Order> newOpenOrders,
                               ExchangeInfo exchangeInfo,
-                              List<Order> newOpenOrders) {
+                              Map<String, BigDecimal> totalAmounts) {
     BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
     BigDecimal myActualBalance = binanceService.getMyActualBalance();
     List<OrderWrapper> wrappers =

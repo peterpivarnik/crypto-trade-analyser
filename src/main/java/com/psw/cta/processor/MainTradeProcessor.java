@@ -29,11 +29,11 @@ public abstract class MainTradeProcessor {
   public abstract void trade(List<Order> openOrders,
                              Map<String, BigDecimal> totalAmounts,
                              BigDecimal myBtcBalance,
-                             BigDecimal totalAmount,
-                             int minOpenOrders,
                              ExchangeInfo exchangeInfo,
+                             BigDecimal actualBalance,
                              long uniqueOpenOrdersSize,
-                             BigDecimal actualBalance);
+                             BigDecimal totalAmount,
+                             int minOpenOrders);
 
   protected Stream<OrderWrapper> getOrderWrapperStream(List<Order> openOrders,
                                                        Map<String, BigDecimal> totalAmounts,

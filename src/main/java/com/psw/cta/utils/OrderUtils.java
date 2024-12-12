@@ -6,6 +6,7 @@ import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.CEILING;
@@ -195,21 +196,19 @@ public class OrderUtils {
   public static Predicate<OrderWrapper> getOrderWrapperPredicate(BigDecimal myBtcBalance) {
     return orderWrapper -> {
       boolean orderPricePercentageLessThan10 = orderWrapper.getOrderPricePercentage().compareTo(TEN) < 0;
-      boolean haveEnoughAmount = orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0;
-      boolean orderPricePercentageLessThan15 = orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("15"))
-                                               < 0;
-      boolean haveDoubleAmount = orderWrapper.getOrderBtcAmount().multiply(new BigDecimal("2"))
-                                             .compareTo(myBtcBalance) < 0;
-      boolean orderBtcAmountLess001 = orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) < 0;
+      boolean hasEnoughAmount = orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0;
+      BigDecimal multiplicator = orderWrapper.getOrderPricePercentage().divide(TEN, 8, UP).add(ONE);
+      boolean hasMultipliedAmount = orderWrapper.getOrderBtcAmount().multiply(multiplicator)
+                                                .compareTo(myBtcBalance) < 0;
       boolean hasMinProfit = orderWrapper.getOrderPricePercentage()
                                          .subtract(orderWrapper.getPriceToSellPercentage())
                                          .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
       boolean remainingTimeGreaterZero = orderWrapper.getActualWaitingTime()
                                                      .compareTo(orderWrapper.getMinWaitingTime()) > 0;
-      return ((orderPricePercentageLessThan10 && haveEnoughAmount)
-              || (!orderPricePercentageLessThan10 && orderPricePercentageLessThan15 && haveDoubleAmount)
-              || (!orderPricePercentageLessThan15 && haveDoubleAmount && orderBtcAmountLess001))
-             && hasMinProfit && remainingTimeGreaterZero;
+      return hasMinProfit
+             && remainingTimeGreaterZero
+             && ((orderPricePercentageLessThan10 && hasEnoughAmount)
+                 || (!orderPricePercentageLessThan10 && hasMultipliedAmount));
     };
   }
 }

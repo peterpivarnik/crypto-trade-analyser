@@ -91,7 +91,6 @@ public class CryptoTrader {
     logger.log("totalAmount: " + totalAmount.stripTrailingZeros());
     int minOpenOrders = calculateMinNumberOfOrders(myBtcBalance);
     logger.log("Min open orders: " + minOpenOrders);
-
     long uniqueOpenOrdersSize = openOrders.parallelStream()
                                           .map(Order::getSymbol)
                                           .distinct()
@@ -99,7 +98,6 @@ public class CryptoTrader {
     logger.log("Unique open orders: " + uniqueOpenOrdersSize);
     BigDecimal actualBalance = binanceService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
-
     tradeFacade.trade(openOrders,
                       totalAmounts,
                       myBtcBalance,

@@ -11,9 +11,11 @@ import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
-import static com.psw.cta.utils.OrderUtils.getOrderWrapperPredicate;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Comparator.comparing;
@@ -37,6 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -144,7 +147,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       cancelTrade(orderWrappers, exchangeInfo);
     } else {
       logger.log("***** ***** Rebuy orders ***** *****");
-      rebuyOrdersWithPredicateCheck(orderWrappers, myBtcBalance, exchangeInfo);
+      rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
     }
   }
 
@@ -232,21 +235,64 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                  exchangeInfo));
   }
 
-  private void rebuyOrdersWithPredicateCheck(List<OrderWrapper> orderWrappers,
-                                             BigDecimal myBtcBalance,
-                                             ExchangeInfo exchangeInfo) {
+  private void rebuyOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance, ExchangeInfo exchangeInfo) {
     orderWrappers.stream()
-                 .filter(getOrderWrapperPredicate(myBtcBalance))
+                 .filter(orderWrapper -> shouldBeRebought(orderWrapper, service -> myBtcBalance))
                  .forEach(orderWrapper -> {
-                   BigDecimal newBtcBalance = binanceService.getMyBalance(ASSET_BTC);
-                   Predicate<OrderWrapper> predicate = getOrderWrapperPredicate(newBtcBalance);
-                   if (!predicate.test(orderWrapper)) {
+                   if (!shouldBeRebought(orderWrapper, service -> service.getMyBalance(ASSET_BTC))) {
                      logger.log("Conditions to rebuy crypto not valid.");
                      return;
                    }
                    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
                    repeatTradingProcessor.rebuySingleOrder(symbolInfo, orderWrapper);
                  });
+  }
+
+  private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
+    return hasMinProfit(orderWrapper)
+           && isRemainingTimeGreaterZero(orderWrapper)
+           && hasEnoughBtcAmount(orderWrapper, function);
+  }
+
+  private boolean hasMinProfit(OrderWrapper orderWrapper) {
+    return orderWrapper.getOrderPricePercentage()
+                       .subtract(orderWrapper.getPriceToSellPercentage())
+                       .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
+  }
+
+  private boolean isRemainingTimeGreaterZero(OrderWrapper orderWrapper) {
+    return orderWrapper.getActualWaitingTime()
+                       .compareTo(orderWrapper.getMinWaitingTime()) > 0;
+  }
+
+  private boolean hasEnoughBtcAmount(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
+    BigDecimal myBtcBalance = function.apply(binanceService);
+    return isOrderPricePercentageLessThan10AndHasEnoughAmount(orderWrapper, myBtcBalance)
+           || isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(orderWrapper, myBtcBalance);
+  }
+
+  private boolean isOrderPricePercentageLessThan10AndHasEnoughAmount(OrderWrapper orderWrapper,
+                                                                     BigDecimal myBtcBalance) {
+    return isOrderPricePercentageLessThan10(orderWrapper) && hasMultipliedAmount(orderWrapper, ONE, myBtcBalance);
+  }
+
+  private boolean isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(OrderWrapper orderWrapper,
+                                                                               BigDecimal myBtcBalance) {
+    BigDecimal multiplicator = orderWrapper.getOrderPricePercentage()
+                                           .divide(TEN, 8, UP)
+                                           .add(ONE);
+    return !isOrderPricePercentageLessThan10(orderWrapper)
+           && hasMultipliedAmount(orderWrapper, multiplicator, myBtcBalance);
+  }
+
+  private boolean isOrderPricePercentageLessThan10(OrderWrapper orderWrapper) {
+    return orderWrapper.getOrderPricePercentage().compareTo(TEN) < 0;
+  }
+
+  private boolean hasMultipliedAmount(OrderWrapper orderWrapper, BigDecimal multiplicator, BigDecimal myBtcBalance) {
+    return orderWrapper.getOrderBtcAmount()
+                       .multiply(multiplicator)
+                       .compareTo(myBtcBalance) < 0;
   }
 
   private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {

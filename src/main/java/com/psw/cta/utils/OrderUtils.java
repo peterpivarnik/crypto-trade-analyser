@@ -2,12 +2,9 @@ package com.psw.cta.utils;
 
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
-import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
@@ -18,14 +15,12 @@ import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneId.systemDefault;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.function.Predicate;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
@@ -183,32 +178,5 @@ public class OrderUtils {
     Duration duration = between(date, now);
     double actualWaitingTimeDouble = (double) duration.get(SECONDS) / (double) 3600;
     return new BigDecimal(String.valueOf(actualWaitingTimeDouble), new MathContext(5));
-  }
-
-  /**
-   * Returns predicate to filter out either trades with amount lower than my BTC amount,
-   * or in case orderPricePercentage higher than 10 filter out those which doubled amount not highier than myBtc amount.
-   * This is done due to always keep some amount to rebuy orders with low orderPricePercentage.
-   *
-   * @param myBtcBalance My actual BTC amount
-   * @return Predicate to filter out orders
-   */
-  public static Predicate<OrderWrapper> getOrderWrapperPredicate(BigDecimal myBtcBalance) {
-    return orderWrapper -> {
-      boolean orderPricePercentageLessThan10 = orderWrapper.getOrderPricePercentage().compareTo(TEN) < 0;
-      boolean hasEnoughAmount = orderWrapper.getOrderBtcAmount().compareTo(myBtcBalance) < 0;
-      BigDecimal multiplicator = orderWrapper.getOrderPricePercentage().divide(TEN, 8, UP).add(ONE);
-      boolean hasMultipliedAmount = orderWrapper.getOrderBtcAmount().multiply(multiplicator)
-                                                .compareTo(myBtcBalance) < 0;
-      boolean hasMinProfit = orderWrapper.getOrderPricePercentage()
-                                         .subtract(orderWrapper.getPriceToSellPercentage())
-                                         .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
-      boolean remainingTimeGreaterZero = orderWrapper.getActualWaitingTime()
-                                                     .compareTo(orderWrapper.getMinWaitingTime()) > 0;
-      return hasMinProfit
-             && remainingTimeGreaterZero
-             && ((orderPricePercentageLessThan10 && hasEnoughAmount)
-                 || (!orderPricePercentageLessThan10 && hasMultipliedAmount));
-    };
   }
 }

@@ -56,6 +56,4 @@ public abstract class MainTradeProcessor {
                                                      actualBalance))
                      .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper));
   }
-
-  public abstract Boolean cancelTrade(OrderWrapper orderWrapper, ExchangeInfo exchangeInfo);
 }

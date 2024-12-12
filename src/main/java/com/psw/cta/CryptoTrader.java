@@ -3,15 +3,11 @@ package com.psw.cta;
 import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
 import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.OrderWrapperBuilder.withPrices;
-import static com.psw.cta.utils.OrderWrapperBuilder.withWaitingTimes;
-import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.jcabi.manifests.Manifests;
-import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.exception.BinanceApiException;
@@ -20,10 +16,8 @@ import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
-import com.psw.cta.utils.OrderWrapperBuilder;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -117,8 +111,7 @@ public class CryptoTrader {
     List<Order> newOpenOrders = binanceService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logTotalAmounts(newTotalAmounts);
-    Boolean tradeCancelled = cancelTrade(newOpenOrders, exchangeInfo, newTotalAmounts);
-    checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders, tradeCancelled);
+    checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders);
     logger.log("Finished trading.");
   }
 
@@ -135,44 +128,15 @@ public class CryptoTrader {
     listOfLists.add(entryList.subList(numberOfTens * 10, entryList.size()));
     listOfLists.forEach(subList -> {
       String sublistString = subList.stream()
-                              .map(stringBigDecimalEntry -> format("%10s=%-11s",
-                                                                   stringBigDecimalEntry.getKey(),
-                                                                   stringBigDecimalEntry.getValue()))
-                              .collect(Collectors.joining());
+                                    .map(stringBigDecimalEntry -> format("%10s=%-11s",
+                                                                         stringBigDecimalEntry.getKey(),
+                                                                         stringBigDecimalEntry.getValue()))
+                                    .collect(Collectors.joining());
       logger.log(sublistString);
     });
   }
 
-  private Boolean cancelTrade(List<Order> newOpenOrders,
-                              ExchangeInfo exchangeInfo,
-                              Map<String, BigDecimal> totalAmounts) {
-    BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
-    BigDecimal myActualBalance = binanceService.getMyActualBalance();
-    List<OrderWrapper> wrappers =
-        newOpenOrders.stream()
-                     .map(OrderWrapperBuilder::build)
-                     .map(orderWrapper -> withPrices(
-                         orderWrapper,
-                         binanceService.getOrderBook(orderWrapper.getOrder().getSymbol(), 20),
-                         exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol()),
-                         myBtcBalance,
-                         myActualBalance))
-                     .map(orderWrapper -> withWaitingTimes(totalAmounts, orderWrapper))
-                     .toList();
-    boolean allRemainWaitingTimeLessThanZero = wrappers.stream()
-                                                       .map(OrderWrapper::getRemainWaitingTime)
-                                                       .allMatch(time -> time.compareTo(ZERO) < 0);
-    Boolean tradeCancelled = FALSE;
-    if (allRemainWaitingTimeLessThanZero) {
-      tradeCancelled = wrappers.stream()
-                               .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
-                               .map(orderWrapper -> tradeFacade.cancelTrade(orderWrapper, exchangeInfo))
-                               .orElse(false);
-    }
-    return tradeCancelled;
-  }
-
-  private void checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders, Boolean tradeCancelled) {
+  private void checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders) {
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     BigDecimal newOrdersAmount = newTotalAmounts.values()
                                                 .stream()
@@ -184,7 +148,7 @@ public class CryptoTrader {
 
     if (ordersAndBtcAmountDifference.compareTo(ZERO) > 0) {
       logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
-    } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0 && FALSE.equals(tradeCancelled)) {
+    } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
                                     + ordersAndBtcAmount
                                     + ". New amount: "

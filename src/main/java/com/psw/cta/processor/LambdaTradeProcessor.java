@@ -177,12 +177,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   }
 
   private void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    Predicate<OrderWrapper> orderWrapperPredicate =
-        orderWrapper -> orderWrapper.getOrderPricePercentage()
-                                    .subtract(orderWrapper.getPriceToSellPercentage())
-                                    .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
     orderWrappers.stream()
-                 .filter(orderWrapperPredicate)
+                 .filter(this::hasMinProfit)
                  .forEach(orderWrapper -> {
                    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
                    repeatTradingProcessor.rebuySingleOrder(symbolInfo, orderWrapper);

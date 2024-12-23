@@ -143,8 +143,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       if (haveBalanceForInitialTrading(myBalance)) {
         initTrading(() -> getCryptos(exchangeInfo));
       }
-    } else if (shouldCancelTrade(orderWrappers)) {
-      cancelTrade(orderWrappers, exchangeInfo);
+//    } else if (shouldCancelTrade(orderWrappers)) {
+//      cancelTrade(orderWrappers, exchangeInfo);
     } else {
       logger.log("***** ***** Rebuy orders ***** *****");
       rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);

@@ -143,8 +143,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       if (haveBalanceForInitialTrading(myBalance)) {
         initTrading(() -> getCryptos(exchangeInfo));
       }
-//    } else if (shouldCancelTrade(orderWrappers)) {
-//      cancelTrade(orderWrappers, exchangeInfo);
+    } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
+      cancelTrade(orderWrappers, exchangeInfo);
     } else {
       logger.log("***** ***** Rebuy orders ***** *****");
       rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
@@ -338,7 +338,17 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             .forEach(acquireProcessor::acquireCrypto);
   }
 
-  private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers) {
+  private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+    return allRemainWaitingTimeLessThanZero(orderWrappers) && allLessThanMyBtcBalance(orderWrappers, myBtcBalance);
+  }
+
+  private boolean allLessThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+    return orderWrappers.stream()
+                        .map(OrderWrapper::getOrderBtcAmount)
+                        .allMatch(orderBtcAmount -> orderBtcAmount.compareTo(myBtcBalance) < 0);
+  }
+
+  private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {
     return orderWrappers.stream()
                         .map(OrderWrapper::getRemainWaitingTime)
                         .allMatch(time -> time.compareTo(ZERO) < 0);

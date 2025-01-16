@@ -26,14 +26,14 @@ public class LocalTradeProcessor extends MainTradeProcessor {
   @Override
   public void trade(List<Order> openOrders,
                     Map<String, BigDecimal> totalAmounts,
-                    BigDecimal myBtcBalance,
                     ExchangeInfo exchangeInfo,
+                    BigDecimal myBtcBalance,
                     BigDecimal actualBalance,
                     long uniqueOpenOrdersSize,
                     BigDecimal totalAmount,
                     int minOpenOrders) {
 
-    getOrderWrapperStream(openOrders, totalAmounts, myBtcBalance, exchangeInfo, actualBalance)
+    getOrderWrapperStream(openOrders, exchangeInfo, myBtcBalance, actualBalance, totalAmounts)
         .sorted(comparing(OrderWrapper::getOrderPricePercentage))
         .forEach(orderWrapper -> logger.log(orderWrapper.toString()));
   }

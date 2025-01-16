@@ -16,6 +16,7 @@ import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,8 +101,8 @@ public class CryptoTrader {
     logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
     tradeFacade.trade(openOrders,
                       totalAmounts,
-                      myBtcBalance,
                       exchangeInfo,
+                      myBtcBalance,
                       actualBalance,
                       uniqueOpenOrdersSize,
                       totalAmount,
@@ -148,11 +149,11 @@ public class CryptoTrader {
       logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
     } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
-                                    + ordersAndBtcAmount
-                                    + ". New amount: "
-                                    + newOrdersAndBtcAmount
-                                    + ". Difference: "
-                                    + ordersAndBtcAmountDifference);
+                                        + ordersAndBtcAmount
+                                        + ". New amount: "
+                                        + newOrdersAndBtcAmount
+                                        + ". Difference: "
+                                        + ordersAndBtcAmountDifference);
     }
   }
 }

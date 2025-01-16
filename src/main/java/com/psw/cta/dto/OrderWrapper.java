@@ -1,7 +1,6 @@
 package com.psw.cta.dto;
 
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.SymbolInfo;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
 
@@ -48,7 +47,7 @@ public class OrderWrapper {
   private final BigDecimal actualWaitingTime;
 
   public OrderWrapper(Order order,
-                      OrderBook orderBook,
+                      BigDecimal currentPrice,
                       SymbolInfo symbolInfo,
                       BigDecimal myBtcBalance,
                       BigDecimal actualBalance,
@@ -56,12 +55,12 @@ public class OrderWrapper {
     this.order = order;
     this.orderPrice = new BigDecimal(this.order.getPrice());
     this.orderBtcAmount = calculateOrderBtcAmount(orderPrice);
-    this.currentPrice = com.psw.cta.utils.CommonUtils.getCurrentPrice(orderBook);
-    this.priceToSell = calculatePriceToSell(orderPrice, currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
-    this.priceToSellPercentage = calculatePricePercentage(currentPrice, priceToSell);
-    this.orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
+    this.currentPrice = currentPrice;
+    this.priceToSell = calculatePriceToSell(orderPrice, this.currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
+    this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, priceToSell);
+    this.orderPricePercentage = calculatePricePercentage(this.currentPrice, orderPrice);
     this.currentBtcAmount = getQuantity(this.order)
-        .multiply(currentPrice)
+        .multiply(this.currentPrice)
         .setScale(8, CEILING);
     this.minWaitingTime = calculateMinWaitingTime(totalAmounts.get(this.order.getSymbol()), orderBtcAmount, orderPricePercentage);
     this.actualWaitingTime = calculateActualWaitingTime(this.order);

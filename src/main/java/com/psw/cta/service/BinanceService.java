@@ -1,24 +1,5 @@
 package com.psw.cta.service;
 
-import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
-import static com.psw.cta.dto.binance.OrderSide.BUY;
-import static com.psw.cta.dto.binance.OrderSide.SELL;
-import static com.psw.cta.dto.binance.OrderType.LIMIT;
-import static com.psw.cta.dto.binance.OrderType.MARKET;
-import static com.psw.cta.dto.binance.TimeInForce.GTC;
-import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
-import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
-import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundAmount;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static java.lang.System.currentTimeMillis;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
-import static java.util.Comparator.comparing;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
@@ -38,14 +19,9 @@ import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
+import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.security.AuthenticationInterceptor;
 import com.psw.cta.utils.CommonUtils;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.function.BiFunction;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
@@ -54,6 +30,32 @@ import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.function.BiFunction;
+
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.OrderType.MARKET;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
+import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
+import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
+import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.roundAmount;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.lang.System.currentTimeMillis;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.util.Comparator.comparing;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Implementation of Binance's REST API using Retrofit with synchronous/blocking method calls.
@@ -111,6 +113,22 @@ public class BinanceService {
    */
   public OrderBook getOrderBook(String symbol, Integer limit) {
     return executeCall(binanceApi.getOrderBook(symbol, limit));
+  }
+
+  /**
+   * Returns current price for provided symbol
+   *
+   * @param symbol Order symbol
+   * @return current price
+   */
+  public BigDecimal getCurrentPrice(String symbol) {
+    return getOrderBook(symbol, 1)
+        .getAsks()
+        .stream()
+        .map(OrderBookEntry::getPrice)
+        .map(BigDecimal::new)
+        .findFirst()
+        .orElseThrow(() -> new CryptoTraderException("No price found!"));
   }
 
   /**
@@ -378,7 +396,7 @@ public class BinanceService {
   /**
    * Get trades for a specific account and symbol.
    *
-   * @param symbol    symbol to get trades from
+   * @param symbol  symbol to get trades from
    * @param orderId id of the order
    * @return a list of trades
    */

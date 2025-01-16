@@ -1,11 +1,5 @@
 package com.psw.cta;
 
-import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
-import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static java.lang.String.format;
-import static java.math.BigDecimal.ZERO;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -19,9 +13,17 @@ import com.psw.cta.service.BinanceService;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.psw.cta.utils.CommonUtils.getQuantity;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.lang.String.format;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.FLOOR;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * Main service for start trading crypto.
@@ -155,5 +157,25 @@ public class CryptoTrader {
                                         + ". Difference: "
                                         + ordersAndBtcAmountDifference);
     }
+  }
+
+  private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
+    return openOrders.stream()
+                     .collect(toMap(Order::getSymbol,
+                                    order -> new BigDecimal(order.getPrice())
+                                        .multiply(getQuantity(order))
+                                        .setScale(8, FLOOR),
+                                    BigDecimal::add))
+                     .entrySet()
+                     .stream()
+                     .sorted((c1, c2) -> c2.getValue().compareTo(c1.getValue()))
+                     .collect(toMap(Map.Entry::getKey,
+                                    Map.Entry::getValue,
+                                    (e1, e2) -> e1,
+                                    LinkedHashMap::new));
+  }
+
+  private int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {
+    return myBtcBalance.multiply(new BigDecimal("50")).intValue();
   }
 }

@@ -1,20 +1,21 @@
 package com.psw.cta.dto;
 
-import static com.psw.cta.utils.CommonUtils.getAveragePrice;
-import static com.psw.cta.utils.CommonUtils.getAveragePrices;
-import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.UP;
-import static java.util.Comparator.naturalOrder;
-
 import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.utils.CommonUtils;
+
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
+import static com.psw.cta.utils.LeastSquares.getSlope;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
+import static java.util.Comparator.naturalOrder;
 
 /**
  * Object holding information about crypto.
@@ -45,13 +46,13 @@ public class Crypto {
                          .map(BigDecimal::new)
                          .findAny()
                          .orElseThrow(() -> new CryptoTraderException("Ticker with symbol: "
-                                                                      + symbolInfo.getSymbol()
-                                                                      + " not found."));
+                                                                          + symbolInfo.getSymbol()
+                                                                          + " not found."));
     return this;
   }
 
-  public Crypto calculateCurrentPrice(OrderBook orderBook) {
-    this.currentPrice = CommonUtils.getCurrentPrice(orderBook);
+  public Crypto setCurrentPrice(BigDecimal currentPrice) {
+    this.currentPrice = currentPrice;
     return this;
   }
 
@@ -138,9 +139,36 @@ public class Crypto {
 
   public Crypto calculateSlopeData() {
     List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
-    this.priceCountToSlope = CommonUtils.getPriceCountToSlope(averagePrices);
+    this.priceCountToSlope = getPriceCountToSlope(averagePrices);
     this.numberOfCandles = new BigDecimal(threeMonthsCandleStickData.size());
     return this;
+  }
+
+  private List<BigDecimal> getAveragePrices(List<Candlestick> threeMonthsCandleStickData) {
+    return threeMonthsCandleStickData.parallelStream()
+                                     .map(this::getAveragePrice)
+                                     .collect(Collectors.toList());
+  }
+
+  private BigDecimal getAveragePrice(Candlestick candle) {
+    BigDecimal open = new BigDecimal(candle.getOpen());
+    BigDecimal close = new BigDecimal(candle.getClose());
+    BigDecimal high = new BigDecimal(candle.getHigh());
+    BigDecimal low = new BigDecimal(candle.getLow());
+    return open.add(close).add(high).add(low).divide(new BigDecimal("4"), 8, CEILING);
+  }
+
+  private BigDecimal getPriceCountToSlope(List<BigDecimal> averagePrices) {
+    BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
+    double leastSquaresSlope = getSlope(averagePrices);
+    if (Double.isNaN(leastSquaresSlope)) {
+      leastSquaresSlope = 0.00000001;
+    }
+    BigDecimal slope = new BigDecimal(String.valueOf(leastSquaresSlope), new MathContext(8));
+    if (ZERO.compareTo(slope) == 0) {
+      slope = new BigDecimal("0.00000001");
+    }
+    return priceCount.divide(slope, 8, CEILING);
   }
 
   public Crypto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
@@ -199,28 +227,28 @@ public class Crypto {
   @Override
   public String toString() {
     return "Crypto{"
-           + "symbol="
-           + symbolInfo.getSymbol()
-           + ", currentPrice="
-           + currentPrice
-           + ", volume="
-           + volume
-           + ", sumPercentageDifferences1h="
-           + sumPercentageDifferences1h
-           + ", sumPercentageDifferences10h="
-           + sumPercentageDifferences10h
-           + ", priceToSell="
-           + priceToSell
-           + ", priceToSellPercentage="
-           + priceToSellPercentage
-           + ", lastThreeHighAverage="
-           + lastThreeHighAverage
-           + ", previousThreeHighAverage="
-           + previousThreeHighAverage
-           + ", priceCountToSlope="
-           + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : null)
-           + ", numberOfCandles="
-           + numberOfCandles
-           + '}';
+        + "symbol="
+        + symbolInfo.getSymbol()
+        + ", currentPrice="
+        + currentPrice
+        + ", volume="
+        + volume
+        + ", sumPercentageDifferences1h="
+        + sumPercentageDifferences1h
+        + ", sumPercentageDifferences10h="
+        + sumPercentageDifferences10h
+        + ", priceToSell="
+        + priceToSell
+        + ", priceToSellPercentage="
+        + priceToSellPercentage
+        + ", lastThreeHighAverage="
+        + lastThreeHighAverage
+        + ", previousThreeHighAverage="
+        + previousThreeHighAverage
+        + ", priceCountToSlope="
+        + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : null)
+        + ", numberOfCandles="
+        + numberOfCandles
+        + '}';
   }
 }

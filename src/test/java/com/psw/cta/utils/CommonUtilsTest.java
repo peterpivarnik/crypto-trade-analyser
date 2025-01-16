@@ -1,16 +1,22 @@
 package com.psw.cta.utils;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.dto.binance.FilterType;
+import com.psw.cta.dto.binance.Order;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.exception.CryptoTraderException;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
 import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
-import static com.psw.cta.utils.CommonUtils.calculateMinNumberOfOrders;
-import static com.psw.cta.utils.CommonUtils.createTotalAmounts;
-import static com.psw.cta.utils.CommonUtils.getAveragePrice;
-import static com.psw.cta.utils.CommonUtils.getAveragePrices;
-import static com.psw.cta.utils.CommonUtils.getCurrentPrice;
-import static com.psw.cta.utils.CommonUtils.getOrderComparator;
-import static com.psw.cta.utils.CommonUtils.getPriceCountToSlope;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
@@ -18,95 +24,11 @@ import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.CommonUtils.splitForbiddenPairs;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.dto.binance.FilterType;
-import com.psw.cta.dto.binance.Order;
-import com.psw.cta.dto.binance.OrderBook;
-import com.psw.cta.dto.binance.OrderBookEntry;
-import com.psw.cta.dto.binance.SymbolFilter;
-import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.exception.CryptoTraderException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
-
 class CommonUtilsTest {
-
-  @Test
-  void shouldOrderByOriginalQuantity() {
-    Order order1 = createOrder("10", "0", "10", 10L);
-    Order order2 = createOrder("20", "0", "10", 10L);
-    Order order3 = createOrder("50", "0", "10", 10L);
-
-    Comparator<Order> orderComparator = getOrderComparator();
-
-    List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                     .sorted(orderComparator)
-                                     .toList();
-    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("50");
-  }
-
-  @Test
-  void shouldOrderByExecutedQuantityMinusExecutedQuantity() {
-    Order order1 = createOrder("10", "0", "10", 10L);
-    Order order2 = createOrder("20", "0", "10", 10L);
-    Order order3 = createOrder("50", "45", "10", 10L);
-
-    Comparator<Order> orderComparator = getOrderComparator();
-
-    List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                     .sorted(orderComparator)
-                                     .toList();
-    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("20");
-  }
-
-  @Test
-  void shouldOrderByBtcAmount() {
-    Order order1 = createOrder("10", "0", "10", 10L);
-    Order order2 = createOrder("20", "0", "20", 10L);
-    Order order3 = createOrder("50", "30", "10", 10L);
-
-    Comparator<Order> orderComparator = getOrderComparator();
-
-    List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                     .sorted(orderComparator)
-                                     .toList();
-    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("20");
-  }
-
-  @Test
-  void shouldOrderByTime() {
-    Order order1 = createOrder("10", "0", "10", 10L);
-    Order order2 = createOrder("20", "0", "10", 11L);
-    Order order3 = createOrder("50", "30", "10", 10L);
-
-    Comparator<Order> orderComparator = getOrderComparator();
-
-    List<Order> sortedOrders = Stream.of(order1, order2, order3)
-                                     .sorted(orderComparator)
-                                     .toList();
-    assertThat(sortedOrders.getFirst().getOrigQty()).isEqualTo("50");
-  }
-
-  private Order createOrder(String origQty, String executedQty, String price, long time) {
-    Order order = new Order();
-    order.setOrigQty(origQty);
-    order.setExecutedQty(executedQty);
-    order.setPrice(price);
-    order.setTime(time);
-    return order;
-  }
 
   @Test
   void shouldSleep() {
@@ -163,12 +85,9 @@ class CommonUtilsTest {
     Function<SymbolFilter, String> symbolFilterFunction = SymbolFilter::getMinNotional;
 
     CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class,
-                                                               () -> getValueFromFilter(symbolInfo,
-                                                                                        symbolFilterFunction,
-                                                                                        PRICE_FILTER));
+                                                               () -> getValueFromFilter(symbolInfo, symbolFilterFunction, PRICE_FILTER));
 
-    assertThat(cryptoTraderException.getMessage())
-        .isEqualTo("Value from filters [PRICE_FILTER] not found");
+    assertThat(cryptoTraderException.getMessage()).isEqualTo("Value from filters [PRICE_FILTER] not found");
   }
 
   private SymbolInfo getSymbolInfo(FilterType filterType, String filterValue) {
@@ -226,92 +145,6 @@ class CommonUtilsTest {
   }
 
   @Test
-  void shouldReturnValidCountToSlope() {
-    List<BigDecimal> averagePrices = new ArrayList<>();
-    for (int i = 0; i < 100; i++) {
-      averagePrices.add(new BigDecimal("" + i));
-    }
-
-    BigDecimal priceCountToSlope = getPriceCountToSlope(averagePrices);
-
-    assertThat(priceCountToSlope.stripTrailingZeros().toPlainString()).isEqualTo("100");
-  }
-
-  @Test
-  void shouldReturnAveragePrices() {
-    List<Candlestick> threeMonthsCandleStickData = createThreeMonthsCandleStickData();
-
-    List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
-
-    assertThat(averagePrices).hasSize(100);
-    for (int i = 0; i < 99; i++) {
-      assertThat(averagePrices.get(i)).isEqualByComparingTo(new BigDecimal(i));
-    }
-  }
-
-  private List<Candlestick> createThreeMonthsCandleStickData() {
-    List<Candlestick> candlesticks = new ArrayList<>();
-    int size = 100;
-    for (int i = 0; i < size; i++) {
-      candlesticks.add(createCandleStick(i, size));
-    }
-    return candlesticks;
-  }
-
-  @Test
-  void shouldGetAveragePrice() {
-    Candlestick candlestick = new Candlestick();
-    candlestick.setOpen("1");
-    candlestick.setClose("2");
-    candlestick.setHigh("3");
-    candlestick.setLow("4");
-
-    BigDecimal averagePrice = getAveragePrice(candlestick);
-
-    assertThat(averagePrice.stripTrailingZeros()).isEqualTo("2.5");
-  }
-
-  private Candlestick createCandleStick(int filterValue, int size) {
-    Candlestick candlestick = new Candlestick();
-    candlestick.setOpen("" + filterValue);
-    candlestick.setClose("" + filterValue);
-    candlestick.setHigh("" + filterValue);
-    candlestick.setLow("" + filterValue);
-    candlestick.setOpenTime((long) size - (long) filterValue);
-    return candlestick;
-  }
-
-  @Test
-  void shouldCreateTotalAmounts() {
-    String symbol1 = "symbol1";
-    String symbol2 = "symbol2";
-    Order order1 = getOrder(symbol1, 1);
-    Order order2 = getOrder(symbol1, 2);
-    Order order3 = getOrder(symbol2, 5);
-    List<Order> openOrders = new ArrayList<>();
-    openOrders.add(order1);
-    openOrders.add(order2);
-    openOrders.add(order3);
-
-    Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
-
-    assertThat(totalAmounts).hasSize(2)
-                            .containsKey(symbol1);
-    assertThat(totalAmounts.get(symbol1)).isEqualByComparingTo(new BigDecimal("30"));
-    assertThat(totalAmounts).containsKey(symbol2);
-    assertThat(totalAmounts.get(symbol2)).isEqualByComparingTo(new BigDecimal("50"));
-  }
-
-  private Order getOrder(String symbol, int index) {
-    Order order = new Order();
-    order.setSymbol(symbol);
-    order.setPrice("10");
-    order.setOrigQty("" + index);
-    order.setExecutedQty("0");
-    return order;
-  }
-
-  @Test
   void shouldReturnQuantityFromOrder() {
     Order order = new Order();
     order.setOrigQty("25");
@@ -320,54 +153,6 @@ class CommonUtilsTest {
     BigDecimal quantityFromOrder = getQuantity(order);
 
     assertThat(quantityFromOrder.stripTrailingZeros().toPlainString()).isEqualTo("15");
-  }
-
-  @Test
-  void shouldCalculateMinNumberOfOrdersFromMyBtcBalance() {
-    BigDecimal myBtcBalance = new BigDecimal("4");
-
-    int minNumberOfOrders = calculateMinNumberOfOrders(myBtcBalance);
-
-    assertThat(minNumberOfOrders).isEqualTo(200);
-  }
-
-  @Test
-  void shouldCalculateCurrentPrice() {
-    OrderBook orderBook = createOrderBook(20);
-
-    BigDecimal currentPrice = getCurrentPrice(orderBook);
-
-    assertThat(currentPrice.stripTrailingZeros()).isEqualTo("5");
-  }
-
-  @Test
-  void shouldThrowCryptoTraderExceptionWhenNoOrderBookEntryExist() {
-    OrderBook orderBook = createOrderBook(0);
-
-    CryptoTraderException cryptoTraderException = assertThrows(CryptoTraderException.class,
-                                                               () -> getCurrentPrice(orderBook));
-
-    assertThat(cryptoTraderException.getMessage()).isEqualTo("No price found!");
-  }
-
-  private OrderBook createOrderBook(int size) {
-    OrderBook orderBook = new OrderBook();
-    orderBook.setAsks(createAsks(size));
-    return orderBook;
-  }
-
-  private List<OrderBookEntry> createAsks(int size) {
-    List<OrderBookEntry> orderBookEntries = new ArrayList<>();
-    for (int i = 5; i < size; i++) {
-      orderBookEntries.add(createOrderBookEntries("" + i));
-    }
-    return orderBookEntries;
-  }
-
-  private OrderBookEntry createOrderBookEntries(String price) {
-    OrderBookEntry orderBookEntry = new OrderBookEntry();
-    orderBookEntry.setPrice(price);
-    return orderBookEntry;
   }
 
   @Test
@@ -386,15 +171,5 @@ class CommonUtilsTest {
     boolean haveBalance = haveBalanceForInitialTrading(myBtcBalance);
 
     assertThat(haveBalance).isFalse();
-  }
-
-  @Test
-  void shouldSplitForbiddenPairs() {
-    String forbiddenPairsVariable = "test1,test2,test3";
-
-    List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
-
-    assertThat(forbiddenPairs).hasSize(3);
-    assertThat(forbiddenPairs).contains("test1", "test2", "test3");
   }
 }

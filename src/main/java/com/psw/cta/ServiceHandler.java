@@ -1,11 +1,10 @@
 package com.psw.cta;
 
-
-import static com.psw.cta.utils.CommonUtils.splitForbiddenPairs;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.psw.cta.dto.Input;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -29,5 +28,7 @@ public class ServiceHandler implements RequestHandler<Input, Object> {
     return "Lambda Function is invoked....";
   }
 
-
+  private List<String> splitForbiddenPairs(String forbiddenPairs) {
+    return Arrays.asList(forbiddenPairs.split(","));
+  }
 }

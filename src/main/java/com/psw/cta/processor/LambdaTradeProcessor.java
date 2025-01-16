@@ -307,9 +307,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                              90L,
                                                                              DAYS)))
                                        .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
-                                       .map(crypto -> crypto.calculateCurrentPrice(binanceService.getOrderBook(
-                                           crypto.getSymbolInfo().getSymbol(),
-                                           20)))
+                                       .map(crypto -> crypto.setCurrentPrice(
+                                           binanceService.getCurrentPrice(crypto.getSymbolInfo().getSymbol())))
                                        .filter(crypto -> crypto.getCurrentPrice()
                                                                .compareTo(new BigDecimal("0.000001")) > 0)
                                        .collect(Collectors.toList());

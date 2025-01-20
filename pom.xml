@@ -21,7 +21,7 @@
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.11.4</org.junit.jupiter.junit-jupiter-api.version>
-        <org.assertj.assertj-core.version>3.27.2</org.assertj.assertj-core.version>
+        <org.assertj.assertj-core.version>3.27.3</org.assertj.assertj-core.version>
         <org.mockito.version>5.15.2</org.mockito.version>
 
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>

@@ -51,6 +51,7 @@ import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.roundAmount;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static java.lang.System.currentTimeMillis;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
@@ -106,16 +107,6 @@ public class BinanceService {
   }
 
   /**
-   * Get order book of a symbol.
-   *
-   * @param symbol ticker symbol (e.g. ETHBTC)
-   * @param limit  depth of the order book (max 100)
-   */
-  public OrderBook getOrderBook(String symbol, Integer limit) {
-    return executeCall(binanceApi.getOrderBook(symbol, limit));
-  }
-
-  /**
    * Returns current price for provided symbol
    *
    * @param symbol Order symbol
@@ -144,6 +135,26 @@ public class BinanceService {
         .parallelStream()
         .min(comparing(OrderBookEntry::getPrice))
         .orElseThrow(RuntimeException::new);
+  }
+
+  /**
+   * Returns current BNB/BTC price.
+   *
+   * @return BNB/BTC price
+   */
+  public BigDecimal getCurrentBnbBtcPrice() {
+    logger.log("Get current BNB/BTC price");
+    return getOrderBook(SYMBOL_BNB_BTC, 20)
+        .getBids()
+        .parallelStream()
+        .max(comparing(OrderBookEntry::getPrice))
+        .map(OrderBookEntry::getPrice)
+        .map(BigDecimal::new)
+        .orElseThrow(RuntimeException::new);
+  }
+
+  private OrderBook getOrderBook(String symbol, Integer limit) {
+    return executeCall(binanceApi.getOrderBook(symbol, limit));
   }
 
 

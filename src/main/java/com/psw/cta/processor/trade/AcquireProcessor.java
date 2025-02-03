@@ -6,7 +6,6 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 
@@ -35,28 +34,26 @@ public class AcquireProcessor {
     BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
 
     // 2. get max possible buy
-    OrderBookEntry orderBookEntry = binanceService.getMinOrderBookEntry(symbol);
-    logger.log("OrderBookEntry: " + orderBookEntry);
+    BigDecimal price = binanceService.getMinPriceFromOrderBookEntry(symbol);
 
     // 3. calculate quantity to buy
     BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-    BigDecimal price = new BigDecimal(orderBookEntry.getPrice());
 
-    if (shouldBuyAndSell(crypto, myBtcBalance, orderBookEntry)) {
+    if (shouldBuyAndSell(crypto, myBtcBalance, price)) {
       // 4. buy
-      BigDecimal quantity = binanceService.buyReturnQuantity(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
+      BigDecimal quantity = binanceService.buyAndReturnQuantity(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
 
       // 5. place sell order
       placeSellOrder(crypto, quantity);
     }
   }
 
-  private boolean shouldBuyAndSell(Crypto crypto, BigDecimal myBtcBalance, OrderBookEntry orderBookEntry) {
-    return isStillValid(crypto, orderBookEntry) && haveBalanceForInitialTrading(myBtcBalance);
+  private boolean shouldBuyAndSell(Crypto crypto, BigDecimal myBtcBalance, BigDecimal price) {
+    return isStillValid(crypto, price) && haveBalanceForInitialTrading(myBtcBalance);
   }
 
-  private boolean isStillValid(Crypto crypto, OrderBookEntry orderBookEntry) {
-    return new BigDecimal(orderBookEntry.getPrice()).equals(crypto.getCurrentPrice());
+  private boolean isStillValid(Crypto crypto, BigDecimal price) {
+    return price.equals(crypto.getCurrentPrice());
   }
 
   private void placeSellOrder(Crypto crypto, BigDecimal quantity) {

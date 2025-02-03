@@ -50,17 +50,21 @@ public class OrderWrapper {
                       Map<String, BigDecimal> totalAmounts) {
     this.order = order;
     this.orderPrice = new BigDecimal(this.order.getPrice());
-    this.orderBtcAmount = calculateOrderBtcAmount(orderPrice);
+    this.orderBtcAmount = calculateOrderBtcAmount(this.orderPrice);
     this.currentPrice = currentPrice;
-    this.priceToSell = calculatePriceToSell(orderPrice, this.currentPrice, orderBtcAmount, myBtcBalance, actualBalance);
-    this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, priceToSell);
-    this.orderPricePercentage = calculatePricePercentage(this.currentPrice, orderPrice);
+    this.priceToSell = calculatePriceToSell(this.orderPrice,
+                                            this.currentPrice,
+                                            this.orderBtcAmount,
+                                            myBtcBalance,
+                                            actualBalance);
+    this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
+    this.orderPricePercentage = calculatePricePercentage(this.currentPrice, this.orderPrice);
     this.currentBtcAmount = getQuantity(this.order)
         .multiply(this.currentPrice)
         .setScale(8, CEILING);
     this.minWaitingTime = calculateMinWaitingTime(totalAmounts.get(this.order.getSymbol()),
-                                                  orderBtcAmount,
-                                                  orderPricePercentage);
+                                                  this.orderBtcAmount,
+                                                  this.orderPricePercentage);
     this.actualWaitingTime = calculateActualWaitingTime(this.order);
   }
 

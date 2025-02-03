@@ -132,12 +132,14 @@ public class BinanceService {
    * @param symbol Order symbol
    * @return OrderBookEntry with min price
    */
-  public OrderBookEntry getMinOrderBookEntry(String symbol) {
+  public BigDecimal getMinPriceFromOrderBookEntry(String symbol) {
     logger.log("Get min order book entry for " + symbol);
     return getOrderBook(symbol, 20)
         .getAsks()
         .parallelStream()
-        .min(comparing(OrderBookEntry::getPrice))
+        .map(OrderBookEntry::getPrice)
+        .map(BigDecimal::new)
+        .min(comparing(Function.identity()))
         .orElseThrow(RuntimeException::new);
   }
 
@@ -201,7 +203,7 @@ public class BinanceService {
    * @param price      price of new order
    * @return bought quantity
    */
-  public Long buyReturnOrderId(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+  public Long buyAndReturnOrderId(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
@@ -214,7 +216,7 @@ public class BinanceService {
     return newOrder.getOrderId();
   }
 
-  public BigDecimal buyReturnQuantity(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+  public BigDecimal buyAndReturnQuantity(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),

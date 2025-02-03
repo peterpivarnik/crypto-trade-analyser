@@ -58,7 +58,9 @@ public class OrderWrapper {
     this.currentBtcAmount = getQuantity(this.order)
         .multiply(this.currentPrice)
         .setScale(8, CEILING);
-    this.minWaitingTime = calculateMinWaitingTime(totalAmounts.get(this.order.getSymbol()), orderBtcAmount, orderPricePercentage);
+    this.minWaitingTime = calculateMinWaitingTime(totalAmounts.get(this.order.getSymbol()),
+                                                  orderBtcAmount,
+                                                  orderPricePercentage);
     this.actualWaitingTime = calculateActualWaitingTime(this.order);
   }
 
@@ -72,10 +74,15 @@ public class OrderWrapper {
                                           BigDecimal orderBtcAmount,
                                           BigDecimal myBtcBalance,
                                           BigDecimal actualBalance) {
+    BigDecimal loss = orderPrice.subtract(currentPrice);
+    BigDecimal halfLoss = loss.divide(TWO, 8, UP);
+    BigDecimal priceToSellWithoutProfit = currentPrice.add(halfLoss);
     BigDecimal profitCoefficient = getProfitCoefficient(orderBtcAmount,
                                                         myBtcBalance,
                                                         actualBalance);
-    return getNewPriceToSell(orderPrice, currentPrice, profitCoefficient);
+    BigDecimal realProfit = halfLoss.multiply(profitCoefficient);
+    BigDecimal priceToSell = priceToSellWithoutProfit.add(realProfit);
+    return priceToSell.setScale(8, CEILING);
   }
 
   private BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount,
@@ -97,14 +104,6 @@ public class OrderWrapper {
     return profitPercentage.max(new BigDecimal("0.005"));
   }
 
-  private BigDecimal getNewPriceToSell(BigDecimal orderPrice, BigDecimal currentPrice, BigDecimal profitCoefficient) {
-    BigDecimal priceToSellWithoutProfit = getPriceToSellWithoutProfit(orderPrice, currentPrice);
-    BigDecimal profit = priceToSellWithoutProfit.subtract(currentPrice);
-    BigDecimal realProfit = profit.multiply(profitCoefficient);
-    BigDecimal priceToSell = priceToSellWithoutProfit.add(realProfit);
-    return priceToSell.stripTrailingZeros();
-  }
-
   private BigDecimal calculateProfitPart(BigDecimal x, BigDecimal a, BigDecimal b) {
     BigDecimal halfOfProfit = calculateLineEquation(x, a, b);
     return correctForMinAndMaxValues(halfOfProfit);
@@ -117,13 +116,6 @@ public class OrderWrapper {
   private BigDecimal correctForMinAndMaxValues(BigDecimal btcAmountPartBase) {
     BigDecimal maxValue = btcAmountPartBase.min(HALF_OF_MAX_PROFIT);
     return maxValue.max(HALF_OF_MIN_PROFIT);
-  }
-
-  private BigDecimal getPriceToSellWithoutProfit(BigDecimal bigPrice,
-                                                 BigDecimal smallPrice) {
-    BigDecimal profit = bigPrice.subtract(smallPrice);
-    BigDecimal realProfit = profit.divide(TWO, 8, UP);
-    return smallPrice.add(realProfit);
   }
 
   private BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
@@ -215,16 +207,16 @@ public class OrderWrapper {
   @Override
   public String toString() {
     return "OrderWrapper{"
-        + format("symbol=%-12s", order.getSymbol() + ",")
-        + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
-        + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
-        + format("quantity=%-9s", getQuantity(order).stripTrailingZeros().toPlainString() + ",")
-        + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
-        + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")
-        + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")
-        + format("orderPricePercentage=%-13s", orderPricePercentage.stripTrailingZeros().toPlainString() + ",")
-        + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
-        + format("remainWaitingTime=%-12s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
-        + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
+           + format("symbol=%-12s", order.getSymbol() + ",")
+           + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("quantity=%-9s", getQuantity(order).stripTrailingZeros().toPlainString() + ",")
+           + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
+           + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")
+           + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")
+           + format("orderPricePercentage=%-13s", orderPricePercentage.stripTrailingZeros().toPlainString() + ",")
+           + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
+           + format("remainWaitingTime=%-12s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
+           + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
   }
 }

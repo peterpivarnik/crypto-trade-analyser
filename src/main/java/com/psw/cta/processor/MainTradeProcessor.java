@@ -3,7 +3,6 @@ package com.psw.cta.processor;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
 import com.psw.cta.utils.CommonUtils;
 
@@ -39,7 +38,6 @@ public abstract class MainTradeProcessor {
                              int minOpenOrders);
 
   protected Stream<OrderWrapper> getOrderWrapperStream(List<Order> openOrders,
-                                                       ExchangeInfo exchangeInfo,
                                                        BigDecimal myBtcBalance,
                                                        BigDecimal actualBalance,
                                                        Map<String, BigDecimal> totalAmounts) {
@@ -50,7 +48,7 @@ public abstract class MainTradeProcessor {
                                               .filter(order -> order.getSymbol().equals(symbol))
                                               .min(getOrderComparator()))
                      .map(Optional::orElseThrow)
-                     .map(order -> createOrderWrapper(order, exchangeInfo, myBtcBalance, actualBalance, totalAmounts));
+                     .map(order -> createOrderWrapper(order, myBtcBalance, actualBalance, totalAmounts));
   }
 
   private Comparator<Order> getOrderComparator() {
@@ -64,12 +62,10 @@ public abstract class MainTradeProcessor {
   }
 
   private OrderWrapper createOrderWrapper(Order order,
-                                          ExchangeInfo exchangeInfo,
                                           BigDecimal myBtcBalance,
                                           BigDecimal actualBalance,
                                           Map<String, BigDecimal> totalAmounts) {
     BigDecimal currentPrice = binanceService.getCurrentPrice(order.getSymbol());
-    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(order.getSymbol());
-    return new OrderWrapper(order, currentPrice, symbolInfo, myBtcBalance, actualBalance, totalAmounts);
+    return new OrderWrapper(order, currentPrice, myBtcBalance, actualBalance, totalAmounts);
   }
 }

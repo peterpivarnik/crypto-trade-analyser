@@ -1,7 +1,9 @@
 package com.psw.cta.service;
 
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
 import static com.psw.cta.dto.binance.OrderSide.BUY;
 import static com.psw.cta.dto.binance.OrderSide.SELL;
@@ -11,8 +13,6 @@ import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundAmount;
-import static com.psw.cta.utils.CommonUtils.roundPrice;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
@@ -30,6 +30,7 @@ import com.psw.cta.dto.binance.AssetBalance;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.CandlestickInterval;
 import com.psw.cta.dto.binance.ExchangeInfo;
+import com.psw.cta.dto.binance.FilterType;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.OrderBook;
@@ -50,6 +51,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
@@ -201,7 +204,12 @@ public class BinanceService {
   public Long buyReturnOrderId(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString(), null);
+    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
+                                               BUY,
+                                               MARKET,
+                                               null,
+                                               roundedQuantity.toPlainString(),
+                                               null);
     logger.log("response: " + newOrder);
     return newOrder.getOrderId();
   }
@@ -209,7 +217,12 @@ public class BinanceService {
   public BigDecimal buyReturnQuantity(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedQuantity.toPlainString(), null);
+    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
+                                               BUY,
+                                               MARKET,
+                                               null,
+                                               roundedQuantity.toPlainString(),
+                                               null);
     logger.log("response: " + newOrder);
     return roundedQuantity;
   }
@@ -279,15 +292,20 @@ public class BinanceService {
   private void createSellLimitOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal balance) {
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
     BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
-    createNewOrder(symbolInfo.getSymbol(), SELL, LIMIT, GTC, roundedBidQuantity.toPlainString(), roundedPriceToSell.toPlainString());
+    createNewOrder(symbolInfo.getSymbol(),
+                   SELL,
+                   LIMIT,
+                   GTC,
+                   roundedBidQuantity.toPlainString(),
+                   roundedPriceToSell.toPlainString());
   }
 
   private NewOrderResponse createNewOrder(String symbol,
-                                         OrderSide orderSide,
-                                         OrderType orderType,
-                                         TimeInForce timeInForce,
-                                         String roundedMyQuatity,
-                                         String price) {
+                                          OrderSide orderSide,
+                                          OrderType orderType,
+                                          TimeInForce timeInForce,
+                                          String roundedMyQuatity,
+                                          String price) {
     return executeCall(binanceApi.newOrder(symbol,
                                            orderSide,
                                            orderType,
@@ -453,5 +471,32 @@ public class BinanceService {
       }
       throw new BinanceApiException(response.toString());
     }
+  }
+
+  private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
+    return round(symbolInfo,
+                 amount,
+                 LOT_SIZE,
+                 SymbolFilter::getMinQty,
+                 (roundedValue, valueFromFilter) -> roundedValue);
+  }
+
+  private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
+    return round(symbolInfo,
+                 price,
+                 PRICE_FILTER,
+                 SymbolFilter::getTickSize,
+                 (roundedValue, valueFromFilter) -> roundedValue);
+  }
+
+  private BigDecimal round(SymbolInfo symbolInfo,
+                           BigDecimal amountToRound,
+                           FilterType filterType,
+                           Function<SymbolFilter, String> symbolFilterFunction,
+                           BinaryOperator<BigDecimal> roundUpFunction) {
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
+    BigDecimal remainder = amountToRound.remainder(valueFromFilter);
+    BigDecimal roundedValue = amountToRound.subtract(remainder);
+    return roundUpFunction.apply(roundedValue, valueFromFilter);
   }
 }

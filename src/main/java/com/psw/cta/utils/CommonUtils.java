@@ -6,15 +6,10 @@ import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.CryptoTraderException;
-
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
-
-import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
-import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 
 /**
  * Common utils to be used everywhere.
@@ -58,62 +53,6 @@ public class CommonUtils {
                      .orElseThrow(() -> new CryptoTraderException("Value from filters "
                                                                       + Arrays.toString(filterTypes)
                                                                       + " not found"));
-  }
-
-  /**
-   * Round amount.
-   *
-   * @param symbolInfo Symbol information
-   * @param amount     Amount to round
-   * @return Rounded amount
-   */
-  public static BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
-    return round(symbolInfo,
-                 amount,
-                 LOT_SIZE,
-                 SymbolFilter::getMinQty,
-                 (roundedValue, valueFromFilter) -> roundedValue);
-  }
-
-  /**
-   * Round Price.
-   *
-   * @param symbolInfo Symbol information
-   * @param price      Price to round
-   * @return Rounded price
-   */
-  public static BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
-    return round(symbolInfo,
-                 price,
-                 PRICE_FILTER,
-                 SymbolFilter::getTickSize,
-                 (roundedValue, valueFromFilter) -> roundedValue);
-  }
-
-  /**
-   * Round price up.
-   *
-   * @param symbolInfo Symbol information
-   * @param price      Price to round
-   * @return Rounded price
-   */
-  public static BigDecimal roundPriceUp(SymbolInfo symbolInfo, BigDecimal price) {
-    return round(symbolInfo,
-                 price,
-                 PRICE_FILTER,
-                 SymbolFilter::getTickSize,
-                 BigDecimal::add);
-  }
-
-  private static BigDecimal round(SymbolInfo symbolInfo,
-                                  BigDecimal amountToRound,
-                                  FilterType filterType,
-                                  Function<SymbolFilter, String> symbolFilterFunction,
-                                  BinaryOperator<BigDecimal> roundUpFunction) {
-    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
-    BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-    BigDecimal roundedValue = amountToRound.subtract(remainder);
-    return roundUpFunction.apply(roundedValue, valueFromFilter);
   }
 
   /**

@@ -6,11 +6,9 @@ import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
-import static java.math.RoundingMode.DOWN;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -181,10 +179,6 @@ public class SplitProcessor {
                                                              .multiply(new BigDecimal("1.01"))
                                                              .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
     logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-    BigDecimal roundedPriceToSell = roundPriceUp(symbolInfo, finalPriceWithProfit);
-    logger.log("roundedPriceToSell: " + roundedPriceToSell);
-    roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
-    logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-    binanceService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity);
+    binanceService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
   }
 }

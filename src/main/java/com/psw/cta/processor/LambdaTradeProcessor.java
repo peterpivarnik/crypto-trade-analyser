@@ -107,7 +107,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     BigDecimal ordersAmount = totalAmounts.values()
                                           .stream()
                                           .reduce(ZERO, BigDecimal::add);
-    List<OrderWrapper> orderWrappers = getOrderWrapperStream(openOrders, exchangeInfo, myBtcBalance, actualBalance, totalAmounts)
+    List<OrderWrapper> orderWrappers = getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
         .collect(Collectors.toList());
     if (!orderSymbolsToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");

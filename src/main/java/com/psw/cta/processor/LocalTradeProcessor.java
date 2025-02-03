@@ -33,7 +33,7 @@ public class LocalTradeProcessor extends MainTradeProcessor {
                     BigDecimal totalAmount,
                     int minOpenOrders) {
 
-    getOrderWrapperStream(openOrders, exchangeInfo, myBtcBalance, actualBalance, totalAmounts)
+    getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
         .sorted(comparing(OrderWrapper::getOrderPricePercentage))
         .forEach(orderWrapper -> logger.log(orderWrapper.toString()));
   }

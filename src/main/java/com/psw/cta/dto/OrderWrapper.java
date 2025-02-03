@@ -1,17 +1,6 @@
 package com.psw.cta.dto;
 
-import com.psw.cta.dto.binance.Order;
-import com.psw.cta.dto.binance.SymbolInfo;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
-
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.Map;
-
 import static com.psw.cta.utils.CommonUtils.getQuantity;
-import static com.psw.cta.utils.CommonUtils.roundPriceUp;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
@@ -26,6 +15,14 @@ import static java.time.LocalDateTime.now;
 import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneId.systemDefault;
 import static java.time.temporal.ChronoUnit.SECONDS;
+
+import com.psw.cta.dto.binance.Order;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Map;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
  * Object holding information about order.
@@ -48,7 +45,6 @@ public class OrderWrapper {
 
   public OrderWrapper(Order order,
                       BigDecimal currentPrice,
-                      SymbolInfo symbolInfo,
                       BigDecimal myBtcBalance,
                       BigDecimal actualBalance,
                       Map<String, BigDecimal> totalAmounts) {
@@ -56,7 +52,7 @@ public class OrderWrapper {
     this.orderPrice = new BigDecimal(this.order.getPrice());
     this.orderBtcAmount = calculateOrderBtcAmount(orderPrice);
     this.currentPrice = currentPrice;
-    this.priceToSell = calculatePriceToSell(orderPrice, this.currentPrice, orderBtcAmount, symbolInfo, myBtcBalance, actualBalance);
+    this.priceToSell = calculatePriceToSell(orderPrice, this.currentPrice, orderBtcAmount, myBtcBalance, actualBalance);
     this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, priceToSell);
     this.orderPricePercentage = calculatePricePercentage(this.currentPrice, orderPrice);
     this.currentBtcAmount = getQuantity(this.order)
@@ -74,13 +70,12 @@ public class OrderWrapper {
   private BigDecimal calculatePriceToSell(BigDecimal orderPrice,
                                           BigDecimal currentPrice,
                                           BigDecimal orderBtcAmount,
-                                          SymbolInfo symbolInfo,
                                           BigDecimal myBtcBalance,
                                           BigDecimal actualBalance) {
     BigDecimal profitCoefficient = getProfitCoefficient(orderBtcAmount,
                                                         myBtcBalance,
                                                         actualBalance);
-    return getNewPriceToSell(orderPrice, currentPrice, symbolInfo, profitCoefficient);
+    return getNewPriceToSell(orderPrice, currentPrice, profitCoefficient);
   }
 
   private BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount,
@@ -102,16 +97,12 @@ public class OrderWrapper {
     return profitPercentage.max(new BigDecimal("0.005"));
   }
 
-  private BigDecimal getNewPriceToSell(BigDecimal orderPrice,
-                                       BigDecimal currentPrice,
-                                       SymbolInfo symbolInfo,
-                                       BigDecimal profitCoefficient) {
+  private BigDecimal getNewPriceToSell(BigDecimal orderPrice, BigDecimal currentPrice, BigDecimal profitCoefficient) {
     BigDecimal priceToSellWithoutProfit = getPriceToSellWithoutProfit(orderPrice, currentPrice);
     BigDecimal profit = priceToSellWithoutProfit.subtract(currentPrice);
     BigDecimal realProfit = profit.multiply(profitCoefficient);
     BigDecimal priceToSell = priceToSellWithoutProfit.add(realProfit);
-    BigDecimal roundedPriceToSell = roundPriceUp(symbolInfo, priceToSell);
-    return roundedPriceToSell.stripTrailingZeros();
+    return priceToSell.stripTrailingZeros();
   }
 
   private BigDecimal calculateProfitPart(BigDecimal x, BigDecimal a, BigDecimal b) {

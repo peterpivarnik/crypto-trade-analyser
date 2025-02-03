@@ -17,11 +17,9 @@ import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.service.BinanceService;
-import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Service to rebuy crypto.
@@ -60,10 +58,8 @@ public class RepeatTradingProcessor {
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);
     logger.log("minAddition: " + minAddition);
     BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
-    Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, orderPrice);
-    logger.log("Bought: " + pair.getRight());
-    logger.log("OrderId: " + pair.getLeft());
-    Long orderId = pair.getLeft();
+    Long orderId = binanceService.buyReturnOrderId(symbolInfo, btcAmount, orderPrice);
+    logger.log("OrderId: " + orderId);
     List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
     myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
@@ -95,7 +91,7 @@ public class RepeatTradingProcessor {
     // 3. create new order
     BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
-    binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell, CommonUtils::roundPriceUp);
+    binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
   }
 
 

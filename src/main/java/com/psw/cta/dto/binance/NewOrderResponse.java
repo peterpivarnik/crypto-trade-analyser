@@ -5,8 +5,6 @@ import java.util.List;
 
 /**
  * Response returned when placing a new order on the system.
- *
- * @see NewOrder for the request
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class NewOrderResponse {

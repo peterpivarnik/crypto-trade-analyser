@@ -21,7 +21,6 @@ import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
-import com.psw.cta.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Service to split crypto to cryptos with small amount.
@@ -175,8 +173,7 @@ public class SplitProcessor {
     logger.log("minAddition: " + minAddition);
     BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
     logger.log("btcAmount: " + btcAmount);
-    Pair<Long, BigDecimal> pair = binanceService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
-    BigDecimal boughtQuantity = pair.getRight();
+    BigDecimal boughtQuantity = binanceService.buyReturnQuantity(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order
@@ -188,6 +185,6 @@ public class SplitProcessor {
     logger.log("roundedPriceToSell: " + roundedPriceToSell);
     roundedPriceToSell = roundedPriceToSell.setScale(8, DOWN);
     logger.log("roundedPriceToSell with scale: " + roundedPriceToSell);
-    binanceService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity, CommonUtils::roundPrice);
+    binanceService.placeSellOrder(symbolInfo, roundedPriceToSell, boughtQuantity);
   }
 }

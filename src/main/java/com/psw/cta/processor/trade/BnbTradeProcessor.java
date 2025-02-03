@@ -1,18 +1,14 @@
 package com.psw.cta.processor.trade;
 
+import static com.psw.cta.utils.Constants.ASSET_BNB;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.math.BigDecimal.ONE;
+import static java.math.RoundingMode.CEILING;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
-
 import java.math.BigDecimal;
-
-import static com.psw.cta.dto.binance.OrderSide.BUY;
-import static com.psw.cta.utils.CommonUtils.roundAmount;
-import static com.psw.cta.utils.Constants.ASSET_BNB;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static java.math.BigDecimal.ONE;
-import static java.math.RoundingMode.CEILING;
 
 /**
  * Service for handling with BNB.
@@ -43,8 +39,7 @@ public class BnbTradeProcessor {
       BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
       logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
       BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
-      BigDecimal quantityToBuy = roundAmount(symbolInfo, min);
-      binanceService.createNewOrder(SYMBOL_BNB_BTC, BUY, quantityToBuy);
+      binanceService.createBuyMarketOrder(symbolInfo, min);
       return binanceService.getMyBalance(ASSET_BNB);
     }
     return myBnbBalance;

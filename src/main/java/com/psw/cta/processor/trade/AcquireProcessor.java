@@ -1,13 +1,18 @@
 package com.psw.cta.processor.trade;
 
+import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
+import static java.time.temporal.ChronoUnit.MINUTES;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
+import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Service for acquire crypto.
@@ -25,9 +30,26 @@ public class AcquireProcessor {
   /**
    * Initial buy of crypto.
    *
-   * @param crypto Crypto to buy.
+   * @param cryptos cryptos for initial trading
    */
-  public synchronized void acquireCrypto(Crypto crypto) {
+  public void initTrading(List<Crypto> cryptos) {
+    logger.log("***** ***** Initial trading ***** *****");
+    cryptos.stream()
+           .map(crypto -> {
+             List<Candlestick> candleStickData = binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
+                                                                                   FIFTEEN_MINUTES,
+                                                                                   96L * 15L,
+                                                                                   MINUTES);
+             return crypto.calculateDataFromCandlesticks(candleStickData);
+           })
+           .filter(crypto -> crypto.getLastThreeHighAverage().compareTo(crypto.getPreviousThreeHighAverage()) > 0)
+           .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
+           .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
+           .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
+           .forEach(this::acquireCrypto);
+  }
+
+  private void acquireCrypto(Crypto crypto) {
     // 1. get balance on account
     logger.log("Trading crypto " + crypto);
     String symbol = crypto.getSymbolInfo().getSymbol();

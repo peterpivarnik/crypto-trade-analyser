@@ -1,13 +1,11 @@
 package com.psw.cta.processor;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
-import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
@@ -17,13 +15,11 @@ import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
@@ -32,7 +28,6 @@ import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -129,7 +123,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       logger.log("***** ***** Splitting trade for quicker selling ***** *****");
       Predicate<OrderWrapper> orderWrapperPredicate =
           orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
-              && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
+                          && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
       splitOrderWithHighestBtcAmount(orderWrappers, orderWrapperPredicate, exchangeInfo, totalAmounts);
     } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
       logger.log("***** ***** Splitting order with highest btc amount and init trading ***** *****");
@@ -138,7 +132,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       splitOrderWithHighestBtcAmount(orderWrappers, orderWrapperPredicate, exchangeInfo, totalAmounts);
       BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
       if (haveBalanceForInitialTrading(myBalance)) {
-        initTrading(() -> getCryptos(exchangeInfo));
+        List<Crypto> cryptos = getCryptos(exchangeInfo);
+        acquireProcessor.initTrading(cryptos);
       }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
       cancelTrade(orderWrappers, exchangeInfo);
@@ -186,7 +181,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                        BigDecimal totalAmount,
                                                        List<OrderWrapper> orderWrappers) {
     return uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
-        && allOlderThanDay(orderWrappers);
+           && allOlderThanDay(orderWrappers);
   }
 
   private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
@@ -200,7 +195,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                     long uniqueOpenOrdersSize,
                                                     BigDecimal totalAmount) {
     return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
-        && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
+           && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
   }
 
   private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
@@ -243,8 +238,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
   private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
     return hasMinProfit(orderWrapper)
-        && isRemainingTimeGreaterZero(orderWrapper)
-        && hasEnoughBtcAmount(orderWrapper, function);
+           && isRemainingTimeGreaterZero(orderWrapper)
+           && hasEnoughBtcAmount(orderWrapper, function);
   }
 
   private boolean hasMinProfit(OrderWrapper orderWrapper) {
@@ -261,7 +256,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   private boolean hasEnoughBtcAmount(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
     BigDecimal myBtcBalance = function.apply(binanceService);
     return isOrderPricePercentageLessThan10AndHasEnoughAmount(orderWrapper, myBtcBalance)
-        || isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(orderWrapper, myBtcBalance);
+           || isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(orderWrapper, myBtcBalance);
   }
 
   private boolean isOrderPricePercentageLessThan10AndHasEnoughAmount(OrderWrapper orderWrapper,
@@ -275,7 +270,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                            .divide(TEN, 8, UP)
                                            .add(ONE);
     return !isOrderPricePercentageLessThan10(orderWrapper)
-        && hasMultipliedAmount(orderWrapper, multiplicator, myBtcBalance);
+           && hasMultipliedAmount(orderWrapper, multiplicator, myBtcBalance);
   }
 
   private boolean isOrderPricePercentageLessThan10(OrderWrapper orderWrapper) {
@@ -316,27 +311,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return cryptos;
   }
 
-  private void initTrading(Supplier<List<Crypto>> supplier) {
-    logger.log("***** ***** Initial trading ***** *****");
-    supplier.get()
-            .stream()
-            .map(crypto -> {
-              List<Candlestick> candleStickData = binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
-                                                                                    FIFTEEN_MINUTES,
-                                                                                    96L * 15L,
-                                                                                    MINUTES);
-              return crypto.calculateDataFromCandlesticks(candleStickData);
-            })
-            .filter(crypto -> crypto.getLastThreeHighAverage().compareTo(crypto.getPreviousThreeHighAverage()) > 0)
-            .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
-            .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
-            .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
-            .forEach(acquireProcessor::acquireCrypto);
-  }
-
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
     return allRemainWaitingTimeLessThanZero(orderWrappers)
-        && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
+           && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
   }
 
   private boolean allOrderBtcAmountBiggerThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

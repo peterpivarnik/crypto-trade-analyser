@@ -1,5 +1,9 @@
 package com.psw.cta.service;
 
+import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
+import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
+import static com.psw.cta.dto.binance.CandlestickInterval.HOURLY;
+import static com.psw.cta.dto.binance.CandlestickInterval.WEEKLY;
 import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
@@ -17,8 +21,10 @@ import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static java.lang.System.currentTimeMillis;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -165,7 +171,7 @@ public class BinanceService {
 
 
   /**
-   * Returns Kline/Candlestick bars for a symbol.
+   * Returns Kline/Candlestick bars for a symbol and provided number of units.
    *
    * @param symbol            Order symbol
    * @param interval          Interval for Candlestick
@@ -187,6 +193,35 @@ public class BinanceService {
   }
 
   /**
+   * Returns candlestick data for provided orde rand actualWaitingTime.
+   *
+   * @param order             order
+   * @param actualWaitingTime order's actual waiting time
+   * @return candlesticks
+   */
+  public List<Candlestick> getCandlesticks(Order order, BigDecimal actualWaitingTime) {
+    List<Candlestick> candleStickData;
+    if (actualWaitingTime.compareTo(ONE) < 0) {
+      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("5"), 8, UP).max(ONE).intValue();
+      candleStickData = getCandleStickData(order.getSymbol(), FIVE_MINUTES, numberOfTimeUnits);
+    } else if (actualWaitingTime.compareTo(new BigDecimal("24")) < 0) {
+      int numberOfTimeUnits = actualWaitingTime.intValue();
+      candleStickData = getCandleStickData(order.getSymbol(), HOURLY, numberOfTimeUnits);
+    } else if (actualWaitingTime.compareTo(new BigDecimal("720")) < 0) {
+      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("24"), 8, UP).intValue();
+      candleStickData = getCandleStickData(order.getSymbol(), DAILY, numberOfTimeUnits);
+    } else {
+      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("168"), 8, UP).intValue();
+      candleStickData = getCandleStickData(order.getSymbol(), WEEKLY, numberOfTimeUnits);
+    }
+    return candleStickData;
+  }
+
+  private List<Candlestick> getCandleStickData(String symbol, CandlestickInterval interval, Integer limit) {
+    return executeCall(binanceApi.getCandlestickBars(symbol, interval.getIntervalId(), limit, null, null));
+  }
+
+  /**
    * Get 24 hour price change statistics for all symbols.
    */
   public List<TickerStatistics> getAll24hTickers() {
@@ -196,7 +231,7 @@ public class BinanceService {
 
 
   /**
-   * Buy order.
+   * Buy order and return id of response order.
    *
    * @param symbolInfo Symbol information
    * @param btcAmount  BTC amount
@@ -216,6 +251,14 @@ public class BinanceService {
     return newOrder.getOrderId();
   }
 
+  /**
+   * Buy order and return quantity of response order.
+   *
+   * @param symbolInfo Symbol information
+   * @param btcAmount  BTC amount
+   * @param price      price of new order
+   * @return bought quantity
+   */
   public BigDecimal buyAndReturnQuantity(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
@@ -229,6 +272,12 @@ public class BinanceService {
     return roundedQuantity;
   }
 
+  /**
+   * Create buy market order.
+   *
+   * @param symbolInfo order symbol informations.
+   * @param balance    balance of order
+   */
   public void createBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal balance) {
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
     createNewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedBidQuantity.toPlainString(), null);

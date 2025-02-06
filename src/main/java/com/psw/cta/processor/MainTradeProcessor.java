@@ -1,21 +1,26 @@
 package com.psw.cta.processor;
 
+import static java.time.Duration.between;
+import static java.time.Instant.ofEpochMilli;
+import static java.time.LocalDateTime.now;
+import static java.time.LocalDateTime.ofInstant;
+import static java.time.ZoneId.systemDefault;
+import static java.time.temporal.ChronoUnit.SECONDS;
+import static java.util.Comparator.comparing;
+
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceService;
-import com.psw.cta.utils.CommonUtils;
-
 import java.math.BigDecimal;
-import java.util.Comparator;
+import java.math.MathContext;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
-
-import static com.psw.cta.utils.CommonUtils.getQuantity;
-import static java.util.Comparator.comparing;
 
 /**
  * Trade service.
@@ -46,19 +51,9 @@ public abstract class MainTradeProcessor {
                      .distinct()
                      .map(symbol -> openOrders.parallelStream()
                                               .filter(order -> order.getSymbol().equals(symbol))
-                                              .min(getOrderComparator()))
+                                              .min(comparing(order -> new BigDecimal(order.getPrice()))))
                      .map(Optional::orElseThrow)
                      .map(order -> createOrderWrapper(order, myBtcBalance, actualBalance, totalAmounts));
-  }
-
-  private Comparator<Order> getOrderComparator() {
-    Function<Order, BigDecimal> quantityFunction = CommonUtils::getQuantity;
-    Function<Order, BigDecimal>
-        btcAmountFunction = order -> (getQuantity(order)).multiply(new BigDecimal(order.getPrice()));
-    Function<Order, BigDecimal> timeFunction = order -> new BigDecimal(order.getTime());
-    return comparing(quantityFunction).reversed()
-                                      .thenComparing(comparing(btcAmountFunction).reversed())
-                                      .thenComparing(timeFunction);
   }
 
   private OrderWrapper createOrderWrapper(Order order,
@@ -66,6 +61,23 @@ public abstract class MainTradeProcessor {
                                           BigDecimal actualBalance,
                                           Map<String, BigDecimal> totalAmounts) {
     BigDecimal currentPrice = binanceService.getCurrentPrice(order.getSymbol());
-    return new OrderWrapper(order, currentPrice, myBtcBalance, actualBalance, totalAmounts);
+    BigDecimal actualWaitingTime = calculateActualWaitingTime(order);
+    List<Candlestick> candleStickData = binanceService.getCandlesticks(order, actualWaitingTime);
+    return new OrderWrapper(order,
+                            currentPrice,
+                            myBtcBalance,
+                            actualBalance,
+                            totalAmounts,
+                            candleStickData,
+                            actualWaitingTime
+    );
+  }
+
+  private BigDecimal calculateActualWaitingTime(Order order) {
+    LocalDateTime date = ofInstant(ofEpochMilli(order.getTime()), systemDefault());
+    LocalDateTime now = now();
+    Duration duration = between(date, now);
+    double actualWaitingTimeDouble = (double) duration.get(SECONDS) / (double) 3600;
+    return new BigDecimal(String.valueOf(actualWaitingTimeDouble), new MathContext(5));
   }
 }

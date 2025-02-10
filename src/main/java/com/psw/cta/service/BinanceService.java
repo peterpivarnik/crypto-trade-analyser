@@ -193,7 +193,7 @@ public class BinanceService {
   }
 
   /**
-   * Returns candlestick data for provided orde rand actualWaitingTime.
+   * Returns candlestick data for provided order and actualWaitingTime.
    *
    * @param order             order
    * @param actualWaitingTime order's actual waiting time

@@ -2,7 +2,6 @@ package com.psw.cta.processor;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
-import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -11,14 +10,12 @@ import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
@@ -27,11 +24,9 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -76,9 +71,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
    *
    * @param openOrders           list of currently open orders
    * @param totalAmounts         map of all amounts
-   * @param exchangeInfo         exchange trading rules and symbol information
    * @param myBtcBalance         current BTC amount
    * @param actualBalance        actual balance
+   * @param exchangeInfo         exchange trading rules and symbol information
    * @param uniqueOpenOrdersSize number of unique open orders
    * @param totalAmount          current total amount
    * @param minOpenOrders        minimum of open orders
@@ -86,9 +81,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   @Override
   public void trade(List<Order> openOrders,
                     Map<String, BigDecimal> totalAmounts,
-                    ExchangeInfo exchangeInfo,
                     BigDecimal myBtcBalance,
                     BigDecimal actualBalance,
+                    ExchangeInfo exchangeInfo,
                     long uniqueOpenOrdersSize,
                     BigDecimal totalAmount,
                     int minOpenOrders) {
@@ -100,37 +95,29 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         .collect(Collectors.toList());
     if (!orderSymbolsToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");
-      orderSymbolsToSplit.forEach(symbol -> splitCancelledOrder(orderWrappers, symbol, exchangeInfo, totalAmounts));
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      orderSymbolsToSplit.forEach(symbol -> splitProcessor.splitCancelledOrder(orderWrappers,
+                                                                               symbol,
+                                                                               exchangeInfo,
+                                                                               totalAmounts,
+                                                                               cryptos));
     } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
       repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
-      logger.log("***** ***** Splitting order with lowest order price percentage ***** *****");
-      orderWrappers.stream()
-                   .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                       .compareTo(new BigDecimal("0.001")) > 0)
-                   .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                   .ifPresent(orderToSplit -> splitProcessor.split(orderToSplit,
-                                                                   getCryptos(exchangeInfo),
-                                                                   totalAmounts,
-                                                                   exchangeInfo));
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
-      logger.log("***** ***** Splitting trade for quicker selling ***** *****");
-      Predicate<OrderWrapper> orderWrapperPredicate =
-          orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
-                          && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
-      splitOrderWithHighestBtcAmount(orderWrappers, orderWrapperPredicate, exchangeInfo, totalAmounts);
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
-      logger.log("***** ***** Splitting order with highest btc amount and init trading ***** *****");
-      Predicate<OrderWrapper> orderWrapperPredicate =
-          orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
-      splitOrderWithHighestBtcAmount(orderWrappers, orderWrapperPredicate, exchangeInfo, totalAmounts);
+      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      splitProcessor.splitHighiestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
       BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
       if (haveBalanceForInitialTrading(myBalance)) {
-        List<Crypto> cryptos = getCryptos(exchangeInfo);
         acquireProcessor.initTrading(cryptos);
       }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
-      cancelTrade(orderWrappers, exchangeInfo);
+      splitProcessor.cancelTrade(orderWrappers, exchangeInfo);
     } else {
       repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
     }
@@ -141,20 +128,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                      .map(Order::getSymbol)
                      .filter(allForbiddenPairs::contains)
                      .collect(Collectors.toSet());
-  }
-
-  private void splitCancelledOrder(List<OrderWrapper> orderWrappers,
-                                   String orderToSplit,
-                                   ExchangeInfo exchangeInfo,
-                                   Map<String, BigDecimal> totalAmounts) {
-    OrderWrapper orderToCancel = orderWrappers.stream()
-                                              .filter(orderWrapper -> orderWrapper.getOrder()
-                                                                                  .getSymbol()
-                                                                                  .equals(orderToSplit))
-                                              .toList()
-                                              .getFirst();
-    List<Crypto> cryptos = getCryptos(exchangeInfo);
-    splitProcessor.split(orderToCancel, cryptos, totalAmounts, exchangeInfo);
   }
 
   private boolean shouldRebuyAllOrders(BigDecimal myBtcBalance, BigDecimal ordersAmount) {
@@ -195,19 +168,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return uniqueOpenOrdersSize <= minOpenOrders;
   }
 
-  private void splitOrderWithHighestBtcAmount(List<OrderWrapper> orderWrappers,
-                                              Predicate<OrderWrapper> orderWrapperPredicate,
-                                              ExchangeInfo exchangeInfo,
-                                              Map<String, BigDecimal> totalAmounts) {
-    orderWrappers.stream()
-                 .filter(orderWrapperPredicate)
-                 .max(comparing(OrderWrapper::getOrderBtcAmount))
-                 .ifPresent(orderWrapper -> splitProcessor.split(orderWrapper,
-                                                                 getCryptos(exchangeInfo),
-                                                                 totalAmounts,
-                                                                 exchangeInfo));
-  }
-
   private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
     sleep(1000 * 60, logger);
     logger.log("Get all cryptos");
@@ -241,32 +201,16 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
            && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
   }
 
-  private boolean allOrderBtcAmountBiggerThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-    return orderWrappers.stream()
-                        .map(OrderWrapper::getOrderBtcAmount)
-                        .allMatch(orderBtcAmount -> orderBtcAmount.compareTo(myBtcBalance) > 0);
-  }
-
   private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {
     return orderWrappers.stream()
                         .map(OrderWrapper::getRemainWaitingTime)
                         .allMatch(time -> time.compareTo(ZERO) < 0);
   }
 
-  private void cancelTrade(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    orderWrappers.stream()
-                 .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
-                 .ifPresent(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
+  private boolean allOrderBtcAmountBiggerThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+    return orderWrappers.stream()
+                        .map(OrderWrapper::getOrderBtcAmount)
+                        .allMatch(orderBtcAmount -> orderBtcAmount.compareTo(myBtcBalance) > 0);
   }
 
-  private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
-    // 1. cancel existing order
-    splitProcessor.cancelRequest(orderToCancel);
-
-    // 2. sell cancelled order
-    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
-    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
-    splitProcessor.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
-  }
 }

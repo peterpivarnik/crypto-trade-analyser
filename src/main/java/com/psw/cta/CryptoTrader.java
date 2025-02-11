@@ -35,7 +35,7 @@ public class CryptoTrader {
   private final BnbTradeProcessor bnbTradeProcessor;
   private final BinanceService binanceService;
   private final LambdaLogger logger;
-  private final MainTradeProcessor tradeFacade;
+  private final MainTradeProcessor tradeProcessor;
 
   /**
    * Constructor of {@link CryptoTrader} for local environment.
@@ -49,7 +49,7 @@ public class CryptoTrader {
                       LambdaLogger logger) {
     this.binanceService = new BinanceService(apiKey, apiSecret, logger);
     this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeFacade = new LocalTradeProcessor(binanceService, logger);
+    this.tradeProcessor = new LocalTradeProcessor(binanceService, logger);
     this.logger = logger;
   }
 
@@ -67,7 +67,7 @@ public class CryptoTrader {
                       LambdaLogger logger) {
     this.binanceService = new BinanceService(apiKey, apiSecret, logger);
     this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeFacade = new LambdaTradeProcessor(binanceService, forbiddenPairs, logger);
+    this.tradeProcessor = new LambdaTradeProcessor(binanceService, forbiddenPairs, logger);
     this.logger = logger;
   }
 
@@ -106,14 +106,14 @@ public class CryptoTrader {
     logger.log("Unique open orders: " + uniqueOpenOrdersSize);
     BigDecimal actualBalance = binanceService.getMyActualBalance();
     logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
-    tradeFacade.trade(openOrders,
-                      totalAmounts,
-                      exchangeInfo,
-                      myBtcBalance,
-                      actualBalance,
-                      uniqueOpenOrdersSize,
-                      totalAmount,
-                      minOpenOrders);
+    tradeProcessor.trade(openOrders,
+                         totalAmounts,
+                         myBtcBalance,
+                         actualBalance,
+                         exchangeInfo,
+                         uniqueOpenOrdersSize,
+                         totalAmount,
+                         minOpenOrders);
     List<Order> newOpenOrders = binanceService.getOpenOrders();
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logTotalAmounts(newTotalAmounts);

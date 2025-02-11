@@ -35,9 +35,9 @@ public abstract class MainTradeProcessor {
 
   public abstract void trade(List<Order> openOrders,
                              Map<String, BigDecimal> totalAmounts,
-                             ExchangeInfo exchangeInfo,
                              BigDecimal myBtcBalance,
                              BigDecimal actualBalance,
+                             ExchangeInfo exchangeInfo,
                              long uniqueOpenOrdersSize,
                              BigDecimal totalAmount,
                              int minOpenOrders);
@@ -69,8 +69,7 @@ public abstract class MainTradeProcessor {
                             actualBalance,
                             totalAmounts,
                             candleStickData,
-                            actualWaitingTime
-    );
+                            actualWaitingTime);
   }
 
   private BigDecimal calculateActualWaitingTime(Order order) {

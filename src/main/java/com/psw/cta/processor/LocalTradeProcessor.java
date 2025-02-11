@@ -26,9 +26,9 @@ public class LocalTradeProcessor extends MainTradeProcessor {
   @Override
   public void trade(List<Order> openOrders,
                     Map<String, BigDecimal> totalAmounts,
-                    ExchangeInfo exchangeInfo,
                     BigDecimal myBtcBalance,
                     BigDecimal actualBalance,
+                    ExchangeInfo exchangeInfo,
                     long uniqueOpenOrdersSize,
                     BigDecimal totalAmount,
                     int minOpenOrders) {

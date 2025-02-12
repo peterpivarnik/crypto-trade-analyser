@@ -349,9 +349,9 @@ public class BinanceService {
     BigDecimal minValue = getMinValue(minValueFromLotSizeFilter, orderPrice, minValueFromMinNotionalFilter);
     logger.log("minValue: " + minValue);
 
-    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice(), balance.subtract(minValue));
+    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice(), minValue);
     BigDecimal minPriceTickSize = getValueFromFilter(symbolInfo, SymbolFilter::getTickSize, PRICE_FILTER);
-    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice().add(minPriceTickSize), minValue);
+    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice().add(minPriceTickSize), balance.subtract(minValue));
   }
 
   private BigDecimal getMinValue(BigDecimal minValueFromLotSizeFilter,

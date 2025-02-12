@@ -2,7 +2,6 @@ package com.psw.cta.utils;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.binance.FilterType;
-import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.CryptoTraderException;
@@ -53,16 +52,6 @@ public class CommonUtils {
                      .orElseThrow(() -> new CryptoTraderException("Value from filters "
                                                                       + Arrays.toString(filterTypes)
                                                                       + " not found"));
-  }
-
-  /**
-   * Returns quantity of open order.
-   *
-   * @param order Trade order information
-   * @return Order quantity
-   */
-  public static BigDecimal getQuantity(Order order) {
-    return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
   }
 
   /**

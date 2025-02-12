@@ -1,6 +1,5 @@
 package com.psw.cta.dto;
 
-import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
@@ -55,7 +54,7 @@ public class OrderWrapper {
                                             this.orderBtcAmount,
                                             myBtcBalance,
                                             actualBalance);
-    this.currentBtcAmount = getQuantity(this.order)
+    this.currentBtcAmount = getQuantity()
         .multiply(this.currentPrice)
         .setScale(8, CEILING);
     this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
@@ -68,7 +67,7 @@ public class OrderWrapper {
   }
 
   private BigDecimal calculateOrderBtcAmount(BigDecimal orderPrice) {
-    BigDecimal orderAltAmount = getQuantity(order);
+    BigDecimal orderAltAmount = getQuantity();
     return orderAltAmount.multiply(orderPrice).setScale(8, CEILING);
   }
 
@@ -157,6 +156,15 @@ public class OrderWrapper {
     return new BigDecimal(String.valueOf(totalTime), new MathContext(3));
   }
 
+  /**
+   * Returns quantity of open order.
+   *
+   * @return Order quantity
+   */
+  public BigDecimal getQuantity() {
+    return new BigDecimal(this.order.getOrigQty()).subtract(new BigDecimal(this.order.getExecutedQty()));
+  }
+
   /*
    * Returns result of f(x)=-0.0008 * x * x + 0.15 * x + 0.5
    */
@@ -225,7 +233,7 @@ public class OrderWrapper {
            + format("symbol=%-12s", order.getSymbol() + ",")
            + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
            + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
-           + format("quantity=%-9s", getQuantity(order).stripTrailingZeros().toPlainString() + ",")
+           + format("quantity=%-9s", getQuantity().stripTrailingZeros().toPlainString() + ",")
            + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
            + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")
            + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")

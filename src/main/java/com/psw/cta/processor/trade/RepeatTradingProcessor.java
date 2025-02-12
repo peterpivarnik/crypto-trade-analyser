@@ -4,7 +4,6 @@ import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
-import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -127,7 +126,7 @@ public class RepeatTradingProcessor {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
     // 1. cancel existing order
-    binanceService.cancelRequest(orderWrapper);
+    binanceService.cancelOrder(orderWrapper);
     // 2. buy
     BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
     BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
@@ -172,7 +171,7 @@ public class RepeatTradingProcessor {
     }
 
     // 3. create new order
-    BigDecimal quantityToSell = getQuantity(orderWrapper.getOrder());
+    BigDecimal quantityToSell = orderWrapper.getQuantity();
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
   }

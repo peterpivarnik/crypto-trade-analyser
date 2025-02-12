@@ -326,6 +326,46 @@ public class BinanceService {
     createSellLimitOrder(symbolInfo, priceToSell, balance);
   }
 
+  /**
+   * Extract two orders out of the provided one.
+   *
+   * @param symbolInfo     symbol information
+   * @param orderToExtract order to be extracted
+   */
+  public void extractTwoSellOrders(SymbolInfo symbolInfo, OrderWrapper orderToExtract) {
+    logger.log("Extract order: " + symbolInfo.getSymbol());
+    String asset = getAssetFromSymbolInfo(symbolInfo);
+    BigDecimal balance = waitUntilHaveBalance(asset, orderToExtract.getQuantity());
+    logger.log("balance: " + balance);
+    BigDecimal orderPrice = orderToExtract.getOrderPrice();
+    logger.log("orderPrice: " + orderPrice);
+    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
+    logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
+                                                                  MIN_NOTIONAL,
+                                                                  NOTIONAL);
+    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+    BigDecimal minValue = getMinValue(minValueFromLotSizeFilter, orderPrice, minValueFromMinNotionalFilter);
+    logger.log("minValue: " + minValue);
+
+    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice(), balance.subtract(minValue));
+    BigDecimal minPriceTickSize = getValueFromFilter(symbolInfo, SymbolFilter::getTickSize, PRICE_FILTER);
+    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice().add(minPriceTickSize), minValue);
+  }
+
+  private BigDecimal getMinValue(BigDecimal minValueFromLotSizeFilter,
+                                 BigDecimal orderPrice,
+                                 BigDecimal minValueFromMinNotionalFilter) {
+    if (minValueFromLotSizeFilter.multiply(orderPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
+      BigDecimal multiply = minValueFromLotSizeFilter.multiply(new BigDecimal("2"));
+      logger.log("Calling recursivelly: multiply: " + multiply);
+      return getMinValue(multiply, orderPrice, minValueFromMinNotionalFilter);
+    }
+    logger.log("Finished calling recursivelly: minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+    return minValueFromLotSizeFilter;
+  }
+
   private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {
     return symbolInfo.getSymbol().substring(0, symbolInfo.getSymbol().length() - 3);
   }
@@ -355,13 +395,13 @@ public class BinanceService {
                                           OrderSide orderSide,
                                           OrderType orderType,
                                           TimeInForce timeInForce,
-                                          String roundedMyQuatity,
+                                          String quantity,
                                           String price) {
     return executeCall(binanceApi.newOrder(symbol,
                                            orderSide,
                                            orderType,
                                            timeInForce,
-                                           roundedMyQuatity,
+                                           quantity,
                                            price,
                                            null,
                                            null,
@@ -388,7 +428,7 @@ public class BinanceService {
    *
    * @param orderWrapper order status request parameters
    */
-  public void cancelRequest(OrderWrapper orderWrapper) {
+  public void cancelOrder(OrderWrapper orderWrapper) {
     logger.log("Cancel request for " + orderWrapper);
     executeCall(binanceApi.cancelOrder(orderWrapper.getOrder().getSymbol(),
                                        null,

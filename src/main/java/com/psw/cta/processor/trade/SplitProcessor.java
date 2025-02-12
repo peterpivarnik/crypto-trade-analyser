@@ -4,7 +4,6 @@ import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
-import static com.psw.cta.utils.CommonUtils.getQuantity;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static java.math.BigDecimal.ZERO;
@@ -129,7 +128,6 @@ public class SplitProcessor {
                                    cryptos);
   }
 
-
   public void splitOrderWithHighestBtcAmount(List<OrderWrapper> orderWrappers,
                                              Predicate<OrderWrapper> orderWrapperPredicate,
                                              ExchangeInfo exchangeInfo,
@@ -162,7 +160,7 @@ public class SplitProcessor {
 
     // 2. sell cancelled order
     SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
-    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
+    BigDecimal currentQuantity = orderToCancel.getQuantity();
     sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
@@ -272,18 +270,39 @@ public class SplitProcessor {
     cancelRequest(orderToCancel);
 
     // 2. sell cancelled order
-    BigDecimal currentQuantity = getQuantity(orderToCancel.getOrder());
+    BigDecimal currentQuantity = orderToCancel.getQuantity();
     SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
     sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
   }
 
   private void cancelRequest(OrderWrapper orderToCancel) {
     logger.log("orderToCancel: " + orderToCancel);
-    binanceService.cancelRequest(orderToCancel);
+    binanceService.cancelOrder(orderToCancel);
   }
 
   private void sellAvailableBalance(SymbolInfo symbolInfoOfSellOrder, BigDecimal currentQuantity) {
     logger.log("currentQuantity: " + currentQuantity);
     binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+  }
+
+
+  /**
+   * Extracts two orders from order with lowest order price percentage.
+   *
+   * @param orderWrappers all orders
+   * @param exchangeInfo  exchange info
+   */
+  public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+    orderWrappers.stream()
+                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                     .compareTo(new BigDecimal("0.001")) > 0)
+                 .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
+                 .ifPresent(order -> extractOrder(order, exchangeInfo));
+  }
+
+  private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {
+    cancelRequest(orderToExtract);
+    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderToExtract.getOrder().getSymbol());
+    binanceService.extractTwoSellOrders(symbolInfo, orderToExtract);
   }
 }

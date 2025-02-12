@@ -1,5 +1,12 @@
 package com.psw.cta;
 
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static java.lang.String.format;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.FLOOR;
+import static java.util.stream.Collectors.toMap;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -11,21 +18,12 @@ import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static com.psw.cta.utils.CommonUtils.getQuantity;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static java.lang.String.format;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.FLOOR;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Main service for start trading crypto.
@@ -178,6 +176,10 @@ public class CryptoTrader {
                                     Map.Entry::getValue,
                                     (e1, e2) -> e1,
                                     LinkedHashMap::new));
+  }
+
+  private BigDecimal getQuantity(Order order) {
+    return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
   }
 
   private int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {

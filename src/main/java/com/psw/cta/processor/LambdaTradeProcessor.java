@@ -106,6 +106,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+    } else if (shouldExtractOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
+      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
@@ -139,6 +141,13 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                        BigDecimal totalAmount,
                                                        List<OrderWrapper> orderWrappers) {
     return uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
+           && allOlderThanDay(orderWrappers);
+  }
+
+  private boolean shouldExtractOrderWithLowestOrderPrice(long uniqueOpenOrdersSize,
+                                                         BigDecimal totalAmount,
+                                                         List<OrderWrapper> orderWrappers) {
+    return !uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
            && allOlderThanDay(orderWrappers);
   }
 

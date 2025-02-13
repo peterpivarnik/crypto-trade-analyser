@@ -10,6 +10,7 @@ import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.time.temporal.ChronoUnit.DAYS;
+import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
@@ -106,7 +107,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldExtractOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
+    } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers)) {
       splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
@@ -144,17 +145,22 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
            && allOlderThanDay(orderWrappers);
   }
 
-  private boolean shouldExtractOrderWithLowestOrderPrice(long uniqueOpenOrdersSize,
-                                                         BigDecimal totalAmount,
-                                                         List<OrderWrapper> orderWrappers) {
-    return !uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
-           && allOlderThanDay(orderWrappers);
+  private boolean shouldExtractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {
+    return allOlderThanDay(orderWrappers) && orderWithSmallestOrderPricePercentageHasMinimalBtcAmount(orderWrappers);
   }
 
   private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
     return orderWrappers.stream()
                         .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                               .compareTo(new BigDecimal("24")) > 0);
+  }
+
+  private boolean orderWithSmallestOrderPricePercentageHasMinimalBtcAmount(List<OrderWrapper> orderWrappers) {
+    return orderWrappers.stream()
+                        .min(comparing(OrderWrapper::getOrderPricePercentage))
+                        .orElseThrow()
+                        .getOrderBtcAmount()
+                        .compareTo(new BigDecimal("0.001")) > 0;
   }
 
   private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,

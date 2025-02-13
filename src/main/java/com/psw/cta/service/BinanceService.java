@@ -359,10 +359,10 @@ public class BinanceService {
                                  BigDecimal minValueFromMinNotionalFilter) {
     if (minValueFromLotSizeFilter.multiply(orderPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
       BigDecimal multiply = minValueFromLotSizeFilter.multiply(new BigDecimal("2"));
-      logger.log("Calling recursivelly: multiply: " + multiply);
+      logger.log("Calling recursively: multiply: " + multiply);
       return getMinValue(multiply, orderPrice, minValueFromMinNotionalFilter);
     }
-    logger.log("Finished calling recursivelly: minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+    logger.log("Finished calling recursively: minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
     return minValueFromLotSizeFilter;
   }
 

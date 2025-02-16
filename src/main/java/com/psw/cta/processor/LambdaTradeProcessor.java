@@ -227,5 +227,4 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                         .map(OrderWrapper::getOrderBtcAmount)
                         .allMatch(orderBtcAmount -> orderBtcAmount.compareTo(myBtcBalance) > 0);
   }
-
 }

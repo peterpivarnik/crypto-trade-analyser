@@ -57,7 +57,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
@@ -381,7 +380,9 @@ public class BinanceService {
   }
 
   private void createSellLimitOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal balance) {
-    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
+    BigDecimal minBalance = getMinBalance(balance, priceToSell, symbolInfo);
+    logger.log("minBalance: " + minBalance);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, minBalance);
     BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
     createNewOrder(symbolInfo.getSymbol(),
                    SELL,
@@ -389,6 +390,19 @@ public class BinanceService {
                    GTC,
                    roundedBidQuantity.toPlainString(),
                    roundedPriceToSell.toPlainString());
+  }
+
+  private BigDecimal getMinBalance(BigDecimal balance, BigDecimal priceToSell, SymbolInfo symbolInfo) {
+    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
+                                                                  MIN_NOTIONAL,
+                                                                  NOTIONAL);
+    BigDecimal btcAmount = balance.multiply(priceToSell);
+    if (btcAmount.compareTo(minValueFromMinNotionalFilter) < 0) {
+      logger.log("Calling recursively: balance: " + balance);
+      return getMinBalance(balance.multiply(new BigDecimal("2")), priceToSell, symbolInfo);
+    }
+    return balance;
   }
 
   private NewOrderResponse createNewOrder(String symbol,
@@ -565,29 +579,19 @@ public class BinanceService {
   }
 
   private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
-    return round(symbolInfo,
-                 amount,
-                 LOT_SIZE,
-                 SymbolFilter::getMinQty,
-                 (roundedValue, valueFromFilter) -> roundedValue);
+    return round(symbolInfo, amount, LOT_SIZE, SymbolFilter::getMinQty);
   }
 
   private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
-    return round(symbolInfo,
-                 price,
-                 PRICE_FILTER,
-                 SymbolFilter::getTickSize,
-                 (roundedValue, valueFromFilter) -> roundedValue);
+    return round(symbolInfo, price, PRICE_FILTER, SymbolFilter::getTickSize);
   }
 
   private BigDecimal round(SymbolInfo symbolInfo,
                            BigDecimal amountToRound,
                            FilterType filterType,
-                           Function<SymbolFilter, String> symbolFilterFunction,
-                           BinaryOperator<BigDecimal> roundUpFunction) {
+                           Function<SymbolFilter, String> symbolFilterFunction) {
     BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
     BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-    BigDecimal roundedValue = amountToRound.subtract(remainder);
-    return roundUpFunction.apply(roundedValue, valueFromFilter);
+    return amountToRound.subtract(remainder);
   }
 }

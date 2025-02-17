@@ -140,7 +140,7 @@ public class RepeatTradingProcessor {
     BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);
     logger.log("minAddition: " + minAddition);
     BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
-    Long orderId = binanceService.buyAndReturnOrderId(symbolInfo, btcAmount, orderPrice);
+    Long orderId = binanceService.buyAndReturnOrderId(symbolInfo, btcAmount, orderPrice, orderWrapper.getPriceToSell());
     logger.log("OrderId: " + orderId);
     List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
     myTrades.forEach(trade -> logger.log(trade.toString()));

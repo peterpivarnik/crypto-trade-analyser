@@ -232,14 +232,19 @@ public class BinanceService {
   /**
    * Buy order and return id of response order.
    *
-   * @param symbolInfo Symbol information
-   * @param btcAmount  BTC amount
-   * @param price      price of new order
+   * @param symbolInfo  Symbol information
+   * @param btcAmount   BTC amount
+   * @param orderPrice  order price of old order
+   * @param priceToSell price to sell of old order
    * @return bought quantity
    */
-  public Long buyAndReturnOrderId(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
-    BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
-    BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
+  public Long buyAndReturnOrderId(SymbolInfo symbolInfo,
+                                  BigDecimal btcAmount,
+                                  BigDecimal orderPrice,
+                                  BigDecimal priceToSell) {
+    BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, orderPrice);
+    BigDecimal minBalance = getMinBalance(myQuantityToBuy, priceToSell, symbolInfo);
+    BigDecimal roundedQuantity = roundAmount(symbolInfo, minBalance);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
                                                BUY,
                                                MARKET,

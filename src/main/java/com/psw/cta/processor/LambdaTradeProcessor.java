@@ -94,6 +94,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                           .reduce(ZERO, BigDecimal::add);
     List<OrderWrapper> orderWrappers = getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
         .collect(Collectors.toList());
+    int numberOfOrdersToExtract = getNumberOfOrdersToExtract(openOrders, myBtcBalance, (int) uniqueOpenOrdersSize);
     if (!orderSymbolsToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");
       List<Crypto> cryptos = getCryptos(exchangeInfo);
@@ -107,8 +108,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers)) {
-      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, exchangeInfo);
+    } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers, numberOfOrdersToExtract)) {
+      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, numberOfOrdersToExtract);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
@@ -124,6 +125,14 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else {
       repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
     }
+  }
+
+  private int getNumberOfOrdersToExtract(List<Order> openOrders, BigDecimal myBtcBalance, int uniqueOpenOrdersSize) {
+    int numberOfAlreadyExtractedOrders = openOrders.size() - uniqueOpenOrdersSize;
+    return myBtcBalance.multiply(new BigDecimal("1000"))
+                       .subtract(new BigDecimal(numberOfAlreadyExtractedOrders))
+                       .max(ZERO)
+                       .intValue();
   }
 
   private Set<String> getOrderSymbolsToSplit(List<Order> openOrders) {
@@ -145,22 +154,15 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
            && allOlderThanDay(orderWrappers);
   }
 
-  private boolean shouldExtractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {
-    return allOlderThanDay(orderWrappers) && orderWithSmallestOrderPricePercentageHasMinimalBtcAmount(orderWrappers);
+  private boolean shouldExtractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
+                                                         int numberOfOrdersToExtract) {
+    return allOlderThanDay(orderWrappers) && numberOfOrdersToExtract > 0;
   }
 
   private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
     return orderWrappers.stream()
                         .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
                                                               .compareTo(new BigDecimal("24")) > 0);
-  }
-
-  private boolean orderWithSmallestOrderPricePercentageHasMinimalBtcAmount(List<OrderWrapper> orderWrappers) {
-    return orderWrappers.stream()
-                        .min(comparing(OrderWrapper::getOrderPricePercentage))
-                        .orElseThrow()
-                        .getOrderBtcAmount()
-                        .compareTo(new BigDecimal("0.001")) > 0;
   }
 
   private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,

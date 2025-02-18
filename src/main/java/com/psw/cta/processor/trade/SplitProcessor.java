@@ -289,15 +289,19 @@ public class SplitProcessor {
   /**
    * Extracts two orders from order with lowest order price percentage.
    *
-   * @param orderWrappers all orders
-   * @param exchangeInfo  exchange info
+   * @param orderWrappers           all orders
+   * @param exchangeInfo            exchange info
+   * @param numberOfOrdersToExtract number of orders to be extracted
    */
-  public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+  public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
+                                               ExchangeInfo exchangeInfo,
+                                               int numberOfOrdersToExtract) {
     orderWrappers.stream()
                  .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
                                                      .compareTo(new BigDecimal("0.001")) > 0)
-                 .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                 .ifPresent(order -> extractOrder(order, exchangeInfo));
+                 .sorted(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
+                 .limit(numberOfOrdersToExtract)
+                 .forEach(order -> extractOrder(order, exchangeInfo));
   }
 
   private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {

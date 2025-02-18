@@ -296,6 +296,7 @@ public class SplitProcessor {
   public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
                                                ExchangeInfo exchangeInfo,
                                                int numberOfOrdersToExtract) {
+    logger.log("***** ***** Extracting  " + numberOfOrdersToExtract + " orders ***** *****");
     orderWrappers.stream()
                  .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
                                                      .compareTo(new BigDecimal("0.001")) > 0)

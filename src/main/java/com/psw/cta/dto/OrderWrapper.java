@@ -5,6 +5,8 @@ import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
@@ -138,7 +140,8 @@ public class OrderWrapper {
                                     .max(comparing(Function.identity()))
                                     .orElse(this.currentPrice);
     BigDecimal minPricePercentage = calculatePricePercentage(max, min).negate();
-    return oldMinWaitingTime.add(oldMinWaitingTime.multiply(minPricePercentage.divide(new BigDecimal("50"), 8, UP))).abs(new MathContext(5));
+    return oldMinWaitingTime.add(oldMinWaitingTime.multiply(minPricePercentage.divide(new BigDecimal("50"), 8, UP)))
+                            .abs(new MathContext(5));
   }
 
   private BigDecimal calculateOldMinWaitingTime(BigDecimal totalSymbolAmount,
@@ -232,6 +235,11 @@ public class OrderWrapper {
     return "OrderWrapper{"
            + format("symbol=%-12s", order.getSymbol() + ",")
            + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
+           + format("neededBtcBalance=%-12s", orderBtcAmount.multiply(orderPricePercentage.divide(TEN, 8, UP)
+                                                                                          .add(ONE))
+                                                            .setScale(8, CEILING)
+                                                            .stripTrailingZeros()
+                                                            .toPlainString() + ",")
            + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
            + format("quantity=%-9s", getQuantity().stripTrailingZeros().toPlainString() + ",")
            + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")

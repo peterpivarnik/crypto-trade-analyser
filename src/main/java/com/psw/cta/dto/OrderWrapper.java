@@ -235,11 +235,7 @@ public class OrderWrapper {
     return "OrderWrapper{"
            + format("symbol=%-12s", order.getSymbol() + ",")
            + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
-           + format("neededBtcBalance=%-12s", orderBtcAmount.multiply(orderPricePercentage.divide(TEN, 8, UP)
-                                                                                          .add(ONE))
-                                                            .setScale(8, CEILING)
-                                                            .stripTrailingZeros()
-                                                            .toPlainString() + ",")
+           + format("neededBtcBalance=%-12s", getNeededBtcBalance() + ",")
            + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
            + format("quantity=%-9s", getQuantity().stripTrailingZeros().toPlainString() + ",")
            + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
@@ -249,5 +245,19 @@ public class OrderWrapper {
            + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
            + format("remainWaitingTime=%-9s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
            + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
+  }
+
+  private String getNeededBtcBalance() {
+    BigDecimal neededBtcBalance;
+    if (orderPricePercentage.compareTo(TEN) < 0) {
+      neededBtcBalance = orderBtcAmount;
+    } else {
+      BigDecimal multiplicand = orderPricePercentage.divide(TEN, 8, UP)
+                                                    .add(ONE);
+      neededBtcBalance = orderBtcAmount.multiply(multiplicand);
+    }
+    return neededBtcBalance.setScale(8, CEILING)
+                           .stripTrailingZeros()
+                           .toPlainString();
   }
 }

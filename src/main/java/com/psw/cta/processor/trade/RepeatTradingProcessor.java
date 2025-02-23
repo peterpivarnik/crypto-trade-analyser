@@ -157,13 +157,13 @@ public class RepeatTradingProcessor {
       logger.log("Bought quantity after still not having: " + boughtQuantity);
     }
     logger.log("boughtQuantity: " + boughtQuantity);
-    BigDecimal earnedBtcs = getSumFromTrades(myTrades,
+    BigDecimal boughtBtcs = getSumFromTrades(myTrades,
                                              trade -> new BigDecimal(trade.getQty())
                                                  .multiply(new BigDecimal(trade.getPrice())));
-    logger.log("earnedBtcs: " + earnedBtcs);
-    BigDecimal soldPrice = earnedBtcs.divide(boughtQuantity, 8, CEILING);
-    logger.log("soldPrice: " + soldPrice);
-    BigDecimal priceDifference = soldPrice.subtract(orderWrapper.getCurrentPrice());
+    logger.log("boughtBtcs: " + boughtBtcs);
+    BigDecimal boughtPrice = boughtBtcs.divide(boughtQuantity, 8, CEILING);
+    logger.log("boughtPrice: " + boughtPrice);
+    BigDecimal priceDifference = orderWrapper.getCurrentPrice().subtract(boughtPrice);
     BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
     if (priceDifference.compareTo(ZERO) > 0) {
       logger.log("priceDifference: " + priceDifference);

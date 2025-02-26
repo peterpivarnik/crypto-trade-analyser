@@ -57,6 +57,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
@@ -584,19 +585,29 @@ public class BinanceService {
   }
 
   private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
-    return round(symbolInfo, amount, LOT_SIZE, SymbolFilter::getMinQty);
+    return round(symbolInfo,
+                 amount,
+                 LOT_SIZE,
+                 SymbolFilter::getStepSize,
+                 (roundedValue, valueFromFilter) -> roundedValue);
   }
 
   private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
-    return round(symbolInfo, price, PRICE_FILTER, SymbolFilter::getTickSize);
+    return round(symbolInfo,
+                 price,
+                 PRICE_FILTER,
+                 SymbolFilter::getTickSize,
+                 BigDecimal::add);
   }
 
   private BigDecimal round(SymbolInfo symbolInfo,
                            BigDecimal amountToRound,
                            FilterType filterType,
-                           Function<SymbolFilter, String> symbolFilterFunction) {
+                           Function<SymbolFilter, String> symbolFilterFunction,
+                           BinaryOperator<BigDecimal> roundUpFunction) {
     BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
     BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-    return amountToRound.subtract(remainder);
+    BigDecimal roundedValue = amountToRound.subtract(remainder);
+    return roundUpFunction.apply(roundedValue, valueFromFilter);
   }
 }

@@ -63,7 +63,7 @@ public class AcquireProcessor {
 
     if (shouldBuyAndSell(crypto, myBtcBalance, price)) {
       // 4. buy
-      BigDecimal quantity = binanceService.buyAndReturnQuantity(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
+      BigDecimal quantity = binanceService.buy(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
 
       // 5. place sell order
       placeSellOrder(crypto, quantity);

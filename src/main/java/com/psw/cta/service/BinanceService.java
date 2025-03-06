@@ -229,28 +229,19 @@ public class BinanceService {
     return executeCall(binanceApi.getAll24HrPriceStatistics());
   }
 
-
   /**
    * Buy order and return id of response order.
    *
-   * @param symbolInfo  Symbol information
-   * @param btcAmount   BTC amount
-   * @param orderPrice  order price of old order
-   * @param priceToSell price to sell of old order
-   * @return bought quantity
+   * @param symbolInfo Symbol information
+   * @param quantity quantity amount
+   * @return Id of order
    */
-  public Long buyAndReturnOrderId(SymbolInfo symbolInfo,
-                                  BigDecimal btcAmount,
-                                  BigDecimal orderPrice,
-                                  BigDecimal priceToSell) {
-    BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, orderPrice);
-    BigDecimal minBalance = getMinBalance(myQuantityToBuy, priceToSell, symbolInfo);
-    BigDecimal roundedQuantity = roundAmount(symbolInfo, minBalance);
+  public Long buy(SymbolInfo symbolInfo, BigDecimal quantity) {
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
                                                BUY,
                                                MARKET,
                                                null,
-                                               roundedQuantity.toPlainString(),
+                                               quantity.toPlainString(),
                                                null);
     logger.log("response: " + newOrder);
     return newOrder.getOrderId();
@@ -264,7 +255,7 @@ public class BinanceService {
    * @param price      price of new order
    * @return bought quantity
    */
-  public BigDecimal buyAndReturnQuantity(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
+  public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),

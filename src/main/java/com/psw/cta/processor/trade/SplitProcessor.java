@@ -241,7 +241,7 @@ public class SplitProcessor {
     logger.log("minAddition: " + minAddition);
     BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
     logger.log("btcAmount: " + btcAmount);
-    BigDecimal boughtQuantity = binanceService.buyAndReturnQuantity(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
+    BigDecimal boughtQuantity = binanceService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order

@@ -41,14 +41,16 @@ public class OrderWrapper {
   private final BigDecimal actualWaitingTime;
 
   public OrderWrapper(Order order,
+                      BigDecimal orderPrice,
                       BigDecimal currentPrice,
                       BigDecimal myBtcBalance,
                       BigDecimal actualBalance,
+                      BigDecimal orderPricePercentage,
                       Map<String, BigDecimal> totalAmounts,
                       List<Candlestick> candleStickData,
                       BigDecimal actualWaitingTime) {
     this.order = order;
-    this.orderPrice = new BigDecimal(this.order.getPrice());
+    this.orderPrice = orderPrice;
     this.orderBtcAmount = calculateOrderBtcAmount(this.orderPrice);
     this.currentPrice = currentPrice;
     this.priceToSell = calculatePriceToSell(this.orderPrice,
@@ -60,7 +62,7 @@ public class OrderWrapper {
         .multiply(this.currentPrice)
         .setScale(8, CEILING);
     this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
-    this.orderPricePercentage = calculatePricePercentage(this.currentPrice, this.orderPrice);
+    this.orderPricePercentage = orderPricePercentage;
     this.minWaitingTime = getMinWaitingTime(totalAmounts,
                                             this.orderBtcAmount,
                                             this.orderPricePercentage,
@@ -180,7 +182,7 @@ public class OrderWrapper {
     return firstElement.add(secondElement.add(c));
   }
 
-  private BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
+  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
                                               BigDecimal highestPrice) {
     BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
     return HUNDRED_PERCENT.subtract(percentage);

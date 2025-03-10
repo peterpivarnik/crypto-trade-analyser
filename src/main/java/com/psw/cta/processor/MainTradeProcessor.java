@@ -1,5 +1,6 @@
 package com.psw.cta.processor;
 
+import static com.psw.cta.dto.OrderWrapper.calculatePricePercentage;
 import static java.time.Duration.between;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.LocalDateTime.now;
@@ -62,11 +63,15 @@ public abstract class MainTradeProcessor {
                                           Map<String, BigDecimal> totalAmounts) {
     BigDecimal currentPrice = binanceService.getCurrentPrice(order.getSymbol());
     BigDecimal actualWaitingTime = calculateActualWaitingTime(order);
-    List<Candlestick> candleStickData = binanceService.getCandlesticks(order, actualWaitingTime);
+    BigDecimal orderPrice = new BigDecimal(order.getPrice());
+    BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
+    List<Candlestick> candleStickData = binanceService.getCandlesticks(order, actualWaitingTime, orderPricePercentage);
     return new OrderWrapper(order,
+                            orderPrice,
                             currentPrice,
                             myBtcBalance,
                             actualBalance,
+                            orderPricePercentage,
                             totalAmounts,
                             candleStickData,
                             actualWaitingTime);

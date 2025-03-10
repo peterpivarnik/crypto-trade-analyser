@@ -1,33 +1,5 @@
 package com.psw.cta.service;
 
-import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
-import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
-import static com.psw.cta.dto.binance.CandlestickInterval.HOURLY;
-import static com.psw.cta.dto.binance.CandlestickInterval.WEEKLY;
-import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
-import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
-import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
-import static com.psw.cta.dto.binance.OrderSide.BUY;
-import static com.psw.cta.dto.binance.OrderSide.SELL;
-import static com.psw.cta.dto.binance.OrderType.LIMIT;
-import static com.psw.cta.dto.binance.OrderType.MARKET;
-import static com.psw.cta.dto.binance.TimeInForce.GTC;
-import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
-import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
-import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static java.lang.System.currentTimeMillis;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
-import static java.math.RoundingMode.UP;
-import static java.util.Comparator.comparing;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
@@ -35,28 +7,55 @@ import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.CandlestickInterval;
+import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
+import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
+import static com.psw.cta.dto.binance.CandlestickInterval.HOURLY;
+import static com.psw.cta.dto.binance.CandlestickInterval.WEEKLY;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.FilterType;
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import com.psw.cta.dto.binance.NewOrderResponse;
+import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.dto.binance.OrderSide;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
 import com.psw.cta.dto.binance.OrderType;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.OrderType.MARKET;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.TimeInForce;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.security.AuthenticationInterceptor;
+import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
+import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import com.psw.cta.utils.CommonUtils;
+import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import java.io.IOException;
+import static java.lang.System.currentTimeMillis;
 import java.math.BigDecimal;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import static java.util.Comparator.comparing;
 import java.util.List;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import okhttp3.Dispatcher;
@@ -195,26 +194,38 @@ public class BinanceService {
   /**
    * Returns candlestick data for provided order and actualWaitingTime.
    *
-   * @param order             order
-   * @param actualWaitingTime order's actual waiting time
+   * @param order                order
+   * @param actualWaitingTime    order's actual waiting time
+   * @param orderPricePercentage percentual price of order
    * @return candlesticks
    */
-  public List<Candlestick> getCandlesticks(Order order, BigDecimal actualWaitingTime) {
-    List<Candlestick> candleStickData;
+  public List<Candlestick> getCandlesticks(Order order, BigDecimal actualWaitingTime, BigDecimal orderPricePercentage) {
     if (actualWaitingTime.compareTo(ONE) < 0) {
-      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("5"), 8, UP).max(ONE).intValue();
-      candleStickData = getCandleStickData(order.getSymbol(), FIVE_MINUTES, numberOfTimeUnits);
+      return getCandlestickList(order, actualWaitingTime, orderPricePercentage, new BigDecimal("5"), FIVE_MINUTES);
     } else if (actualWaitingTime.compareTo(new BigDecimal("24")) < 0) {
-      int numberOfTimeUnits = actualWaitingTime.intValue();
-      candleStickData = getCandleStickData(order.getSymbol(), HOURLY, numberOfTimeUnits);
+      return getCandlestickList(order, actualWaitingTime, orderPricePercentage, new BigDecimal("1"), HOURLY);
     } else if (actualWaitingTime.compareTo(new BigDecimal("720")) < 0) {
-      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("24"), 8, UP).intValue();
-      candleStickData = getCandleStickData(order.getSymbol(), DAILY, numberOfTimeUnits);
+      return getCandlestickList(order, actualWaitingTime, orderPricePercentage, new BigDecimal("24"), DAILY);
     } else {
-      int numberOfTimeUnits = actualWaitingTime.divide(new BigDecimal("168"), 8, UP).intValue();
-      candleStickData = getCandleStickData(order.getSymbol(), WEEKLY, numberOfTimeUnits);
+      return getCandlestickList(order, actualWaitingTime, orderPricePercentage, new BigDecimal("168"), WEEKLY);
     }
-    return candleStickData;
+  }
+
+  private List<Candlestick> getCandlestickList(Order order,
+                                               BigDecimal actualWaitingTime,
+                                               BigDecimal orderPricePercentage,
+                                               BigDecimal divisor,
+                                               CandlestickInterval candlestickInterval) {
+    int totalTimeUnits = getTotalTimeUnits(actualWaitingTime, orderPricePercentage, divisor);
+    return getCandleStickData(order.getSymbol(), candlestickInterval, totalTimeUnits);
+  }
+
+  private int getTotalTimeUnits(BigDecimal actualWaitingTime, BigDecimal orderPricePercentage, BigDecimal divisor) {
+    BigDecimal baseTimeUnits = actualWaitingTime.divide(divisor, 8, UP).max(ONE);
+    BigDecimal timeUnitsAddition = baseTimeUnits.multiply(orderPricePercentage).divide(new BigDecimal("100"), 8, UP);
+    return baseTimeUnits.add(timeUnitsAddition)
+                        .setScale(0, UP)
+                        .intValue();
   }
 
   private List<Candlestick> getCandleStickData(String symbol, CandlestickInterval interval, Integer limit) {
@@ -233,7 +244,7 @@ public class BinanceService {
    * Buy order and return id of response order.
    *
    * @param symbolInfo Symbol information
-   * @param quantity quantity amount
+   * @param quantity   quantity amount
    * @return Id of order
    */
   public Long buy(SymbolInfo symbolInfo, BigDecimal quantity) {

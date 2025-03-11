@@ -1,27 +1,24 @@
 package com.psw.cta.processor.trade;
 
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.ExchangeInfo;
 import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.dto.binance.Trade;
+import com.psw.cta.service.BinanceService;
 import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
 import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.TEN;
+import java.math.BigDecimal;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
-
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.dto.binance.ExchangeInfo;
-import com.psw.cta.dto.binance.SymbolFilter;
-import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.dto.binance.Trade;
-import com.psw.cta.service.BinanceService;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
 
@@ -62,7 +59,7 @@ public class RepeatTradingProcessor {
   private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
     return hasMinProfit(orderWrapper)
            && isRemainingTimeGreaterZero(orderWrapper)
-           && hasEnoughBtcAmount(orderWrapper, function);
+           && hasEnoughBtcAmount(function, orderWrapper);
   }
 
   private boolean isRemainingTimeGreaterZero(OrderWrapper orderWrapper) {
@@ -70,34 +67,9 @@ public class RepeatTradingProcessor {
                        .compareTo(orderWrapper.getMinWaitingTime()) > 0;
   }
 
-  private boolean hasEnoughBtcAmount(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
+  private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
     BigDecimal myBtcBalance = function.apply(binanceService);
-    return isOrderPricePercentageLessThan10AndHasEnoughAmount(orderWrapper, myBtcBalance)
-           || isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(orderWrapper, myBtcBalance);
-  }
-
-  private boolean isOrderPricePercentageLessThan10AndHasEnoughAmount(OrderWrapper orderWrapper,
-                                                                     BigDecimal myBtcBalance) {
-    return isOrderPricePercentageLessThan10(orderWrapper) && hasMultipliedAmount(orderWrapper, ONE, myBtcBalance);
-  }
-
-  private boolean isOrderPricePercentageMoreThan10AndHasEnoughMultipliedAmount(OrderWrapper orderWrapper,
-                                                                               BigDecimal myBtcBalance) {
-    BigDecimal multiplicator = orderWrapper.getOrderPricePercentage()
-                                           .divide(TEN, 8, UP)
-                                           .add(ONE);
-    return !isOrderPricePercentageLessThan10(orderWrapper)
-           && hasMultipliedAmount(orderWrapper, multiplicator, myBtcBalance);
-  }
-
-  private boolean isOrderPricePercentageLessThan10(OrderWrapper orderWrapper) {
-    return orderWrapper.getOrderPricePercentage().compareTo(TEN) < 0;
-  }
-
-  private boolean hasMultipliedAmount(OrderWrapper orderWrapper, BigDecimal multiplicator, BigDecimal myBtcBalance) {
-    return orderWrapper.getOrderBtcAmount()
-                       .multiply(multiplicator)
-                       .compareTo(myBtcBalance) < 0;
+    return orderWrapper.getNeededBtcAmount().compareTo(myBtcBalance) > 0;
   }
 
   /**

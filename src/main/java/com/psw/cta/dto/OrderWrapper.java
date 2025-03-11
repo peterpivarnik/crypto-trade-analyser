@@ -1,21 +1,20 @@
 package com.psw.cta.dto;
 
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.Order;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
+import java.math.BigDecimal;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
+import java.math.MathContext;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
-
-import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.dto.binance.Order;
-import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -30,15 +29,18 @@ public class OrderWrapper {
   private static final BigDecimal HALF_OF_MIN_PROFIT = new BigDecimal("0.0025");
 
   private final Order order;
-  private final BigDecimal orderPrice;
-  private final BigDecimal orderBtcAmount;
-  private final BigDecimal currentBtcAmount;
   private final BigDecimal currentPrice;
+  private final BigDecimal orderPrice;
+  private final BigDecimal quantity;
+  private final BigDecimal orderBtcAmount;
   private final BigDecimal priceToSell;
-  private final BigDecimal priceToSellPercentage;
+  private final BigDecimal currentBtcAmount;
   private final BigDecimal orderPricePercentage;
+  private final BigDecimal priceToSellPercentage;
+  private final BigDecimal neededBtcAmount;
   private final BigDecimal minWaitingTime;
   private final BigDecimal actualWaitingTime;
+  private final BigDecimal remainWaitingTime;
 
   public OrderWrapper(Order order,
                       BigDecimal orderPrice,
@@ -50,29 +52,37 @@ public class OrderWrapper {
                       List<Candlestick> candleStickData,
                       BigDecimal actualWaitingTime) {
     this.order = order;
-    this.orderPrice = orderPrice;
-    this.orderBtcAmount = calculateOrderBtcAmount(this.orderPrice);
     this.currentPrice = currentPrice;
+    this.orderPrice = orderPrice;
+    this.quantity = calculateQuantity(this.order);
+    this.orderBtcAmount = calculateOrderBtcAmount(this.orderPrice, this.quantity);
     this.priceToSell = calculatePriceToSell(this.orderPrice,
                                             this.currentPrice,
                                             this.orderBtcAmount,
                                             myBtcBalance,
                                             actualBalance);
-    this.currentBtcAmount = getQuantity()
-        .multiply(this.currentPrice)
-        .setScale(8, CEILING);
-    this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
+    this.currentBtcAmount = this.quantity.multiply(this.currentPrice)
+                                         .setScale(8, CEILING);
     this.orderPricePercentage = orderPricePercentage;
-    this.minWaitingTime = getMinWaitingTime(totalAmounts,
-                                            this.orderBtcAmount,
-                                            this.orderPricePercentage,
-                                            candleStickData);
+    this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
+    this.neededBtcAmount = calculateNeededBtcAmount(this.orderPricePercentage, this.orderBtcAmount);
+    this.minWaitingTime = calculateMinWaitingTime(this.order,
+                                                  totalAmounts,
+                                                  this.orderBtcAmount,
+                                                  this.orderPricePercentage,
+                                                  candleStickData,
+                                                  this.currentPrice);
     this.actualWaitingTime = actualWaitingTime;
+    this.remainWaitingTime = calculateRemainWaitingTime(this.minWaitingTime, this.actualWaitingTime);
   }
 
-  private BigDecimal calculateOrderBtcAmount(BigDecimal orderPrice) {
-    BigDecimal orderAltAmount = getQuantity();
-    return orderAltAmount.multiply(orderPrice).setScale(8, CEILING);
+  private BigDecimal calculateQuantity(Order order) {
+    return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
+  }
+
+  private BigDecimal calculateOrderBtcAmount(BigDecimal orderPrice, BigDecimal quantity) {
+    return quantity.multiply(orderPrice)
+                   .setScale(8, CEILING);
   }
 
   private BigDecimal calculatePriceToSell(BigDecimal orderPrice,
@@ -111,24 +121,43 @@ public class OrderWrapper {
   }
 
   private BigDecimal calculateProfitPart(BigDecimal x, BigDecimal a, BigDecimal b) {
-    BigDecimal halfOfProfit = calculateLineEquation(x, a, b);
-    return correctForMinAndMaxValues(halfOfProfit);
+    return calculateLineEquation(x, a, b)
+        .min(HALF_OF_MAX_PROFIT)
+        .max(HALF_OF_MIN_PROFIT);
   }
 
   private BigDecimal calculateLineEquation(BigDecimal x, BigDecimal a, BigDecimal b) {
     return (x.multiply(a)).add(b);
   }
 
-  private BigDecimal correctForMinAndMaxValues(BigDecimal btcAmountPartBase) {
-    BigDecimal maxValue = btcAmountPartBase.min(HALF_OF_MAX_PROFIT);
-    return maxValue.max(HALF_OF_MIN_PROFIT);
+  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
+                                                    BigDecimal highestPrice) {
+    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
+    return HUNDRED_PERCENT.subtract(percentage);
   }
 
-  private BigDecimal getMinWaitingTime(Map<String, BigDecimal> totalAmounts,
-                                       BigDecimal orderBtcAmount,
-                                       BigDecimal orderPricePercentage,
-                                       List<Candlestick> candleStickData) {
-    BigDecimal oldMinWaitingTime = calculateOldMinWaitingTime(totalAmounts.get(this.order.getSymbol()),
+  private BigDecimal calculateNeededBtcAmount(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
+    BigDecimal multiplicand = getMultiplicand(orderPricePercentage);
+    return orderBtcAmount.multiply(multiplicand)
+                         .setScale(8, CEILING);
+  }
+
+  private BigDecimal getMultiplicand(BigDecimal orderPricePercentage) {
+    if (orderPricePercentage.compareTo(TEN) < 0) {
+      return ONE;
+    } else {
+      return ONE.add(orderPricePercentage.divide(TEN, 8, UP));
+    }
+  }
+
+  private BigDecimal calculateMinWaitingTime(Order order,
+                                             Map<String, BigDecimal> totalAmounts,
+                                             BigDecimal orderBtcAmount,
+                                             BigDecimal orderPricePercentage,
+                                             List<Candlestick> candleStickData,
+                                             BigDecimal currentPrice) {
+    String symbol = order.getSymbol();
+    BigDecimal oldMinWaitingTime = calculateOldMinWaitingTime(totalAmounts.get(symbol),
                                                               orderBtcAmount,
                                                               orderPricePercentage);
     BigDecimal min = candleStickData.stream()
@@ -140,7 +169,7 @@ public class OrderWrapper {
                                     .map(Candlestick::getHigh)
                                     .map(BigDecimal::new)
                                     .max(comparing(Function.identity()))
-                                    .orElse(this.currentPrice);
+                                    .orElse(currentPrice);
     BigDecimal minPricePercentage = calculatePricePercentage(max, min).negate();
     return oldMinWaitingTime.add(oldMinWaitingTime.multiply(minPricePercentage.divide(new BigDecimal("50"), 8, UP)))
                             .abs(new MathContext(5));
@@ -161,15 +190,6 @@ public class OrderWrapper {
     return new BigDecimal(String.valueOf(totalTime), new MathContext(3));
   }
 
-  /**
-   * Returns quantity of open order.
-   *
-   * @return Order quantity
-   */
-  public BigDecimal getQuantity() {
-    return new BigDecimal(this.order.getOrigQty()).subtract(new BigDecimal(this.order.getExecutedQty()));
-  }
-
   /*
    * Returns result of f(x)=-0.0008 * x * x + 0.15 * x + 0.5
    */
@@ -182,38 +202,48 @@ public class OrderWrapper {
     return firstElement.add(secondElement.add(c));
   }
 
-  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
-                                              BigDecimal highestPrice) {
-    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
-    return HUNDRED_PERCENT.subtract(percentage);
+  private BigDecimal calculateRemainWaitingTime(BigDecimal minWaitingTime, BigDecimal actualWaitingTime) {
+    return minWaitingTime.subtract(actualWaitingTime);
   }
 
   public Order getOrder() {
     return order;
   }
 
-  public BigDecimal getOrderBtcAmount() {
-    return orderBtcAmount;
-  }
-
-  public BigDecimal getCurrentBtcAmount() {
-    return currentBtcAmount;
+  public BigDecimal getCurrentPrice() {
+    return currentPrice;
   }
 
   public BigDecimal getOrderPrice() {
     return orderPrice;
   }
 
-  public BigDecimal getCurrentPrice() {
-    return currentPrice;
+  public BigDecimal getQuantity() {
+    return this.quantity;
+  }
+
+  public BigDecimal getOrderBtcAmount() {
+    return orderBtcAmount;
   }
 
   public BigDecimal getPriceToSell() {
     return priceToSell;
   }
 
+  public BigDecimal getCurrentBtcAmount() {
+    return currentBtcAmount;
+  }
+
+  public BigDecimal getOrderPricePercentage() {
+    return orderPricePercentage;
+  }
+
   public BigDecimal getPriceToSellPercentage() {
     return priceToSellPercentage;
+  }
+
+  public BigDecimal getNeededBtcAmount() {
+    return neededBtcAmount;
   }
 
   public BigDecimal getMinWaitingTime() {
@@ -224,42 +254,28 @@ public class OrderWrapper {
     return actualWaitingTime;
   }
 
-  public BigDecimal getOrderPricePercentage() {
-    return orderPricePercentage;
-  }
-
   public BigDecimal getRemainWaitingTime() {
-    return minWaitingTime.subtract(actualWaitingTime);
+    return remainWaitingTime;
   }
 
   @Override
   public String toString() {
     return "OrderWrapper{"
            + format("symbol=%-12s", order.getSymbol() + ",")
-           + format("orderBtcAmount=%-12s", orderBtcAmount.stripTrailingZeros().toPlainString() + ",")
-           + format("neededBtcBalance=%-12s", getNeededBtcBalance() + ",")
-           + format("currentBtcAmount=%-12s", currentBtcAmount.stripTrailingZeros().toPlainString() + ",")
-           + format("quantity=%-9s", getQuantity().stripTrailingZeros().toPlainString() + ",")
-           + format("currentPrice=%-12s", currentPrice.stripTrailingZeros().toPlainString() + ",")
-           + format("orderPrice=%-12s", orderPrice.stripTrailingZeros().toPlainString() + ",")
-           + format("priceToSell=%-12s", priceToSell.stripTrailingZeros().toPlainString() + ",")
-           + format("orderPricePercentage=%-13s", orderPricePercentage.stripTrailingZeros().toPlainString() + ",")
-           + format("priceToSellPercentage=%-13s", priceToSellPercentage.stripTrailingZeros().toPlainString() + ",")
-           + format("remainWaitingTime=%-9s", getRemainWaitingTime().stripTrailingZeros().toPlainString() + ",")
-           + format("actualWaitingTime=%-1s", actualWaitingTime.stripTrailingZeros().toPlainString() + "}");
+           + format("orderBtcAmount=%-12s", bigDecimalToString(orderBtcAmount) + ",")
+           + format("neededBtcBalance=%-12s", bigDecimalToString(neededBtcAmount) + ",")
+           + format("currentBtcAmount=%-12s", bigDecimalToString(currentBtcAmount) + ",")
+           + format("quantity=%-9s", bigDecimalToString(quantity) + ",")
+           + format("currentPrice=%-12s", bigDecimalToString(currentPrice) + ",")
+           + format("orderPrice=%-12s", bigDecimalToString(orderPrice) + ",")
+           + format("priceToSell=%-12s", bigDecimalToString(priceToSell) + ",")
+           + format("orderPricePercentage=%-13s", bigDecimalToString(orderPricePercentage) + ",")
+           + format("priceToSellPercentage=%-13s", bigDecimalToString(priceToSellPercentage) + ",")
+           + format("remainWaitingTime=%-9s", bigDecimalToString(remainWaitingTime) + ",")
+           + format("actualWaitingTime=%-1s", bigDecimalToString(actualWaitingTime) + "}");
   }
 
-  private String getNeededBtcBalance() {
-    BigDecimal neededBtcBalance;
-    if (orderPricePercentage.compareTo(TEN) < 0) {
-      neededBtcBalance = orderBtcAmount;
-    } else {
-      BigDecimal multiplicand = orderPricePercentage.divide(TEN, 8, UP)
-                                                    .add(ONE);
-      neededBtcBalance = orderBtcAmount.multiply(multiplicand);
-    }
-    return neededBtcBalance.setScale(8, CEILING)
-                           .stripTrailingZeros()
-                           .toPlainString();
+  private String bigDecimalToString(BigDecimal bigDecimal) {
+    return bigDecimal.stripTrailingZeros().toPlainString();
   }
 }

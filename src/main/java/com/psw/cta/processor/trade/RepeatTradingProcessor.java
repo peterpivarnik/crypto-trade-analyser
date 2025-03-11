@@ -69,7 +69,7 @@ public class RepeatTradingProcessor {
 
   private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
     BigDecimal myBtcBalance = function.apply(binanceService);
-    return orderWrapper.getNeededBtcAmount().compareTo(myBtcBalance) > 0;
+    return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
   }
 
   /**

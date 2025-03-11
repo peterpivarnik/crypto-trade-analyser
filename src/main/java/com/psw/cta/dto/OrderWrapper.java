@@ -260,22 +260,22 @@ public class OrderWrapper {
 
   @Override
   public String toString() {
-    return "OrderWrapper{"
-           + format("symbol=%-12s", order.getSymbol() + ",")
-           + format("orderBtcAmount=%-12s", bigDecimalToString(orderBtcAmount) + ",")
-           + format("neededBtcBalance=%-12s", bigDecimalToString(neededBtcAmount) + ",")
-           + format("currentBtcAmount=%-12s", bigDecimalToString(currentBtcAmount) + ",")
-           + format("quantity=%-9s", bigDecimalToString(quantity) + ",")
-           + format("currentPrice=%-12s", bigDecimalToString(currentPrice) + ",")
-           + format("orderPrice=%-12s", bigDecimalToString(orderPrice) + ",")
-           + format("priceToSell=%-12s", bigDecimalToString(priceToSell) + ",")
-           + format("orderPricePercentage=%-13s", bigDecimalToString(orderPricePercentage) + ",")
-           + format("priceToSellPercentage=%-13s", bigDecimalToString(priceToSellPercentage) + ",")
-           + format("remainWaitingTime=%-9s", bigDecimalToString(remainWaitingTime) + ",")
-           + format("actualWaitingTime=%-1s", bigDecimalToString(actualWaitingTime) + "}");
+    return format("%-12s", order.getSymbol())
+           + format("orderAmount=%-11s", bigDecimalToString(orderBtcAmount))
+           + format("neededAmount=%-11s", bigDecimalToString(neededBtcAmount))
+           + format("currentAmount=%-11s", bigDecimalToString(currentBtcAmount))
+           + format("quantity=%-8s", bigDecimalToString(quantity))
+           + format("currentPrice=%-11s", bigDecimalToString(currentPrice))
+           + format("orderPrice=%-11s", bigDecimalToString(orderPrice))
+           + format("priceToSell=%-11s", bigDecimalToString(priceToSell))
+           + format("orderPricePerc=%-12s", bigDecimalToString(orderPricePercentage))
+           + format("priceToSellPerc=%-12s", bigDecimalToString(priceToSellPercentage))
+           + format("remainTime=%-9s", bigDecimalToString(remainWaitingTime))
+           + format("actualTime=%-1s", bigDecimalToString(actualWaitingTime));
   }
 
   private String bigDecimalToString(BigDecimal bigDecimal) {
-    return bigDecimal.stripTrailingZeros().toPlainString();
+    return bigDecimal.stripTrailingZeros()
+                     .toPlainString();
   }
 }

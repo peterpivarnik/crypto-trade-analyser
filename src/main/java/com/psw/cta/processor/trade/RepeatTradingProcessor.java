@@ -46,7 +46,7 @@ public class RepeatTradingProcessor {
     logger.log("***** ***** Rebuy orders ***** *****");
     orderWrappers.stream()
                  .filter(orderWrapper -> shouldBeRebought(orderWrapper, service -> myBtcBalance))
-                 .forEach(orderWrapper -> {
+                 .forEachOrdered(orderWrapper -> {
                    if (!shouldBeRebought(orderWrapper, service -> service.getMyBalance(ASSET_BTC))) {
                      logger.log("Conditions to rebuy crypto not valid.");
                      return;

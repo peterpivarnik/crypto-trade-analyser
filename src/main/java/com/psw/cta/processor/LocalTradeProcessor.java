@@ -1,9 +1,6 @@
 package com.psw.cta.processor;
 
-import static java.util.Comparator.comparing;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceService;
@@ -34,7 +31,6 @@ public class LocalTradeProcessor extends MainTradeProcessor {
                     int minOpenOrders) {
 
     getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
-        .sorted(comparing(OrderWrapper::getOrderPricePercentage))
         .forEach(orderWrapper -> logger.log(orderWrapper.toString()));
   }
 }

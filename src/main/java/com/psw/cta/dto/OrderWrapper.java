@@ -12,6 +12,7 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
 import java.math.MathContext;
+import static java.math.MathContext.DECIMAL32;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
@@ -182,7 +183,8 @@ public class OrderWrapper {
     BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
     BigDecimal waitingTime = totalWaitingTime.add(orderWaitingTime);
     BigDecimal timeVariable = getTimeVariable(orderPricePercentage);
-    return waitingTime.multiply(timeVariable).round(MathContext.DECIMAL32);
+    return waitingTime.multiply(timeVariable)
+                      .round(DECIMAL32);
   }
 
   private BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
@@ -203,7 +205,8 @@ public class OrderWrapper {
   }
 
   private BigDecimal calculateRemainWaitingTime(BigDecimal minWaitingTime, BigDecimal actualWaitingTime) {
-    return minWaitingTime.subtract(actualWaitingTime);
+    return minWaitingTime.subtract(actualWaitingTime)
+                         .round(new MathContext(5));
   }
 
   public Order getOrder() {
@@ -270,7 +273,7 @@ public class OrderWrapper {
            + format("priceToSell=%-11s", bigDecimalToString(priceToSell))
            + format("orderPricePerc=%-12s", bigDecimalToString(orderPricePercentage))
            + format("priceToSellPerc=%-12s", bigDecimalToString(priceToSellPercentage))
-           + format("remainTime=%-9s", bigDecimalToString(remainWaitingTime))
+           + format("remainTime=%-8s", bigDecimalToString(remainWaitingTime))
            + format("actualTime=%-1s", bigDecimalToString(actualWaitingTime));
   }
 

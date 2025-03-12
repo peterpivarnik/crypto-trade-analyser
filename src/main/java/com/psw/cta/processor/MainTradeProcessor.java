@@ -54,7 +54,8 @@ public abstract class MainTradeProcessor {
                                               .filter(order -> order.getSymbol().equals(symbol))
                                               .min(comparing(order -> new BigDecimal(order.getPrice()))))
                      .map(Optional::orElseThrow)
-                     .map(order -> createOrderWrapper(order, myBtcBalance, actualBalance, totalAmounts));
+                     .map(order -> createOrderWrapper(order, myBtcBalance, actualBalance, totalAmounts))
+                     .sorted(comparing(OrderWrapper::getOrderPricePercentage));
   }
 
   private OrderWrapper createOrderWrapper(Order order,

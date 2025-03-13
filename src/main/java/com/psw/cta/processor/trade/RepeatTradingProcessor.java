@@ -3,22 +3,16 @@ package com.psw.cta.processor.trade;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
-import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
-import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
-import com.psw.cta.dto.binance.SymbolFilter;
+import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.service.BinanceService;
-import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
-import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import java.math.BigDecimal;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
-import static java.math.RoundingMode.UP;
 import java.util.List;
 import java.util.function.Function;
 
@@ -97,35 +91,26 @@ public class RepeatTradingProcessor {
   private void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
+
     // 1. cancel existing order
     binanceService.cancelOrder(orderWrapper);
+
     // 2. buy
-    BigDecimal orderBtcAmount = orderWrapper.getOrderBtcAmount();
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
-    logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
-                                                                  SymbolFilter::getMinNotional,
-                                                                  MIN_NOTIONAL,
-                                                                  NOTIONAL);
-    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-    BigDecimal orderPrice = orderWrapper.getOrderPrice();
-    BigDecimal minAddition = minValueFromLotSizeFilter.multiply(orderPrice);
-    logger.log("minAddition: " + minAddition);
-    BigDecimal btcAmount = getMinBtcAmount(orderBtcAmount, minAddition, minValueFromMinNotionalFilter);
-    Long orderId = binanceService.buy(symbolInfo, orderWrapper.getQuantity());
-    logger.log("OrderId: " + orderId);
-    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
+    NewOrderResponse orderResponse = binanceService.buy(symbolInfo, orderWrapper);
+
+    logger.log("OrderId: " + orderResponse.getOrderId());
+    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
     myTrades.forEach(trade -> logger.log(trade.toString()));
     BigDecimal boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
     if (boughtQuantity.compareTo(ZERO) == 0) {
       sleep(50 * 1000, logger);
-      myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderId);
+      myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
       myTrades.forEach(trade -> logger.log(trade.toString()));
       boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
       logger.log("Bought quantity after waiting: " + boughtQuantity);
     }
     if (boughtQuantity.compareTo(ZERO) == 0) {
-      boughtQuantity = btcAmount.divide(orderPrice, 8, UP);
+      boughtQuantity = new BigDecimal(orderResponse.getExecutedQty());
       logger.log("Bought quantity after still not having: " + boughtQuantity);
     }
     logger.log("boughtQuantity: " + boughtQuantity);

@@ -241,21 +241,44 @@ public class BinanceService {
   }
 
   /**
-   * Buy order and return id of response order.
+   * Buy order.
    *
-   * @param symbolInfo Symbol information
-   * @param quantity   quantity amount
-   * @return Id of order
+   * @param symbolInfo   Symbol information
+   * @param orderWrapper order wrapper
+   * @return order response
    */
-  public Long buy(SymbolInfo symbolInfo, BigDecimal quantity) {
+  public NewOrderResponse buy(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
+    logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + orderWrapper.getQuantity());
+    BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
+    logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
+    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
+                                                                  MIN_NOTIONAL,
+                                                                  NOTIONAL);
+    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+    BigDecimal minQuantityToBuy = getMinQuantityToBuy(orderWrapper.getQuantity(),
+                                                      orderWrapper.getCurrentPrice(),
+                                                      minValueFromMinNotionalFilter,
+                                                      stepSizeFromLotSizeFilter);
+    logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
     NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
                                                BUY,
                                                MARKET,
                                                null,
-                                               quantity.toPlainString(),
+                                               minQuantityToBuy.toPlainString(),
                                                null);
     logger.log("response: " + newOrder);
-    return newOrder.getOrderId();
+    return newOrder;
+  }
+
+  private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
+                                         BigDecimal currentPrice,
+                                         BigDecimal minValueFromMinNotionalFilter,
+                                         BigDecimal stepSize) {
+    if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
+      return getMinQuantityToBuy(quantity.add(stepSize), currentPrice, minValueFromMinNotionalFilter, stepSize);
+    }
+    return quantity;
   }
 
   /**

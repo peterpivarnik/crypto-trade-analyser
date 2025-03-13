@@ -1,25 +1,18 @@
 package com.psw.cta.processor.trade;
 
-import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
-import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
-import static com.psw.cta.utils.CommonUtils.getMinBtcAmount;
-import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
-import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
-import static java.util.Comparator.comparing;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
-import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
+import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import java.math.BigDecimal;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
 import java.util.Comparator;
+import static java.util.Comparator.comparing;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -227,29 +220,16 @@ public class SplitProcessor {
 
   private void buyAndSell(OrderWrapper orderToCancel, BigDecimal btcAmountToSpend, Crypto cryptoToBuy) {
     // 3. buy
-    SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
-    BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
-    logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
-    logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
-                                                                  SymbolFilter::getMinNotional,
-                                                                  MIN_NOTIONAL,
-                                                                  NOTIONAL);
-    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-    BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
-    logger.log("minAddition: " + minAddition);
-    BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
-    logger.log("btcAmount: " + btcAmount);
-    BigDecimal boughtQuantity = binanceService.buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
+    BigDecimal boughtQuantity = binanceService.buy(cryptoToBuy, btcAmountToSpend);
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order
-    BigDecimal finalPriceWithProfit = cryptoToBuyCurrentPrice.multiply(orderToCancel.getOrderPrice())
-                                                             .multiply(new BigDecimal("1.01"))
-                                                             .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
+    BigDecimal finalPriceWithProfit = cryptoToBuy.getCurrentPrice()
+                                                 .multiply(orderToCancel.getOrderPrice())
+                                                 .multiply(new BigDecimal("1.01"))
+                                                 .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
     logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-    binanceService.placeSellOrder(symbolInfo, finalPriceWithProfit, boughtQuantity);
+    binanceService.placeSellOrder(cryptoToBuy.getSymbolInfo(), finalPriceWithProfit, boughtQuantity);
   }
 
   /**

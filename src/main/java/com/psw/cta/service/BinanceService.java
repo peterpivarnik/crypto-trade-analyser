@@ -2,6 +2,7 @@ package com.psw.cta.service;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
+import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
@@ -40,7 +41,6 @@ import com.psw.cta.security.AuthenticationInterceptor;
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import com.psw.cta.utils.CommonUtils;
-import static com.psw.cta.utils.CommonUtils.getValueFromFilter;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
@@ -53,6 +53,7 @@ import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import static java.util.Comparator.comparing;
 import java.util.List;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -284,6 +285,31 @@ public class BinanceService {
   /**
    * Buy order and return quantity of response order.
    *
+   * @param cryptoToBuy dto holding information about crypto to buy
+   * @param btcAmountToSpend  BTC amount to spend
+   * @return bought quantity
+   */
+  public BigDecimal buy(Crypto cryptoToBuy, BigDecimal btcAmountToSpend) {
+    SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
+    BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
+    logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
+    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
+    logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
+    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
+                                                                  SymbolFilter::getMinNotional,
+                                                                  MIN_NOTIONAL,
+                                                                  NOTIONAL);
+    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+    BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
+    logger.log("minAddition: " + minAddition);
+    BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
+    logger.log("btcAmount: " + btcAmount);
+    return buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
+  }
+
+  /**
+   * Buy order and return quantity of response order.
+   *
    * @param symbolInfo Symbol information
    * @param btcAmount  BTC amount
    * @param price      price of new order
@@ -300,6 +326,17 @@ public class BinanceService {
                                                null);
     logger.log("response: " + newOrder);
     return roundedQuantity;
+  }
+
+  private BigDecimal getMinBtcAmount(BigDecimal btcAmountToSpend,
+                                     BigDecimal minAddition,
+                                     BigDecimal minValueFromMinNotionalFilter) {
+    if (btcAmountToSpend.compareTo(minValueFromMinNotionalFilter) < 0) {
+      return getMinBtcAmount(btcAmountToSpend.add(minAddition),
+                             minAddition,
+                             minValueFromMinNotionalFilter);
+    }
+    return btcAmountToSpend.add(minAddition);
   }
 
   /**
@@ -634,5 +671,20 @@ public class BinanceService {
     BigDecimal remainder = amountToRound.remainder(valueFromFilter);
     BigDecimal roundedValue = amountToRound.subtract(remainder);
     return roundUpFunction.apply(roundedValue, valueFromFilter);
+  }
+
+  private BigDecimal getValueFromFilter(SymbolInfo symbolInfo,
+                                        Function<SymbolFilter, String> symbolFilterFunction,
+                                        FilterType... filterTypes) {
+    List<FilterType> filterTypesList = Arrays.asList(filterTypes);
+    return symbolInfo.getFilters()
+                     .parallelStream()
+                     .filter(filter -> filterTypesList.contains(filter.getFilterType()))
+                     .map(symbolFilterFunction)
+                     .map(BigDecimal::new)
+                     .findAny()
+                     .orElseThrow(() -> new CryptoTraderException("Value from filters "
+                                                                  + Arrays.toString(filterTypes)
+                                                                  + " not found"));
   }
 }

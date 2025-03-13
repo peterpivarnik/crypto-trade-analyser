@@ -106,7 +106,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers, numberOfOrdersToExtract)) {
-      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, numberOfOrdersToExtract);
+      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, numberOfOrdersToExtract, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);

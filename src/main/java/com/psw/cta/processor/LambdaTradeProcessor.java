@@ -1,27 +1,25 @@
 package com.psw.cta.processor;
 
-import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
-import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
-import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
-import static java.time.temporal.ChronoUnit.DAYS;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
+import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
+import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import java.math.BigDecimal;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.time.temporal.ChronoUnit.DAYS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -116,7 +114,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitHighiestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
       BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
-      if (haveBalanceForInitialTrading(myBalance)) {
+      if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
         acquireProcessor.initTrading(cryptos);
       }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {

@@ -1,17 +1,15 @@
 package com.psw.cta.processor.trade;
 
-import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.utils.CommonUtils.haveBalanceForInitialTrading;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
-import static java.time.temporal.ChronoUnit.MINUTES;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
+import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
 import com.psw.cta.service.BinanceService;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import java.math.BigDecimal;
+import static java.time.temporal.ChronoUnit.MINUTES;
 import java.util.List;
 
 /**
@@ -72,6 +70,16 @@ public class AcquireProcessor {
 
   private boolean shouldBuyAndSell(Crypto crypto, BigDecimal myBtcBalance, BigDecimal price) {
     return isStillValid(crypto, price) && haveBalanceForInitialTrading(myBtcBalance);
+  }
+
+  /**
+   * Returns whether BTC balance is higher than minimal balance for trading.
+   *
+   * @param myBtcBalance Actual BTC balance
+   * @return Flag whether BTC balance is higher than minimal balance
+   */
+  public boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
+    return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
   }
 
   private boolean isStillValid(Crypto crypto, BigDecimal price) {

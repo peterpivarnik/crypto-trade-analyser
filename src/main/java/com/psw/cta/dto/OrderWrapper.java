@@ -138,17 +138,9 @@ public class OrderWrapper {
   }
 
   private BigDecimal calculateNeededBtcAmount(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
-    BigDecimal multiplicand = getMultiplicand(orderPricePercentage);
+    BigDecimal multiplicand = ONE.add(orderPricePercentage.divide(TEN, 8, UP));
     return orderBtcAmount.multiply(multiplicand)
                          .setScale(8, CEILING);
-  }
-
-  private BigDecimal getMultiplicand(BigDecimal orderPricePercentage) {
-    if (orderPricePercentage.compareTo(TEN) < 0) {
-      return ONE;
-    } else {
-      return ONE.add(orderPricePercentage.divide(TEN, 8, UP));
-    }
   }
 
   private BigDecimal calculateMinWaitingTime(Order order,

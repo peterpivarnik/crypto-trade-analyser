@@ -22,7 +22,7 @@
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.12.1</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>4.0.0-M1</org.assertj.assertj-core.version>
-        <org.mockito.version>5.16.0</org.mockito.version>
+        <org.mockito.version>5.16.1</org.mockito.version>
 
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>

@@ -9,6 +9,7 @@ import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import java.math.BigDecimal;
+import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import java.util.Comparator;
@@ -269,20 +270,26 @@ public class SplitProcessor {
   /**
    * Extracts two orders from order with lowest order price percentage.
    *
-   * @param orderWrappers           all orders
-   * @param numberOfOrdersToExtract number of orders to be extracted
-   * @param exchangeInfo            exchange info
+   * @param orderWrappers all orders
+   * @param myBtcBalance my actual balance in BTC
+   * @param exchangeInfo  exchange info
    */
   public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
-                                               int numberOfOrdersToExtract,
+                                               BigDecimal myBtcBalance,
                                                ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Extracting  " + numberOfOrdersToExtract + " orders ***** *****");
+    logger.log("***** ***** Extracting orders ***** *****");
     orderWrappers.stream()
-                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0)
+                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
                  .filter(orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
                  .sorted(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                 .limit(numberOfOrdersToExtract)
+                 .limit(getNumberOfOrdersToExtract(myBtcBalance))
                  .forEach(order -> extractOrder(order, exchangeInfo));
+  }
+
+  private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
+    return myBtcBalance.multiply(new BigDecimal("1000"))
+                       .max(ONE)
+                       .intValue();
   }
 
   private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {

@@ -9,7 +9,6 @@ import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import java.util.Comparator;
@@ -150,12 +149,12 @@ public class SplitProcessor {
     }
 
     // 1. cancel existing order
-    cancelRequest(orderToCancel);
+    binanceService.cancelOrder(orderToCancel);
 
     // 2. sell cancelled order
     SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
     BigDecimal currentQuantity = orderToCancel.getQuantity();
-    sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+    binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
     BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
     List<Crypto> cryptosToBuy = getCryptosToBuy(totalAmounts, cryptos);
@@ -231,70 +230,5 @@ public class SplitProcessor {
                                                  .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
     logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
     binanceService.placeSellOrder(cryptoToBuy.getSymbolInfo(), finalPriceWithProfit, boughtQuantity);
-  }
-
-  /**
-   * Cancel trade.
-   *
-   * @param orderWrappers all orders
-   * @param exchangeInfo  exchange info
-   */
-  public void cancelTrade(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    orderWrappers.stream()
-                 .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
-                 .ifPresent(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
-  }
-
-  private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
-    // 1. cancel existing order
-    cancelRequest(orderToCancel);
-
-    // 2. sell cancelled order
-    BigDecimal currentQuantity = orderToCancel.getQuantity();
-    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
-    sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
-  }
-
-  private void cancelRequest(OrderWrapper orderToCancel) {
-    logger.log("orderToCancel: " + orderToCancel);
-    binanceService.cancelOrder(orderToCancel);
-  }
-
-  private void sellAvailableBalance(SymbolInfo symbolInfoOfSellOrder, BigDecimal currentQuantity) {
-    logger.log("currentQuantity: " + currentQuantity);
-    binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
-  }
-
-
-  /**
-   * Extracts two orders from order with lowest order price percentage.
-   *
-   * @param orderWrappers all orders
-   * @param myBtcBalance my actual balance in BTC
-   * @param exchangeInfo  exchange info
-   */
-  public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
-                                               BigDecimal myBtcBalance,
-                                               ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Extracting orders ***** *****");
-    orderWrappers.stream()
-                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
-                 .filter(orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
-                 .sorted(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                 .limit(getNumberOfOrdersToExtract(myBtcBalance))
-                 .forEach(order -> extractOrder(order, exchangeInfo));
-  }
-
-  private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
-    return myBtcBalance.multiply(new BigDecimal("1000"))
-                       .max(ONE)
-                       .intValue();
-  }
-
-  private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {
-    cancelRequest(orderToExtract);
-    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderToExtract.getOrder().getSymbol());
-    binanceService.extractTwoSellOrders(symbolInfo, orderToExtract);
   }
 }

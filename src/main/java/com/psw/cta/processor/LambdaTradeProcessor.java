@@ -10,6 +10,7 @@ import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.CancelProcessor;
+import com.psw.cta.processor.trade.ExtractProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
@@ -33,12 +34,13 @@ import java.util.stream.Collectors;
  */
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
-  private final LambdaLogger logger;
-  private final RepeatTradingProcessor repeatTradingProcessor;
   private final SplitProcessor splitProcessor;
+  private final RepeatTradingProcessor repeatTradingProcessor;
+  private final ExtractProcessor extractProcessor;
   private final AcquireProcessor acquireProcessor;
   private final CancelProcessor cancelProcessor;
   private final List<String> allForbiddenPairs;
+  private final LambdaLogger logger;
 
   /**
    * Default constructor.
@@ -53,6 +55,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     super(binanceService);
     this.splitProcessor = new SplitProcessor(binanceService, logger);
     this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
+    this.extractProcessor = new ExtractProcessor(binanceService, logger);
     this.acquireProcessor = new AcquireProcessor(binanceService, logger);
     this.cancelProcessor = new CancelProcessor(binanceService, logger);
     this.logger = logger;
@@ -110,7 +113,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers)) {
-      splitProcessor.extractOrderWithLowestOrderPrice(orderWrappers, myBtcBalance, exchangeInfo);
+      extractProcessor.extractOrderWithLowestOrderPrice(orderWrappers, myBtcBalance, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = getCryptos(exchangeInfo);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);

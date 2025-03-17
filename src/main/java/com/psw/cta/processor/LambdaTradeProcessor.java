@@ -3,25 +3,21 @@ package com.psw.cta.processor;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
-import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.CancelProcessor;
+import com.psw.cta.processor.trade.CryptoProcessor;
 import com.psw.cta.processor.trade.ExtractProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import java.math.BigDecimal;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
-import static java.time.temporal.ChronoUnit.DAYS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +30,7 @@ import java.util.stream.Collectors;
  */
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
+  private final CryptoProcessor cryptoProcessor;
   private final SplitProcessor splitProcessor;
   private final RepeatTradingProcessor repeatTradingProcessor;
   private final ExtractProcessor extractProcessor;
@@ -49,10 +46,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
    * @param forbiddenPairs forbidden pairs
    * @param logger         logger
    */
-  public LambdaTradeProcessor(BinanceService binanceService,
-                              List<String> forbiddenPairs,
-                              LambdaLogger logger) {
+  public LambdaTradeProcessor(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
     super(binanceService);
+    this.cryptoProcessor = new CryptoProcessor(binanceService, logger);
     this.splitProcessor = new SplitProcessor(binanceService, logger);
     this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
     this.extractProcessor = new ExtractProcessor(binanceService, logger);
@@ -101,27 +97,31 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         .collect(Collectors.toList());
     if (!orderSymbolsToSplit.isEmpty()) {
       logger.log("***** ***** Splitting cancelled trades ***** *****");
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
-      orderSymbolsToSplit.forEach(symbol -> splitProcessor.splitCancelledOrder(orderWrappers,
-                                                                               symbol,
-                                                                               exchangeInfo,
-                                                                               totalAmounts,
-                                                                               cryptos));
+      orderSymbolsToSplit.forEach(symbol -> {
+        List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo,
+                                                          allForbiddenPairs);
+        splitProcessor.splitCancelledOrder(orderWrappers,
+                                           symbol,
+                                           exchangeInfo,
+                                           totalAmounts,
+                                           cryptos);
+      });
     } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
       repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
-      splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+      splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);//
     } else if (shouldExtractOrderWithLowestOrderPrice(orderWrappers)) {
       extractProcessor.extractOrderWithLowestOrderPrice(orderWrappers, myBtcBalance, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
+      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
-      List<Crypto> cryptos = getCryptos(exchangeInfo);
-      splitProcessor.splitHighiestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+      splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
       BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
       if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
+        cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
         acquireProcessor.initTrading(cryptos);
       }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
@@ -180,33 +180,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return uniqueOpenOrdersSize <= minOpenOrders;
   }
 
-  private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
-    sleep(1000 * 60, logger);
-    logger.log("Get all cryptos");
-    List<TickerStatistics> tickers = binanceService.getAll24hTickers();
-    List<Crypto> cryptos = exchangeInfo.getSymbols()
-                                       .parallelStream()
-                                       .map(Crypto::new)
-                                       .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
-                                       .filter(crypto -> !allForbiddenPairs.contains(crypto.getSymbolInfo()
-                                                                                           .getSymbol()))
-                                       .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
-                                       .map(crypto -> crypto.calculateVolume(tickers))
-                                       .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
-                                       .map(crypto -> crypto.setThreeMonthsCandleStickData(
-                                           binanceService.getCandleStickData(crypto.getSymbolInfo().getSymbol(),
-                                                                             DAILY,
-                                                                             90L,
-                                                                             DAYS)))
-                                       .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
-                                       .map(crypto -> crypto.setCurrentPrice(
-                                           binanceService.getCurrentPrice(crypto.getSymbolInfo().getSymbol())))
-                                       .filter(crypto -> crypto.getCurrentPrice()
-                                                               .compareTo(new BigDecimal("0.000001")) > 0)
-                                       .collect(Collectors.toList());
-    logger.log("Cryptos count: " + cryptos.size());
-    return cryptos;
-  }
 
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
     return allRemainWaitingTimeLessThanZero(orderWrappers)

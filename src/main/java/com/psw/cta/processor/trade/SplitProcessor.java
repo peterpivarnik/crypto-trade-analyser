@@ -37,23 +37,22 @@ public class SplitProcessor {
    * Splits cancelled order.
    *
    * @param orderWrappers all orders
-   * @param orderToSplit  order for splitting
+   * @param symbol        symbol of order to splitting
    * @param exchangeInfo  exchange info
    * @param totalAmounts  map of total amounts
    * @param cryptos       cryptos for new buy
    */
   public void splitCancelledOrder(List<OrderWrapper> orderWrappers,
-                                  String orderToSplit,
+                                  String symbol,
                                   ExchangeInfo exchangeInfo,
                                   Map<String, BigDecimal> totalAmounts,
                                   List<Crypto> cryptos) {
-    OrderWrapper orderToCancel = orderWrappers.stream()
-                                              .filter(orderWrapper -> orderWrapper.getOrder()
-                                                                                  .getSymbol()
-                                                                                  .equals(orderToSplit))
-                                              .toList()
-                                              .getFirst();
-    split(orderToCancel, exchangeInfo, totalAmounts, cryptos);
+    orderWrappers.stream()
+                 .filter(orderWrapper -> orderWrapper.getOrder()
+                                                     .getSymbol()
+                                                     .equals(symbol))
+                 .findFirst()
+                 .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, totalAmounts, cryptos));
   }
 
   /**
@@ -92,40 +91,40 @@ public class SplitProcessor {
     Predicate<OrderWrapper> orderWrapperPredicate =
         orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
                         && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
-    splitOrderWithHighestBtcAmount(orderWrappers,
-                                   orderWrapperPredicate,
-                                   exchangeInfo,
-                                   totalAmounts,
-                                   cryptos);
+    splitOrderWithHighestOrderAmount(orderWrappers,
+                                     orderWrapperPredicate,
+                                     exchangeInfo,
+                                     totalAmounts,
+                                     cryptos);
   }
 
   /**
-   * Split order with highiest btc amount.
+   * Split order with the highest order btc amount.
    *
    * @param orderWrappers all orders
    * @param exchangeInfo  exchange info
    * @param totalAmounts  map of total amounts
    * @param cryptos       cryptos for new buy
    */
-  public void splitHighiestOrder(List<OrderWrapper> orderWrappers,
-                                 ExchangeInfo exchangeInfo,
-                                 Map<String, BigDecimal> totalAmounts,
-                                 List<Crypto> cryptos) {
+  public void splitHighestOrder(List<OrderWrapper> orderWrappers,
+                                ExchangeInfo exchangeInfo,
+                                Map<String, BigDecimal> totalAmounts,
+                                List<Crypto> cryptos) {
     logger.log("***** ***** Splitting order with highest btc amount and init trading ***** *****");
     Predicate<OrderWrapper> orderWrapperPredicate =
         orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
-    splitOrderWithHighestBtcAmount(orderWrappers,
-                                   orderWrapperPredicate,
-                                   exchangeInfo,
-                                   totalAmounts,
-                                   cryptos);
+    splitOrderWithHighestOrderAmount(orderWrappers,
+                                     orderWrapperPredicate,
+                                     exchangeInfo,
+                                     totalAmounts,
+                                     cryptos);
   }
 
-  public void splitOrderWithHighestBtcAmount(List<OrderWrapper> orderWrappers,
-                                             Predicate<OrderWrapper> orderWrapperPredicate,
-                                             ExchangeInfo exchangeInfo,
-                                             Map<String, BigDecimal> totalAmounts,
-                                             List<Crypto> cryptos) {
+  private void splitOrderWithHighestOrderAmount(List<OrderWrapper> orderWrappers,
+                                                Predicate<OrderWrapper> orderWrapperPredicate,
+                                                ExchangeInfo exchangeInfo,
+                                                Map<String, BigDecimal> totalAmounts,
+                                                List<Crypto> cryptos) {
     orderWrappers.stream()
                  .filter(orderWrapperPredicate)
                  .max(comparing(OrderWrapper::getOrderBtcAmount))

@@ -5,11 +5,12 @@ package com.psw.cta.exception;
  */
 public class CryptoTraderException extends RuntimeException {
 
+  /**
+   * Default constructor.
+   *
+   * @param message exception message
+   */
   public CryptoTraderException(String message) {
     super(message);
-  }
-
-  public CryptoTraderException(Exception exception) {
-    super(exception);
   }
 }

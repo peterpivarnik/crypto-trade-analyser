@@ -7,6 +7,7 @@ import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.service.BinanceService;
@@ -21,6 +22,12 @@ public class AcquireProcessor {
   private final BinanceService binanceService;
   private final LambdaLogger logger;
 
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
   public AcquireProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
     this.logger = logger;

@@ -6,6 +6,12 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
  * Main application class for running from command line.
  */
 public class CryptoTraderApplication {
+
+  /**
+   * main method to run from command line.
+   *
+   * @param args arguments
+   */
   public static void main(String[] args) {
     CryptoTrader cryptoTrader = new CryptoTrader(args[0], args[1], getLogger());
     cryptoTrader.startTrading();

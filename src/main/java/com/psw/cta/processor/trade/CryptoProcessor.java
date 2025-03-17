@@ -7,6 +7,7 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
@@ -23,6 +24,12 @@ public class CryptoProcessor {
   private final BinanceService binanceService;
   private final LambdaLogger logger;
 
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
   public CryptoProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
     this.logger = logger;

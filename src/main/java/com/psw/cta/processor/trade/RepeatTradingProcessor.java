@@ -7,6 +7,7 @@ import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
@@ -25,6 +26,12 @@ public class RepeatTradingProcessor {
   private final BinanceService binanceService;
   private final LambdaLogger logger;
 
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
   public RepeatTradingProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
     this.logger = logger;

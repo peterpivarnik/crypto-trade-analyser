@@ -6,6 +6,7 @@ import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
@@ -21,6 +22,12 @@ public class BnbTradeProcessor {
   private final LambdaLogger logger;
   private final BinanceService binanceService;
 
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
   public BnbTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.logger = logger;
     this.binanceService = binanceService;

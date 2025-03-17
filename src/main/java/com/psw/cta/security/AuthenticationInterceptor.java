@@ -20,6 +20,12 @@ public class AuthenticationInterceptor implements Interceptor {
   private final String apiKey;
   private final String secret;
 
+  /**
+   * Default constructor.
+   *
+   * @param apiKey api key
+   * @param secret secret
+   */
   public AuthenticationInterceptor(String apiKey, String secret) {
     this.apiKey = apiKey;
     this.secret = secret;

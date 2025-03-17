@@ -34,10 +34,21 @@ public class Crypto {
   private BigDecimal priceCountToSlope;
   private BigDecimal numberOfCandles;
 
+  /**
+   * Default constructor.
+   *
+   * @param symbolInfo symbol information
+   */
   public Crypto(SymbolInfo symbolInfo) {
     this.symbolInfo = symbolInfo;
   }
 
+  /**
+   * Calculate volume.
+   *
+   * @param tickers ticker statistics
+   * @return volume
+   */
   public Crypto calculateVolume(List<TickerStatistics> tickers) {
     this.volume = tickers.parallelStream()
                          .filter(ticker -> ticker.getSymbol().equals(symbolInfo.getSymbol()))
@@ -50,6 +61,12 @@ public class Crypto {
     return this;
   }
 
+  /**
+   * Calculate all available data from candle sticks.
+   *
+   * @param fifteenMinutesCandleStickData candle stick data
+   * @return {@link Crypto}
+   */
   public Crypto calculateDataFromCandlesticks(List<Candlestick> fifteenMinutesCandleStickData) {
     this.lastThreeHighAverage = calculateHighAverage(fifteenMinutesCandleStickData, 3);
     this.previousThreeHighAverage = calculateHighAverage(fifteenMinutesCandleStickData, 6);
@@ -131,6 +148,11 @@ public class Crypto {
     return relativeValue.subtract(new BigDecimal("100")).abs();
   }
 
+  /**
+   * Calculate slope data.
+   *
+   * @return {@link Crypto}
+   */
   public Crypto calculateSlopeData() {
     List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
     this.priceCountToSlope = calculatePriceCountToSlope(averagePrices);
@@ -177,6 +199,12 @@ public class Crypto {
     return threeMonthsCandleStickData;
   }
 
+  /**
+   * Set candle stick data for last three months.
+   *
+   * @param threeMonthsCandleStickData candle stick data
+   * @return {@link Crypto}
+   */
   public Crypto setThreeMonthsCandleStickData(List<Candlestick> threeMonthsCandleStickData) {
     this.threeMonthsCandleStickData = threeMonthsCandleStickData;
     return this;
@@ -190,6 +218,12 @@ public class Crypto {
     return currentPrice;
   }
 
+  /**
+   * Set current price.
+   *
+   * @param currentPrice current order price
+   * @return {@link Crypto}
+   */
   public Crypto setCurrentPrice(BigDecimal currentPrice) {
     this.currentPrice = currentPrice;
     return this;

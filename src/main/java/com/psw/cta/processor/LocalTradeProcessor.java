@@ -1,6 +1,7 @@
 package com.psw.cta.processor;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceService;
@@ -15,8 +16,14 @@ public class LocalTradeProcessor extends MainTradeProcessor {
 
   private final LambdaLogger logger;
 
-  public LocalTradeProcessor(BinanceService binanceApiService, LambdaLogger logger) {
-    super(binanceApiService);
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
+  public LocalTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
+    super(binanceService);
     this.logger = logger;
   }
 

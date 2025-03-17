@@ -44,6 +44,19 @@ public class OrderWrapper {
   private final BigDecimal actualWaitingTime;
   private final BigDecimal remainWaitingTime;
 
+  /**
+   * Default constructor.
+   *
+   * @param order                open order info
+   * @param orderPrice           price from order
+   * @param currentPrice         current market price
+   * @param myBtcBalance         my btc balance
+   * @param actualBalance        actual balance of all trades and my btc balance
+   * @param orderPricePercentage percentage of order price to current price
+   * @param totalAmounts         all amounts
+   * @param candleStickData      candle sticks
+   * @param actualWaitingTime    actual waiting time of order
+   */
   public OrderWrapper(Order order,
                       BigDecimal orderPrice,
                       BigDecimal currentPrice,
@@ -78,6 +91,13 @@ public class OrderWrapper {
     this.remainWaitingTime = calculateRemainWaitingTime(this.minWaitingTime, this.actualWaitingTime);
   }
 
+  /**
+   * Calculate percentage between highest and lowest price.
+   *
+   * @param lowestPrice  lowest price
+   * @param highestPrice highest price
+   * @return percentage price
+   */
   public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
                                                     BigDecimal highestPrice) {
     BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);

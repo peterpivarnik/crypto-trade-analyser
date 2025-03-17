@@ -1,6 +1,7 @@
 package com.psw.cta.processor.trade;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
@@ -17,6 +18,12 @@ public class CancelProcessor {
   private final BinanceService binanceService;
   private final LambdaLogger logger;
 
+  /**
+   * Default constructor.
+   *
+   * @param binanceService service for {@link BinanceApi}
+   * @param logger logger
+   */
   public CancelProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
     this.logger = logger;

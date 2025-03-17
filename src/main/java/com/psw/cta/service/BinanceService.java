@@ -400,9 +400,6 @@ public class BinanceService {
                                            timeInForce,
                                            quantity,
                                            price,
-                                           null,
-                                           null,
-                                           null,
                                            RESULT,
                                            DEFAULT_RECEIVING_WINDOW,
                                            System.currentTimeMillis()));
@@ -564,7 +561,6 @@ public class BinanceService {
     logger.log("Check order status for " + symbol + ", orderId=" + orderId);
     executeCall(binanceApi.getOrderStatus(symbol,
                                           orderId,
-                                          null,
                                           DEFAULT_RECEIVING_WINDOW,
                                           currentTimeMillis()));
   }
@@ -577,9 +573,7 @@ public class BinanceService {
   public void cancelOrder(OrderWrapper orderWrapper) {
     logger.log("Cancel request for " + orderWrapper);
     executeCall(binanceApi.cancelOrder(orderWrapper.getOrder().getSymbol(),
-                                       null,
                                        orderWrapper.getOrder().getClientOrderId(),
-                                       null,
                                        DEFAULT_RECEIVING_WINDOW,
                                        currentTimeMillis()));
   }
@@ -591,9 +585,7 @@ public class BinanceService {
    */
   public List<Order> getOpenOrders() {
     logger.log("Get open orders");
-    return executeCall(binanceApi.getOpenOrders(null,
-                                                DEFAULT_RECEIVING_WINDOW,
-                                                currentTimeMillis()));
+    return executeCall(binanceApi.getOpenOrders(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
   }
 
   /**
@@ -671,13 +663,7 @@ public class BinanceService {
   public List<Trade> getMyTrades(String symbol, Long orderId) {
     logger.log("Get my trades for " + symbol + ", orderId=" + orderId);
     sleep(5 * 1000, logger);
-    return executeCall(binanceApi.getMyTrades(symbol,
-                                              orderId + "",
-                                              null,
-                                              null,
-                                              null,
-                                              null,
-                                              currentTimeMillis()));
+    return executeCall(binanceApi.getMyTrades(symbol, orderId + "", currentTimeMillis()));
   }
 
   private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {

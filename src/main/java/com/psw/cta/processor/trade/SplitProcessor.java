@@ -1,5 +1,10 @@
 package com.psw.cta.processor.trade;
 
+import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.util.Comparator.comparing;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
@@ -7,12 +12,8 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
-import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 import java.util.Comparator;
-import static java.util.Comparator.comparing;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

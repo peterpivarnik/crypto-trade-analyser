@@ -1,5 +1,32 @@
 package com.psw.cta.service;
 
+import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
+import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
+import static com.psw.cta.dto.binance.CandlestickInterval.HOURLY;
+import static com.psw.cta.dto.binance.CandlestickInterval.WEEKLY;
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
+import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
+import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
+import static com.psw.cta.dto.binance.OrderSide.BUY;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.OrderType.MARKET;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
+import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
+import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static java.lang.System.currentTimeMillis;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+import static java.math.RoundingMode.UP;
+import static java.util.Comparator.comparing;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
@@ -8,55 +35,29 @@ import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.CandlestickInterval;
-import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
-import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
-import static com.psw.cta.dto.binance.CandlestickInterval.HOURLY;
-import static com.psw.cta.dto.binance.CandlestickInterval.WEEKLY;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.FilterType;
-import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
-import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
-import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
 import com.psw.cta.dto.binance.NewOrderResponse;
-import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.OrderBook;
 import com.psw.cta.dto.binance.OrderBookEntry;
 import com.psw.cta.dto.binance.OrderSide;
-import static com.psw.cta.dto.binance.OrderSide.BUY;
-import static com.psw.cta.dto.binance.OrderSide.SELL;
 import com.psw.cta.dto.binance.OrderType;
-import static com.psw.cta.dto.binance.OrderType.LIMIT;
-import static com.psw.cta.dto.binance.OrderType.MARKET;
 import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.TimeInForce;
-import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.security.AuthenticationInterceptor;
-import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
-import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import com.psw.cta.utils.CommonUtils;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import java.io.IOException;
-import static java.lang.System.currentTimeMillis;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ONE;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
-import static java.math.RoundingMode.UP;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import static java.util.Comparator.comparing;
 import java.util.List;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import okhttp3.Dispatcher;
@@ -116,8 +117,38 @@ public class BinanceService {
     return executeCall(binanceApi.getExchangeInfo());
   }
 
+  private <T> T executeCall(Call<T> call) {
+    Response<T> response;
+    try {
+      response = call.execute();
+    } catch (IOException e) {
+      logger.log("Exception during execution of request: " + e);
+      throw new BinanceApiException(e);
+    }
+    if (response.isSuccessful()) {
+      return response.body();
+    } else {
+      logger.log("Call failed: " + response);
+      logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
+      if (response.body() != null) {
+        logger.log("Call failed with body  " + response.body());
+      }
+      try (ResponseBody errorBody = response.errorBody()) {
+        if (errorBody != null) {
+          try {
+            logger.log("Call failed with errorBody  " + errorBody.string());
+          } catch (IOException e) {
+            logger.log("Exception during parsing response: " + e);
+            throw new BinanceApiException(e);
+          }
+        }
+      }
+      throw new BinanceApiException(response.toString());
+    }
+  }
+
   /**
-   * Returns current price for provided symbol
+   * Returns current price for provided symbol.
    *
    * @param symbol Order symbol
    * @return current price
@@ -130,6 +161,10 @@ public class BinanceService {
         .map(BigDecimal::new)
         .findFirst()
         .orElseThrow(() -> new CryptoTraderException("No price found!"));
+  }
+
+  private OrderBook getOrderBook(String symbol, Integer limit) {
+    return executeCall(binanceApi.getOrderBook(symbol, limit));
   }
 
   /**
@@ -164,11 +199,6 @@ public class BinanceService {
         .map(BigDecimal::new)
         .orElseThrow(RuntimeException::new);
   }
-
-  private OrderBook getOrderBook(String symbol, Integer limit) {
-    return executeCall(binanceApi.getOrderBook(symbol, limit));
-  }
-
 
   /**
    * Returns Kline/Candlestick bars for a symbol and provided number of units.
@@ -218,7 +248,7 @@ public class BinanceService {
                                                BigDecimal divisor,
                                                CandlestickInterval candlestickInterval) {
     int totalTimeUnits = getTotalTimeUnits(actualWaitingTime, orderPricePercentage, divisor);
-    return getCandleStickData(order.getSymbol(), candlestickInterval, totalTimeUnits);
+    return getCandlestickBars(order.getSymbol(), candlestickInterval, totalTimeUnits);
   }
 
   private int getTotalTimeUnits(BigDecimal actualWaitingTime, BigDecimal orderPricePercentage, BigDecimal divisor) {
@@ -229,7 +259,7 @@ public class BinanceService {
                         .intValue();
   }
 
-  private List<Candlestick> getCandleStickData(String symbol, CandlestickInterval interval, Integer limit) {
+  private List<Candlestick> getCandlestickBars(String symbol, CandlestickInterval interval, Integer limit) {
     return executeCall(binanceApi.getCandlestickBars(symbol, interval.getIntervalId(), limit, null, null));
   }
 
@@ -272,21 +302,11 @@ public class BinanceService {
     return newOrder;
   }
 
-  private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
-                                         BigDecimal currentPrice,
-                                         BigDecimal minValueFromMinNotionalFilter,
-                                         BigDecimal stepSize) {
-    if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
-      return getMinQuantityToBuy(quantity.add(stepSize), currentPrice, minValueFromMinNotionalFilter, stepSize);
-    }
-    return quantity;
-  }
-
   /**
    * Buy order and return quantity of response order.
    *
-   * @param cryptoToBuy dto holding information about crypto to buy
-   * @param btcAmountToSpend  BTC amount to spend
+   * @param cryptoToBuy      dto holding information about crypto to buy
+   * @param btcAmountToSpend BTC amount to spend
    * @return bought quantity
    */
   public BigDecimal buy(Crypto cryptoToBuy, BigDecimal btcAmountToSpend) {
@@ -328,6 +348,16 @@ public class BinanceService {
     return roundedQuantity;
   }
 
+  private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
+                                         BigDecimal currentPrice,
+                                         BigDecimal minValueFromMinNotionalFilter,
+                                         BigDecimal stepSize) {
+    if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
+      return getMinQuantityToBuy(quantity.add(stepSize), currentPrice, minValueFromMinNotionalFilter, stepSize);
+    }
+    return quantity;
+  }
+
   private BigDecimal getMinBtcAmount(BigDecimal btcAmountToSpend,
                                      BigDecimal minAddition,
                                      BigDecimal minValueFromMinNotionalFilter) {
@@ -348,6 +378,60 @@ public class BinanceService {
   public void createBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal balance) {
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
     createNewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedBidQuantity.toPlainString(), null);
+  }
+
+  private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
+    return round(symbolInfo,
+                 amount,
+                 LOT_SIZE,
+                 SymbolFilter::getStepSize,
+                 (roundedValue, valueFromFilter) -> roundedValue);
+  }
+
+  private NewOrderResponse createNewOrder(String symbol,
+                                          OrderSide orderSide,
+                                          OrderType orderType,
+                                          TimeInForce timeInForce,
+                                          String quantity,
+                                          String price) {
+    return executeCall(binanceApi.newOrder(symbol,
+                                           orderSide,
+                                           orderType,
+                                           timeInForce,
+                                           quantity,
+                                           price,
+                                           null,
+                                           null,
+                                           null,
+                                           RESULT,
+                                           DEFAULT_RECEIVING_WINDOW,
+                                           System.currentTimeMillis()));
+  }
+
+  private BigDecimal round(SymbolInfo symbolInfo,
+                           BigDecimal amountToRound,
+                           FilterType filterType,
+                           Function<SymbolFilter, String> symbolFilterFunction,
+                           BinaryOperator<BigDecimal> roundUpFunction) {
+    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
+    BigDecimal remainder = amountToRound.remainder(valueFromFilter);
+    BigDecimal roundedValue = amountToRound.subtract(remainder);
+    return roundUpFunction.apply(roundedValue, valueFromFilter);
+  }
+
+  private BigDecimal getValueFromFilter(SymbolInfo symbolInfo,
+                                        Function<SymbolFilter, String> symbolFilterFunction,
+                                        FilterType... filterTypes) {
+    List<FilterType> filterTypesList = Arrays.asList(filterTypes);
+    return symbolInfo.getFilters()
+                     .parallelStream()
+                     .filter(filter -> filterTypesList.contains(filter.getFilterType()))
+                     .map(symbolFilterFunction)
+                     .map(BigDecimal::new)
+                     .findAny()
+                     .orElseThrow(() -> new CryptoTraderException("Value from filters "
+                                                                  + Arrays.toString(filterTypes)
+                                                                  + " not found"));
   }
 
   private BigDecimal getMyQuantityToBuy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
@@ -473,26 +557,6 @@ public class BinanceService {
     return balance;
   }
 
-  private NewOrderResponse createNewOrder(String symbol,
-                                          OrderSide orderSide,
-                                          OrderType orderType,
-                                          TimeInForce timeInForce,
-                                          String quantity,
-                                          String price) {
-    return executeCall(binanceApi.newOrder(symbol,
-                                           orderSide,
-                                           orderType,
-                                           timeInForce,
-                                           quantity,
-                                           price,
-                                           null,
-                                           null,
-                                           null,
-                                           RESULT,
-                                           DEFAULT_RECEIVING_WINDOW,
-                                           System.currentTimeMillis()));
-  }
-
   /**
    * Check an order's status.
    */
@@ -616,75 +680,11 @@ public class BinanceService {
                                               currentTimeMillis()));
   }
 
-  private <T> T executeCall(Call<T> call) {
-    Response<T> response;
-    try {
-      response = call.execute();
-    } catch (IOException e) {
-      logger.log("Exception during execution of request: " + e);
-      throw new BinanceApiException(e);
-    }
-    if (response.isSuccessful()) {
-      return response.body();
-    } else {
-      logger.log("Call failed: " + response);
-      logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
-      if (response.body() != null) {
-        logger.log("Call failed with body  " + response.body());
-      }
-      try (ResponseBody errorBody = response.errorBody()) {
-        if (errorBody != null) {
-          try {
-            logger.log("Call failed with errorBody  " + errorBody.string());
-          } catch (IOException e) {
-            logger.log("Exception during parsing response: " + e);
-            throw new BinanceApiException(e);
-          }
-        }
-      }
-      throw new BinanceApiException(response.toString());
-    }
-  }
-
-  private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
-    return round(symbolInfo,
-                 amount,
-                 LOT_SIZE,
-                 SymbolFilter::getStepSize,
-                 (roundedValue, valueFromFilter) -> roundedValue);
-  }
-
   private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
     return round(symbolInfo,
                  price,
                  PRICE_FILTER,
                  SymbolFilter::getTickSize,
                  BigDecimal::add);
-  }
-
-  private BigDecimal round(SymbolInfo symbolInfo,
-                           BigDecimal amountToRound,
-                           FilterType filterType,
-                           Function<SymbolFilter, String> symbolFilterFunction,
-                           BinaryOperator<BigDecimal> roundUpFunction) {
-    BigDecimal valueFromFilter = getValueFromFilter(symbolInfo, symbolFilterFunction, filterType);
-    BigDecimal remainder = amountToRound.remainder(valueFromFilter);
-    BigDecimal roundedValue = amountToRound.subtract(remainder);
-    return roundUpFunction.apply(roundedValue, valueFromFilter);
-  }
-
-  private BigDecimal getValueFromFilter(SymbolInfo symbolInfo,
-                                        Function<SymbolFilter, String> symbolFilterFunction,
-                                        FilterType... filterTypes) {
-    List<FilterType> filterTypesList = Arrays.asList(filterTypes);
-    return symbolInfo.getFilters()
-                     .parallelStream()
-                     .filter(filter -> filterTypesList.contains(filter.getFilterType()))
-                     .map(symbolFilterFunction)
-                     .map(BigDecimal::new)
-                     .findAny()
-                     .orElseThrow(() -> new CryptoTraderException("Value from filters "
-                                                                  + Arrays.toString(filterTypes)
-                                                                  + " not found"));
   }
 }

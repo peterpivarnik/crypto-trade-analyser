@@ -8,8 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * IOC (Immediate or Cancel) orders fills all or part of an order immediately and cancels the remaining part of order.
  * FOK (Fill or Kill) orders fills all in its entirety, otherwise, the entire order will be cancelled.
  *
- * @see
- * <a href="http://www.investopedia.com/terms/t/timeinforce.asp">http://www.investopedia.com/terms/t/timeinforce.asp</a>
+ * @see <a href="http://www.investopedia.com/terms/t/timeinforce.asp">http://www.investopedia.com/terms/t/timeinforce.asp</a>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public enum TimeInForce {

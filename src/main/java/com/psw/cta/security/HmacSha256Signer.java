@@ -10,6 +10,9 @@ import org.apache.commons.codec.binary.Hex;
  */
 public class HmacSha256Signer {
 
+  private HmacSha256Signer() {
+  }
+
   /**
    * Sign the given message using the given secret.
    *
@@ -26,8 +29,5 @@ public class HmacSha256Signer {
     } catch (Exception e) {
       throw new BinanceApiException("Unable to sign message.", e);
     }
-  }
-
-  private HmacSha256Signer() {
   }
 }

@@ -1,15 +1,16 @@
 package com.psw.cta.processor.trade;
 
-import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.dto.Crypto;
-import com.psw.cta.dto.binance.Candlestick;
 import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
-import com.psw.cta.service.BinanceService;
 import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
-import java.math.BigDecimal;
 import static java.time.temporal.ChronoUnit.MINUTES;
+
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.dto.Crypto;
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.service.BinanceService;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -72,20 +73,6 @@ public class AcquireProcessor {
     return isStillValid(crypto, price) && haveBalanceForInitialTrading(myBtcBalance);
   }
 
-  /**
-   * Returns whether BTC balance is higher than minimal balance for trading.
-   *
-   * @param myBtcBalance Actual BTC balance
-   * @return Flag whether BTC balance is higher than minimal balance
-   */
-  public boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
-    return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
-  }
-
-  private boolean isStillValid(Crypto crypto, BigDecimal price) {
-    return price.equals(crypto.getCurrentPrice());
-  }
-
   private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
     try {
       binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
@@ -94,5 +81,19 @@ public class AcquireProcessor {
       sleep(61000, logger);
       binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
     }
+  }
+
+  private boolean isStillValid(Crypto crypto, BigDecimal price) {
+    return price.equals(crypto.getCurrentPrice());
+  }
+
+  /**
+   * Returns whether BTC balance is higher than minimal balance for trading.
+   *
+   * @param myBtcBalance Actual BTC balance
+   * @return Flag whether BTC balance is higher than minimal balance
+   */
+  public boolean haveBalanceForInitialTrading(BigDecimal myBtcBalance) {
+    return myBtcBalance.compareTo(new BigDecimal("0.0002")) > 0;
   }
 }

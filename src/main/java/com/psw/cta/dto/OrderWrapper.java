@@ -1,21 +1,22 @@
 package com.psw.cta.dto;
 
-import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.dto.binance.Order;
 import static com.psw.cta.utils.Constants.HUNDRED_PERCENT;
 import static com.psw.cta.utils.Constants.TWO;
 import static com.psw.cta.utils.LeastSquares.getRegression;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
-import java.math.BigDecimal;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.valueOf;
-import java.math.MathContext;
 import static java.math.MathContext.DECIMAL32;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
 import static java.util.Comparator.comparing;
+
+import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.Order;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -77,6 +78,12 @@ public class OrderWrapper {
     this.remainWaitingTime = calculateRemainWaitingTime(this.minWaitingTime, this.actualWaitingTime);
   }
 
+  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
+                                                    BigDecimal highestPrice) {
+    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
+    return HUNDRED_PERCENT.subtract(percentage);
+  }
+
   private BigDecimal calculateQuantity(Order order) {
     return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
   }
@@ -100,41 +107,6 @@ public class OrderWrapper {
     BigDecimal realProfit = halfLoss.multiply(profitCoefficient);
     BigDecimal priceToSell = priceToSellWithoutProfit.add(realProfit);
     return priceToSell.setScale(8, CEILING);
-  }
-
-  private BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount,
-                                          BigDecimal myBtcBalance,
-                                          BigDecimal actualBalance) {
-    BigDecimal btcBalanceToTotalBalanceRatio = myBtcBalance.divide(actualBalance, 8, CEILING);
-    BigDecimal maxBtcAmountToReduceProfit = myBtcBalance.divide(new BigDecimal("2"), 8, CEILING);
-    SimpleRegression regression = getRegression(0.0001,
-                                                HALF_OF_MAX_PROFIT.doubleValue(),
-                                                maxBtcAmountToReduceProfit.doubleValue(),
-                                                HALF_OF_MIN_PROFIT.doubleValue());
-    BigDecimal btcAmountProfitPart = calculateProfitPart(orderBtcAmount,
-                                                         valueOf(regression.getSlope()),
-                                                         valueOf(regression.getIntercept()));
-    BigDecimal ratioProfitPart = calculateProfitPart(btcBalanceToTotalBalanceRatio,
-                                                     new BigDecimal("0.1638"),
-                                                     new BigDecimal("-0.0138"));
-    BigDecimal profitPercentage = btcAmountProfitPart.add(ratioProfitPart);
-    return profitPercentage.max(new BigDecimal("0.005"));
-  }
-
-  private BigDecimal calculateProfitPart(BigDecimal x, BigDecimal a, BigDecimal b) {
-    return calculateLineEquation(x, a, b)
-        .min(HALF_OF_MAX_PROFIT)
-        .max(HALF_OF_MIN_PROFIT);
-  }
-
-  private BigDecimal calculateLineEquation(BigDecimal x, BigDecimal a, BigDecimal b) {
-    return (x.multiply(a)).add(b);
-  }
-
-  public static BigDecimal calculatePricePercentage(BigDecimal lowestPrice,
-                                                    BigDecimal highestPrice) {
-    BigDecimal percentage = lowestPrice.multiply(HUNDRED_PERCENT).divide(highestPrice, 8, UP);
-    return HUNDRED_PERCENT.subtract(percentage);
   }
 
   private BigDecimal calculateNeededBtcAmount(BigDecimal orderPricePercentage, BigDecimal orderBtcAmount) {
@@ -168,6 +140,30 @@ public class OrderWrapper {
                             .abs(new MathContext(5));
   }
 
+  private BigDecimal calculateRemainWaitingTime(BigDecimal minWaitingTime, BigDecimal actualWaitingTime) {
+    return minWaitingTime.subtract(actualWaitingTime)
+                         .round(new MathContext(5));
+  }
+
+  private BigDecimal getProfitCoefficient(BigDecimal orderBtcAmount,
+                                          BigDecimal myBtcBalance,
+                                          BigDecimal actualBalance) {
+    BigDecimal btcBalanceToTotalBalanceRatio = myBtcBalance.divide(actualBalance, 8, CEILING);
+    BigDecimal maxBtcAmountToReduceProfit = myBtcBalance.divide(new BigDecimal("2"), 8, CEILING);
+    SimpleRegression regression = getRegression(0.0001,
+                                                HALF_OF_MAX_PROFIT.doubleValue(),
+                                                maxBtcAmountToReduceProfit.doubleValue(),
+                                                HALF_OF_MIN_PROFIT.doubleValue());
+    BigDecimal btcAmountProfitPart = calculateProfitPart(orderBtcAmount,
+                                                         valueOf(regression.getSlope()),
+                                                         valueOf(regression.getIntercept()));
+    BigDecimal ratioProfitPart = calculateProfitPart(btcBalanceToTotalBalanceRatio,
+                                                     new BigDecimal("0.1638"),
+                                                     new BigDecimal("-0.0138"));
+    BigDecimal profitPercentage = btcAmountProfitPart.add(ratioProfitPart);
+    return profitPercentage.max(new BigDecimal("0.005"));
+  }
+
   private BigDecimal calculateOldMinWaitingTime(BigDecimal totalSymbolAmount,
                                                 BigDecimal orderBtcAmount,
                                                 BigDecimal orderPricePercentage) {
@@ -177,6 +173,12 @@ public class OrderWrapper {
     BigDecimal timeVariable = getTimeVariable(orderPricePercentage);
     return waitingTime.multiply(timeVariable)
                       .round(DECIMAL32);
+  }
+
+  private BigDecimal calculateProfitPart(BigDecimal x, BigDecimal a, BigDecimal b) {
+    return calculateLineEquation(x, a, b)
+        .min(HALF_OF_MAX_PROFIT)
+        .max(HALF_OF_MIN_PROFIT);
   }
 
   private BigDecimal getTimeFromAmount(BigDecimal totalAmount) {
@@ -196,9 +198,8 @@ public class OrderWrapper {
     return firstElement.add(secondElement.add(c));
   }
 
-  private BigDecimal calculateRemainWaitingTime(BigDecimal minWaitingTime, BigDecimal actualWaitingTime) {
-    return minWaitingTime.subtract(actualWaitingTime)
-                         .round(new MathContext(5));
+  private BigDecimal calculateLineEquation(BigDecimal x, BigDecimal a, BigDecimal b) {
+    return (x.multiply(a)).add(b);
   }
 
   public Order getOrder() {

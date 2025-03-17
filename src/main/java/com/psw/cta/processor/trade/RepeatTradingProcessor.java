@@ -1,5 +1,11 @@
 package com.psw.cta.processor.trade;
 
+import static com.psw.cta.utils.CommonUtils.sleep;
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -7,12 +13,7 @@ import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.service.BinanceService;
-import static com.psw.cta.utils.CommonUtils.sleep;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 import java.util.List;
 import java.util.function.Function;
 
@@ -54,38 +55,6 @@ public class RepeatTradingProcessor {
     return hasMinProfit(orderWrapper)
            && isRemainingTimeGreaterZero(orderWrapper)
            && hasEnoughBtcAmount(function, orderWrapper);
-  }
-
-  private boolean isRemainingTimeGreaterZero(OrderWrapper orderWrapper) {
-    return orderWrapper.getActualWaitingTime()
-                       .compareTo(orderWrapper.getMinWaitingTime()) > 0;
-  }
-
-  private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
-    BigDecimal myBtcBalance = function.apply(binanceService);
-    return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
-  }
-
-  /**
-   * Rebuy all ordes.
-   *
-   * @param orderWrappers list of orders to rebuy
-   * @param exchangeInfo  exchange info
-   */
-  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Rebuy all orders ***** *****");
-    orderWrappers.stream()
-                 .filter(this::hasMinProfit)
-                 .forEach(orderWrapper -> {
-                   SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
-                   rebuySingleOrder(symbolInfo, orderWrapper);
-                 });
-  }
-
-  private boolean hasMinProfit(OrderWrapper orderWrapper) {
-    return orderWrapper.getOrderPricePercentage()
-                       .subtract(orderWrapper.getPriceToSellPercentage())
-                       .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
   }
 
   private void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
@@ -130,10 +99,41 @@ public class RepeatTradingProcessor {
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
   }
 
+  private boolean hasMinProfit(OrderWrapper orderWrapper) {
+    return orderWrapper.getOrderPricePercentage()
+                       .subtract(orderWrapper.getPriceToSellPercentage())
+                       .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
+  }
+
+  private boolean isRemainingTimeGreaterZero(OrderWrapper orderWrapper) {
+    return orderWrapper.getActualWaitingTime()
+                       .compareTo(orderWrapper.getMinWaitingTime()) > 0;
+  }
+
+  private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
+    BigDecimal myBtcBalance = function.apply(binanceService);
+    return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
+  }
 
   private BigDecimal getSumFromTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
     return myTrades.stream()
                    .map(function)
                    .reduce(ZERO, BigDecimal::add);
+  }
+
+  /**
+   * Rebuy all ordes.
+   *
+   * @param orderWrappers list of orders to rebuy
+   * @param exchangeInfo  exchange info
+   */
+  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+    logger.log("***** ***** Rebuy all orders ***** *****");
+    orderWrappers.stream()
+                 .filter(this::hasMinProfit)
+                 .forEach(orderWrapper -> {
+                   SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
+                   rebuySingleOrder(symbolInfo, orderWrapper);
+                 });
   }
 }

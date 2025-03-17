@@ -1,5 +1,11 @@
 package com.psw.cta.processor;
 
+import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.CEILING;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
@@ -12,12 +18,7 @@ import com.psw.cta.processor.trade.ExtractProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -154,12 +155,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return allOlderThanDay(orderWrappers);
   }
 
-  private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
-    return orderWrappers.stream()
-                        .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
-                                                              .compareTo(new BigDecimal("24")) > 0);
-  }
-
   private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
                                                     BigDecimal actualBalance,
                                                     long uniqueOpenOrdersSize,
@@ -168,22 +163,27 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
            && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
   }
 
-  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
-    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
+  private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
+    return uniqueOpenOrdersSize <= minOpenOrders;
+  }
+
+  private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+    return allRemainWaitingTimeLessThanZero(orderWrappers)
+           && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
   }
 
   private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize, BigDecimal totalAmount) {
     return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
   }
 
-  private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
-    return uniqueOpenOrdersSize <= minOpenOrders;
+  private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
+    return orderWrappers.stream()
+                        .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
+                                                              .compareTo(new BigDecimal("24")) > 0);
   }
 
-
-  private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-    return allRemainWaitingTimeLessThanZero(orderWrappers)
-           && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
+  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
+    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
   }
 
   private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {

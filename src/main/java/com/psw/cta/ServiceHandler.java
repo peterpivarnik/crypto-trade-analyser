@@ -3,7 +3,6 @@ package com.psw.cta;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.psw.cta.dto.Input;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

@@ -119,6 +119,22 @@ public class CryptoTrader {
     logger.log("Finished trading.");
   }
 
+  private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
+    return openOrders.stream()
+                     .collect(toMap(Order::getSymbol,
+                                    order -> new BigDecimal(order.getPrice())
+                                        .multiply(getQuantity(order))
+                                        .setScale(8, FLOOR),
+                                    BigDecimal::add))
+                     .entrySet()
+                     .stream()
+                     .sorted((c1, c2) -> c2.getValue().compareTo(c1.getValue()))
+                     .collect(toMap(Map.Entry::getKey,
+                                    Map.Entry::getValue,
+                                    (e1, e2) -> e1,
+                                    LinkedHashMap::new));
+  }
+
   private void logTotalAmounts(Map<String, BigDecimal> totalAmounts) {
     logger.log("totalAmounts: ");
     List<Map.Entry<String, BigDecimal>> entryList = totalAmounts.entrySet()
@@ -140,6 +156,10 @@ public class CryptoTrader {
     });
   }
 
+  private int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {
+    return myBtcBalance.multiply(new BigDecimal("50")).intValue();
+  }
+
   private void checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders) {
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     BigDecimal newOrdersAmount = newTotalAmounts.values()
@@ -154,35 +174,15 @@ public class CryptoTrader {
       logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
     } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
       throw new BinanceApiException("New amount lower than before trading! Old amount : "
-                                        + ordersAndBtcAmount
-                                        + ". New amount: "
-                                        + newOrdersAndBtcAmount
-                                        + ". Difference: "
-                                        + ordersAndBtcAmountDifference);
+                                    + ordersAndBtcAmount
+                                    + ". New amount: "
+                                    + newOrdersAndBtcAmount
+                                    + ". Difference: "
+                                    + ordersAndBtcAmountDifference);
     }
-  }
-
-  private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {
-    return openOrders.stream()
-                     .collect(toMap(Order::getSymbol,
-                                    order -> new BigDecimal(order.getPrice())
-                                        .multiply(getQuantity(order))
-                                        .setScale(8, FLOOR),
-                                    BigDecimal::add))
-                     .entrySet()
-                     .stream()
-                     .sorted((c1, c2) -> c2.getValue().compareTo(c1.getValue()))
-                     .collect(toMap(Map.Entry::getKey,
-                                    Map.Entry::getValue,
-                                    (e1, e2) -> e1,
-                                    LinkedHashMap::new));
   }
 
   private BigDecimal getQuantity(Order order) {
     return new BigDecimal(order.getOrigQty()).subtract(new BigDecimal(order.getExecutedQty()));
-  }
-
-  private int calculateMinNumberOfOrders(BigDecimal myBtcBalance) {
-    return myBtcBalance.multiply(new BigDecimal("50")).intValue();
   }
 }

@@ -20,7 +20,7 @@ public class CryptoTraderApplication {
 
       @Override
       public void log(byte[] bytes) {
-          System.out.println(new String(bytes));
+        System.out.println(new String(bytes));
       }
     };
   }

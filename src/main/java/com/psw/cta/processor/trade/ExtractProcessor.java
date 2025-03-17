@@ -1,12 +1,13 @@
 package com.psw.cta.processor.trade;
 
+import static java.math.BigDecimal.ONE;
+
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
-import static java.math.BigDecimal.ONE;
 import java.util.Comparator;
 import java.util.List;
 

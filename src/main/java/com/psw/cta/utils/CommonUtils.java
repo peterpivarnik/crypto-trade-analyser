@@ -7,6 +7,9 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
  */
 public class CommonUtils {
 
+  private CommonUtils() {
+  }
+
   /**
    * Sleep program for provided amount of milliseconds.
    *
@@ -21,8 +24,5 @@ public class CommonUtils {
     } catch (InterruptedException e) {
       logger.log("Error during sleeping");
     }
-  }
-
-  private CommonUtils() {
   }
 }

@@ -9,6 +9,7 @@ import com.psw.cta.dto.binance.Order;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.processor.trade.AcquireProcessor;
+import com.psw.cta.processor.trade.CancelProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
@@ -36,6 +37,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   private final RepeatTradingProcessor repeatTradingProcessor;
   private final SplitProcessor splitProcessor;
   private final AcquireProcessor acquireProcessor;
+  private final CancelProcessor cancelProcessor;
   private final List<String> allForbiddenPairs;
 
   /**
@@ -45,11 +47,14 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
    * @param forbiddenPairs forbidden pairs
    * @param logger         logger
    */
-  public LambdaTradeProcessor(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
+  public LambdaTradeProcessor(BinanceService binanceService,
+                              List<String> forbiddenPairs,
+                              LambdaLogger logger) {
     super(binanceService);
-    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
-    this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
     this.splitProcessor = new SplitProcessor(binanceService, logger);
+    this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
+    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
+    this.cancelProcessor = new CancelProcessor(binanceService, logger);
     this.logger = logger;
     this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
   }
@@ -117,7 +122,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         acquireProcessor.initTrading(cryptos);
       }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
-      splitProcessor.cancelTrade(orderWrappers, exchangeInfo);
+      cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
     } else {
       repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
     }

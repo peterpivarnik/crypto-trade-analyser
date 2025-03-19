@@ -287,8 +287,10 @@ public class BinanceService {
                                                                   MIN_NOTIONAL,
                                                                   NOTIONAL);
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
+
+    BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
     BigDecimal minQuantityToBuy = getMinQuantityToBuy(orderWrapper.getQuantity(),
-                                                      orderWrapper.getCurrentPrice(),
+                                                      currentPrice,
                                                       minValueFromMinNotionalFilter,
                                                       stepSizeFromLotSizeFilter);
     logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);

@@ -16,7 +16,6 @@ import static com.psw.cta.dto.binance.OrderType.MARKET;
 import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static java.lang.System.currentTimeMillis;
@@ -51,7 +50,6 @@ import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.security.AuthenticationInterceptor;
-import com.psw.cta.utils.CommonUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -268,6 +266,7 @@ public class BinanceService {
    */
   public List<TickerStatistics> getAll24hTickers() {
     logger.log("Get 24 h Tickers");
+    sleep(1000 * 60, logger);
     return executeCall(binanceApi.getAll24HrPriceStatistics());
   }
 
@@ -294,14 +293,14 @@ public class BinanceService {
                                                       minValueFromMinNotionalFilter,
                                                       stepSizeFromLotSizeFilter);
     logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
-    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
+    NewOrderResponse response = createNewOrder(symbolInfo.getSymbol(),
                                                BUY,
                                                MARKET,
                                                null,
                                                minQuantityToBuy.toPlainString(),
                                                null);
-    logger.log("response: " + newOrder);
-    return newOrder;
+    logger.log("response: " + response);
+    return response;
   }
 
   /**
@@ -525,7 +524,7 @@ public class BinanceService {
     if (myBalance.compareTo(quantity) >= 0) {
       return myBalance;
     } else {
-      CommonUtils.sleep(500, logger);
+      sleep(500, logger);
       return waitUntilHaveBalance(asset, quantity);
     }
   }
@@ -656,16 +655,41 @@ public class BinanceService {
   }
 
   /**
-   * Get trades for a specific account and symbol.
+   * Returns new price to sell. If crypto was bought with different prices, then new price to sell must be calculated.
+   * If crypto with the same price was bought, then no change is done to the price to sell.
    *
-   * @param symbol  symbol to get trades from
-   * @param orderId id of the order
-   * @return a list of trades
+   * @param symbolInfo    symbol information
+   * @param orderResponse response from new order creation
+   * @param orderWrapper  wrapper holding trade information
+   * @return new price to sell
    */
-  public List<Trade> getMyTrades(String symbol, Long orderId) {
+  public BigDecimal getNewPriceToSell(SymbolInfo symbolInfo,
+                                      NewOrderResponse orderResponse,
+                                      OrderWrapper orderWrapper) {
+    List<Trade> myTrades = getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
+    BigDecimal boughtQuantity = new BigDecimal(orderResponse.getExecutedQty());
+    logger.log("boughtQuantity: " + boughtQuantity);
+    BigDecimal boughtBtcs = getBoughtBtcsFromTrades(myTrades);
+    logger.log("boughtBtcs: " + boughtBtcs);
+    BigDecimal boughtPrice = boughtBtcs.divide(boughtQuantity, 8, CEILING);
+    logger.log("boughtPrice: " + boughtPrice);
+    BigDecimal priceDifference = boughtPrice.subtract(orderWrapper.getCurrentPrice());
+    logger.log("priceDifference: " + priceDifference);
+    BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
+    logger.log("newPriceToSell: " + newPriceToSell);
+    return newPriceToSell;
+  }
+
+  private List<Trade> getMyTrades(String symbol, Long orderId) {
     logger.log("Get my trades for " + symbol + ", orderId=" + orderId);
     sleep(5 * 1000, logger);
     return executeCall(binanceApi.getMyTrades(symbol, orderId + "", currentTimeMillis()));
+  }
+
+  private BigDecimal getBoughtBtcsFromTrades(List<Trade> myTrades) {
+    return myTrades.stream()
+                   .map(trade -> new BigDecimal(trade.getQty()).multiply(new BigDecimal(trade.getPrice())))
+                   .reduce(ZERO, BigDecimal::add);
   }
 
   private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
@@ -674,5 +698,14 @@ public class BinanceService {
                  PRICE_FILTER,
                  SymbolFilter::getTickSize,
                  BigDecimal::add);
+  }
+
+  private void sleep(int millis, LambdaLogger logger) {
+    logger.log("Sleeping for " + millis / 1000 + " seconds");
+    try {
+      Thread.sleep(millis);
+    } catch (InterruptedException e) {
+      logger.log("Error during sleeping");
+    }
   }
 }

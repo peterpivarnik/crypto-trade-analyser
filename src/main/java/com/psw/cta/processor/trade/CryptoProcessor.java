@@ -2,7 +2,6 @@ package com.psw.cta.processor.trade;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.time.temporal.ChronoUnit.DAYS;
 
@@ -43,7 +42,6 @@ public class CryptoProcessor {
    * @return list of cryptos available to buy
    */
   public List<Crypto> getCryptos(ExchangeInfo exchangeInfo, List<String> allForbiddenPairs) {
-    sleep(1000 * 60, logger);
     logger.log("Get all cryptos");
     List<TickerStatistics> tickers = binanceService.getAll24hTickers();
     List<Crypto> cryptos = exchangeInfo.getSymbols()

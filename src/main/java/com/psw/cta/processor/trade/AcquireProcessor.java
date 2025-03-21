@@ -1,7 +1,6 @@
 package com.psw.cta.processor.trade;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -72,22 +71,12 @@ public class AcquireProcessor {
       BigDecimal quantity = binanceService.buy(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
 
       // 5. place sell order
-      placeSellOrder(crypto, quantity);
+      binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
     }
   }
 
   private boolean shouldBuyAndSell(Crypto crypto, BigDecimal myBtcBalance, BigDecimal price) {
     return isStillValid(crypto, price) && haveBalanceForInitialTrading(myBtcBalance);
-  }
-
-  private void placeSellOrder(Crypto crypto, BigDecimal quantity) {
-    try {
-      binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
-    } catch (Exception e) {
-      logger.log("Catched exception: " + e.getClass().getName() + ", with message: " + e.getMessage());
-      sleep(61000, logger);
-      binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
-    }
   }
 
   private boolean isStillValid(Crypto crypto, BigDecimal price) {

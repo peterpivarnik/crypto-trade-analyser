@@ -1,10 +1,7 @@
 package com.psw.cta.processor.trade;
 
-import static com.psw.cta.utils.CommonUtils.sleep;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
-import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
@@ -12,7 +9,6 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,7 +26,7 @@ public class RepeatTradingProcessor {
    * Default constructor.
    *
    * @param binanceService service for {@link BinanceApi}
-   * @param logger logger
+   * @param logger         logger
    */
   public RepeatTradingProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
@@ -74,32 +70,7 @@ public class RepeatTradingProcessor {
     // 2. buy
     NewOrderResponse orderResponse = binanceService.buy(symbolInfo, orderWrapper);
 
-    logger.log("OrderId: " + orderResponse.getOrderId());
-    List<Trade> myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
-    myTrades.forEach(trade -> logger.log(trade.toString()));
-    BigDecimal boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-    if (boughtQuantity.compareTo(ZERO) == 0) {
-      sleep(50 * 1000, logger);
-      myTrades = binanceService.getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
-      myTrades.forEach(trade -> logger.log(trade.toString()));
-      boughtQuantity = getSumFromTrades(myTrades, trade -> new BigDecimal(trade.getQty()));
-      logger.log("Bought quantity after waiting: " + boughtQuantity);
-    }
-    if (boughtQuantity.compareTo(ZERO) == 0) {
-      boughtQuantity = new BigDecimal(orderResponse.getExecutedQty());
-      logger.log("Bought quantity after still not having: " + boughtQuantity);
-    }
-    logger.log("boughtQuantity: " + boughtQuantity);
-    BigDecimal boughtBtcs = getSumFromTrades(myTrades,
-                                             trade -> new BigDecimal(trade.getQty())
-                                                 .multiply(new BigDecimal(trade.getPrice())));
-    logger.log("boughtBtcs: " + boughtBtcs);
-    BigDecimal boughtPrice = boughtBtcs.divide(boughtQuantity, 8, CEILING);
-    logger.log("boughtPrice: " + boughtPrice);
-    BigDecimal priceDifference = boughtPrice.subtract(orderWrapper.getCurrentPrice());
-    logger.log("priceDifference: " + priceDifference);
-    BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
-    logger.log("newPriceToSell: " + newPriceToSell);
+    BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
     // 3. create new order
     BigDecimal quantityToSell = orderWrapper.getQuantity();
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
@@ -120,12 +91,6 @@ public class RepeatTradingProcessor {
   private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
     BigDecimal myBtcBalance = function.apply(binanceService);
     return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
-  }
-
-  private BigDecimal getSumFromTrades(List<Trade> myTrades, Function<Trade, BigDecimal> function) {
-    return myTrades.stream()
-                   .map(function)
-                   .reduce(ZERO, BigDecimal::add);
   }
 
   /**

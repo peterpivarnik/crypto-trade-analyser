@@ -14,13 +14,15 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
+        <software.amazon.awssdk.regions.version>2.31.9</software.amazon.awssdk.regions.version>
+        <software.amazon.awssdk.secretsmanager.version>2.31.9</software.amazon.awssdk.secretsmanager.version>
         <com.squareup.retrofit2.converter-jackson.version>2.11.0</com.squareup.retrofit2.converter-jackson.version>
         <com.squareup.okhttp3.version>5.0.0-alpha.14</com.squareup.okhttp3.version>
         <commons.codec.commons-codec.version>1.18.0</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.17.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
-        <org.junit.jupiter.junit-jupiter-api.version>5.12.1</org.junit.jupiter.junit-jupiter-api.version>
+        <org.junit.jupiter.junit-jupiter-api.version>5.13.0-M2</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>4.0.0-M1</org.assertj.assertj-core.version>
         <org.mockito.version>5.16.1</org.mockito.version>
 
@@ -40,6 +42,16 @@
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
             <version>${com.amazonaws.aws-lambda-java-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>regions</artifactId>
+            <version>${software.amazon.awssdk.regions.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>secretsmanager</artifactId>
+            <version>${software.amazon.awssdk.secretsmanager.version}</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>

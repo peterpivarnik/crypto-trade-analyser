@@ -42,9 +42,7 @@ public class ServiceHandler implements RequestHandler<Input, Object> {
     SecretsProvider secretsProvider = ParamManager.getSecretsProvider();
 
     // Retrieve a single secret
-    String value = secretsProvider.get("/my/secret");
     String value2 = secretsProvider.get("testSecret");
-    logger.log("Secret: " + value);
-    logger.log("Secret2: " + value2);
+    logger.log("Secret: " + value2);
   }
 }

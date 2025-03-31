@@ -30,8 +30,8 @@
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-        <checkstyle.version>10.21.4</checkstyle.version>
-        <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+        <checkstyle.version>10.22.0</checkstyle.version>
+        <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <openapi-generator-maven-plugin.version>7.5.0</openapi-generator-maven-plugin.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>

@@ -169,7 +169,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
     return allRemainWaitingTimeLessThanZero(orderWrappers)
-           && allOrderBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
+           && allNeededBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
   }
 
   private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize, BigDecimal totalAmount) {
@@ -192,9 +192,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                         .allMatch(time -> time.compareTo(ZERO) < 0);
   }
 
-  private boolean allOrderBtcAmountBiggerThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+  private boolean allNeededBtcAmountBiggerThanMyBtcBalance(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
     return orderWrappers.stream()
-                        .map(OrderWrapper::getOrderBtcAmount)
+                        .map(OrderWrapper::getNeededBtcAmount)
                         .allMatch(orderBtcAmount -> orderBtcAmount.compareTo(myBtcBalance) > 0);
   }
 }

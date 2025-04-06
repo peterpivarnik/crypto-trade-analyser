@@ -1,7 +1,5 @@
 package com.psw.cta.processor.trade;
 
-import static java.math.BigDecimal.ONE;
-
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
@@ -53,7 +51,6 @@ public class ExtractProcessor {
 
   private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
     return myBtcBalance.multiply(new BigDecimal("1000"))
-                       .max(ONE)
                        .intValue();
   }
 

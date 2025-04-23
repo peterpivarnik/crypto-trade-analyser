@@ -91,9 +91,16 @@ public class RepeatTradingProcessor {
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
   }
 
-  private boolean shouldBeRebought(OrderWrapper orderWrapper, BigDecimal myBtcBalance) {
+  /**
+   * Check whether order can be rebought.
+   *
+   * @param orderWrapper wrapper holding order info
+   * @param myBtcBalance actual balance in btc
+   * @return whether order can be rebought
+   */
+  public boolean shouldBeRebought(OrderWrapper orderWrapper, BigDecimal myBtcBalance) {
     return hasMinProfit(orderWrapper)
-           && isRemainingTimeGreaterZero(orderWrapper)
+           && isRemainingTimeLessZero(orderWrapper)
            && hasEnoughBtcAmount(myBtcBalance, orderWrapper);
   }
 
@@ -103,9 +110,9 @@ public class RepeatTradingProcessor {
                        .compareTo(MIN_PROFIT_PERCENTAGE) > 0;
   }
 
-  private boolean isRemainingTimeGreaterZero(OrderWrapper orderWrapper) {
-    return orderWrapper.getActualWaitingTime()
-                       .compareTo(orderWrapper.getMinWaitingTime()) > 0;
+  private boolean isRemainingTimeLessZero(OrderWrapper orderWrapper) {
+    return orderWrapper.getRemainWaitingTime()
+                       .compareTo(BigDecimal.ZERO) < 0;
   }
 
   private boolean hasEnoughBtcAmount(BigDecimal myBtcBalance, OrderWrapper orderWrapper) {

@@ -33,9 +33,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
   private final CryptoProcessor cryptoProcessor;
   private final SplitProcessor splitProcessor;
+  private final AcquireProcessor acquireProcessor;
   private final RepeatTradingProcessor repeatTradingProcessor;
   private final ExtractProcessor extractProcessor;
-  private final AcquireProcessor acquireProcessor;
   private final CancelProcessor cancelProcessor;
   private final List<String> allForbiddenPairs;
   private final LambdaLogger logger;
@@ -51,12 +51,12 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     super(binanceService);
     this.cryptoProcessor = new CryptoProcessor(binanceService, logger);
     this.splitProcessor = new SplitProcessor(binanceService, logger);
+    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
     this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
     this.extractProcessor = new ExtractProcessor(binanceService, logger);
-    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
     this.cancelProcessor = new CancelProcessor(binanceService, logger);
-    this.logger = logger;
     this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
+    this.logger = logger;
   }
 
   private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {
@@ -107,15 +107,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                            totalAmounts,
                                            cryptos);
       });
-    } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
-      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
-      extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
-    } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
-      extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
@@ -127,10 +121,16 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
         acquireProcessor.initTrading(cryptos);
       }
+    } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
+      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
+    } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
+      repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
+    } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
+      extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
+    } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
+      extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
       cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
-    } else {
-      repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
     }
   }
 
@@ -141,16 +141,40 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                      .collect(Collectors.toSet());
   }
 
-  private boolean shouldRebuyAllOrders(BigDecimal myBtcBalance, BigDecimal ordersAmount) {
-    return myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0;
-  }
-
-
   private boolean shouldSplitOrderWithLowestOrderPrice(long uniqueOpenOrdersSize,
                                                        BigDecimal totalAmount,
                                                        List<OrderWrapper> orderWrappers) {
     return uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
            && allOlderThanDay(orderWrappers);
+  }
+
+  private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
+                                                    BigDecimal actualBalance,
+                                                    long uniqueOpenOrdersSize,
+                                                    BigDecimal totalAmount) {
+    return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
+           && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
+  }
+
+  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
+    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
+  }
+
+  private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize, BigDecimal totalAmount) {
+    return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
+  }
+
+  private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
+    return uniqueOpenOrdersSize <= minOpenOrders;
+  }
+
+  private boolean shouldRebuyAllOrders(BigDecimal myBtcBalance, BigDecimal ordersAmount) {
+    return myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0;
+  }
+
+  private boolean shouldRebuyAnyOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
+    return orderWrappers.stream()
+                        .anyMatch(orderWrapper -> repeatTradingProcessor.shouldBeRebought(orderWrapper, myBtcBalance));
   }
 
   private boolean shouldExtractMoreOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
@@ -171,29 +195,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return myBtcBalance.compareTo(new BigDecimal("0.001")) > 0;
   }
 
-  private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
-                                                    BigDecimal actualBalance,
-                                                    long uniqueOpenOrdersSize,
-                                                    BigDecimal totalAmount) {
-    return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
-           && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
-  }
-
-  private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
-    return uniqueOpenOrdersSize <= minOpenOrders;
-  }
-
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
     return allRemainWaitingTimeLessThanZero(orderWrappers)
            && allNeededBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
-  }
-
-  private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize, BigDecimal totalAmount) {
-    return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
-  }
-
-  private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
-    return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
   }
 
   private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {

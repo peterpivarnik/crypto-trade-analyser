@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
  */
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
+  private final LambdaLogger logger;
   private final CryptoProcessor cryptoProcessor;
   private final SplitProcessor splitProcessor;
   private final AcquireProcessor acquireProcessor;
@@ -38,7 +39,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   private final ExtractProcessor extractProcessor;
   private final CancelProcessor cancelProcessor;
   private final List<String> allForbiddenPairs;
-  private final LambdaLogger logger;
 
   /**
    * Default constructor.
@@ -49,6 +49,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
    */
   public LambdaTradeProcessor(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
     super(binanceService);
+    this.logger = logger;
     this.cryptoProcessor = new CryptoProcessor(binanceService, logger);
     this.splitProcessor = new SplitProcessor(binanceService, logger);
     this.acquireProcessor = new AcquireProcessor(binanceService, logger);
@@ -56,7 +57,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     this.extractProcessor = new ExtractProcessor(binanceService, logger);
     this.cancelProcessor = new CancelProcessor(binanceService, logger);
     this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
-    this.logger = logger;
   }
 
   private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {

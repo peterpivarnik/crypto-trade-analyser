@@ -2,6 +2,7 @@ package com.psw.cta.processor;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
+import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.service.BinanceService;
@@ -20,7 +21,7 @@ public class LocalTradeProcessor extends MainTradeProcessor {
    * Default constructor.
    *
    * @param binanceService service for {@link BinanceApi}
-   * @param logger logger
+   * @param logger         logger
    */
   public LocalTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
     super(binanceService);
@@ -37,7 +38,10 @@ public class LocalTradeProcessor extends MainTradeProcessor {
                     BigDecimal totalAmount,
                     int minOpenOrders) {
 
-    getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
-        .forEach(orderWrapper -> logger.log(orderWrapper.toString()));
+    BigDecimal neededBtcAmount = getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
+        .peek(orderWrapper -> logger.log(orderWrapper.toString()))
+        .map(OrderWrapper::getNeededBtcAmount)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    logger.log("Needed btc amount from all orders: " + neededBtcAmount);
   }
 }

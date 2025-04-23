@@ -40,7 +40,6 @@ public class OrderWrapper {
   private final BigDecimal orderPricePercentage;
   private final BigDecimal priceToSellPercentage;
   private final BigDecimal neededBtcAmount;
-  private final BigDecimal minWaitingTime;
   private final BigDecimal actualWaitingTime;
   private final BigDecimal remainWaitingTime;
 
@@ -81,14 +80,14 @@ public class OrderWrapper {
     this.orderPricePercentage = orderPricePercentage;
     this.priceToSellPercentage = calculatePricePercentage(this.currentPrice, this.priceToSell);
     this.neededBtcAmount = calculateNeededBtcAmount(this.orderPricePercentage, this.orderBtcAmount);
-    this.minWaitingTime = calculateMinWaitingTime(this.order,
-                                                  totalAmounts,
-                                                  this.orderBtcAmount,
-                                                  this.orderPricePercentage,
-                                                  candleStickData,
-                                                  this.currentPrice);
     this.actualWaitingTime = actualWaitingTime;
-    this.remainWaitingTime = calculateRemainWaitingTime(this.minWaitingTime, this.actualWaitingTime);
+    BigDecimal minWaitingTime = calculateMinWaitingTime(this.order,
+                                                        totalAmounts,
+                                                        this.orderBtcAmount,
+                                                        this.orderPricePercentage,
+                                                        candleStickData,
+                                                        this.currentPrice);
+    this.remainWaitingTime = calculateRemainWaitingTime(minWaitingTime, this.actualWaitingTime);
   }
 
   /**
@@ -260,10 +259,6 @@ public class OrderWrapper {
 
   public BigDecimal getNeededBtcAmount() {
     return neededBtcAmount;
-  }
-
-  public BigDecimal getMinWaitingTime() {
-    return minWaitingTime;
   }
 
   public BigDecimal getActualWaitingTime() {

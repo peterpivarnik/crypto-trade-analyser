@@ -108,7 +108,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                            cryptos);
       });
     } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
-      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
+      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo, myBtcBalance);
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);

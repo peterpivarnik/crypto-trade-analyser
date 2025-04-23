@@ -44,30 +44,42 @@ public class RepeatTradingProcessor {
     logger.log("***** ***** Rebuy orders ***** *****");
     orderWrappers.stream()
                  .filter(orderWrapper -> shouldBeRebought(orderWrapper, service -> myBtcBalance))
-                 .forEachOrdered(orderWrapper -> {
-                   if (!shouldBeRebought(orderWrapper, service -> service.getMyBalance(ASSET_BTC))) {
-                     logger.log("Conditions to rebuy crypto not valid.");
-                     return;
-                   }
-                   SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
-                   rebuySingleOrder(symbolInfo, orderWrapper);
-                 });
+                 .forEachOrdered(orderWrapper -> rebuySingleOrder(orderWrapper,
+                                                                  service -> service.getMyBalance(ASSET_BTC),
+                                                                  exchangeInfo));
   }
 
-  private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
-    return hasMinProfit(orderWrapper)
-           && isRemainingTimeGreaterZero(orderWrapper)
-           && hasEnoughBtcAmount(function, orderWrapper);
+  /**
+   * Rebuy all orders.
+   *
+   * @param orderWrappers list of orders to rebuy
+   * @param exchangeInfo  exchange info
+   * @param myBtcBalance  actual balance in btc
+   */
+  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo, BigDecimal myBtcBalance) {
+    logger.log("***** ***** Rebuy all orders ***** *****");
+    orderWrappers.stream()
+                 .filter(this::hasMinProfit)
+                 .forEach(orderWrapper -> rebuySingleOrder(orderWrapper, service -> myBtcBalance, exchangeInfo));
   }
 
-  private void rebuySingleOrder(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
+  private void rebuySingleOrder(OrderWrapper orderWrapper,
+                                Function<BinanceService, BigDecimal> getMyBtcBalanceFunction,
+                                ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
 
+
+    // 0. Check if still have enough balance
+    if (!hasEnoughBtcAmount(getMyBtcBalanceFunction, orderWrapper)) {
+      logger.log("Conditions to rebuy crypto not valid.");
+      return;
+    }
     // 1. cancel existing order
     binanceService.cancelOrder(orderWrapper);
 
     // 2. buy
+    SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
     NewOrderResponse orderResponse = binanceService.buy(symbolInfo, orderWrapper);
 
     BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
@@ -75,6 +87,12 @@ public class RepeatTradingProcessor {
     BigDecimal quantityToSell = orderWrapper.getQuantity();
     BigDecimal completeQuantityToSell = quantityToSell.multiply(new BigDecimal("2"));
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
+  }
+
+  private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
+    return hasMinProfit(orderWrapper)
+           && isRemainingTimeGreaterZero(orderWrapper)
+           && hasEnoughBtcAmount(function, orderWrapper);
   }
 
   private boolean hasMinProfit(OrderWrapper orderWrapper) {
@@ -91,21 +109,5 @@ public class RepeatTradingProcessor {
   private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
     BigDecimal myBtcBalance = function.apply(binanceService);
     return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
-  }
-
-  /**
-   * Rebuy all ordes.
-   *
-   * @param orderWrappers list of orders to rebuy
-   * @param exchangeInfo  exchange info
-   */
-  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Rebuy all orders ***** *****");
-    orderWrappers.stream()
-                 .filter(this::hasMinProfit)
-                 .forEach(orderWrapper -> {
-                   SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
-                   rebuySingleOrder(symbolInfo, orderWrapper);
-                 });
   }
 }

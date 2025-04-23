@@ -22,7 +22,7 @@ public class ExtractProcessor {
    * Default constructor.
    *
    * @param binanceService service providing functionality for {@link BinanceApi}
-   * @param logger logger
+   * @param logger         logger
    */
   public ExtractProcessor(BinanceService binanceService, LambdaLogger logger) {
     this.binanceService = binanceService;
@@ -31,15 +31,15 @@ public class ExtractProcessor {
 
 
   /**
-   * Extracts two orders from order with lowest order price percentage.
+   * Extracts two orders from more orders.
    *
    * @param orderWrappers all orders
    * @param myBtcBalance  my actual balance in BTC
    * @param exchangeInfo  exchange info
    */
-  public void extractOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
-                                               BigDecimal myBtcBalance,
-                                               ExchangeInfo exchangeInfo) {
+  public void extractOrders(List<OrderWrapper> orderWrappers,
+                            BigDecimal myBtcBalance,
+                            ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Extracting orders ***** *****");
     orderWrappers.stream()
                  .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
@@ -52,6 +52,21 @@ public class ExtractProcessor {
   private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
     return myBtcBalance.multiply(new BigDecimal("1000"))
                        .intValue();
+  }
+
+  /**
+   * Extracts two orders from one order.
+   *
+   * @param orderWrappers all orders
+   * @param exchangeInfo  exchange info
+   */
+  public void extractOnlyFirstOrder(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+    logger.log("***** ***** Extracting first order ***** *****");
+    orderWrappers.stream()
+                 .filter(orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
+                 .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
+                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
+                 .ifPresent(order -> extractOrder(order, exchangeInfo));
   }
 
   private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {

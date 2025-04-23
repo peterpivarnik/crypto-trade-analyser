@@ -12,7 +12,7 @@ import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
 
 /**
  * Service to rebuy crypto.
@@ -42,11 +42,12 @@ public class RepeatTradingProcessor {
    */
   public void rebuyOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance, ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Rebuy orders ***** *****");
+    BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate = (service, wrapper) -> hasEnoughBtcAmount(
+        service.getMyBalance(ASSET_BTC),
+        wrapper);
     orderWrappers.stream()
-                 .filter(orderWrapper -> shouldBeRebought(orderWrapper, service -> myBtcBalance))
-                 .forEachOrdered(orderWrapper -> rebuySingleOrder(orderWrapper,
-                                                                  service -> service.getMyBalance(ASSET_BTC),
-                                                                  exchangeInfo));
+                 .filter(orderWrapper -> shouldBeRebought(orderWrapper, myBtcBalance))
+                 .forEachOrdered(orderWrapper -> rebuySingleOrder(orderWrapper, hasBtcPredicate, exchangeInfo));
   }
 
   /**
@@ -54,24 +55,25 @@ public class RepeatTradingProcessor {
    *
    * @param orderWrappers list of orders to rebuy
    * @param exchangeInfo  exchange info
-   * @param myBtcBalance  actual balance in btc
    */
-  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo, BigDecimal myBtcBalance) {
+  public void rebuyAllOrders(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Rebuy all orders ***** *****");
     orderWrappers.stream()
                  .filter(this::hasMinProfit)
-                 .forEach(orderWrapper -> rebuySingleOrder(orderWrapper, service -> myBtcBalance, exchangeInfo));
+                 .forEach(orderWrapper -> rebuySingleOrder(orderWrapper,
+                                                           (binanceService, wrapper) -> true,
+                                                           exchangeInfo));
   }
 
   private void rebuySingleOrder(OrderWrapper orderWrapper,
-                                Function<BinanceService, BigDecimal> getMyBtcBalanceFunction,
+                                BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate,
                                 ExchangeInfo exchangeInfo) {
     logger.log("***** ***** Repeat trading ***** *****");
     logger.log("OrderWrapper: " + orderWrapper);
 
 
     // 0. Check if still have enough balance
-    if (!hasEnoughBtcAmount(getMyBtcBalanceFunction, orderWrapper)) {
+    if (!hasBtcPredicate.test(binanceService, orderWrapper)) {
       logger.log("Conditions to rebuy crypto not valid.");
       return;
     }
@@ -89,10 +91,10 @@ public class RepeatTradingProcessor {
     binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
   }
 
-  private boolean shouldBeRebought(OrderWrapper orderWrapper, Function<BinanceService, BigDecimal> function) {
+  private boolean shouldBeRebought(OrderWrapper orderWrapper, BigDecimal myBtcBalance) {
     return hasMinProfit(orderWrapper)
            && isRemainingTimeGreaterZero(orderWrapper)
-           && hasEnoughBtcAmount(function, orderWrapper);
+           && hasEnoughBtcAmount(myBtcBalance, orderWrapper);
   }
 
   private boolean hasMinProfit(OrderWrapper orderWrapper) {
@@ -106,8 +108,7 @@ public class RepeatTradingProcessor {
                        .compareTo(orderWrapper.getMinWaitingTime()) > 0;
   }
 
-  private boolean hasEnoughBtcAmount(Function<BinanceService, BigDecimal> function, OrderWrapper orderWrapper) {
-    BigDecimal myBtcBalance = function.apply(binanceService);
+  private boolean hasEnoughBtcAmount(BigDecimal myBtcBalance, OrderWrapper orderWrapper) {
     return myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
   }
 }

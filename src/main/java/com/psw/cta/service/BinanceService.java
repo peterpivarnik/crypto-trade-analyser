@@ -495,24 +495,26 @@ public class BinanceService {
                                                                   MIN_NOTIONAL,
                                                                   NOTIONAL);
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-    BigDecimal minValue = getMinValue(minValueFromLotSizeFilter, orderPrice, minValueFromMinNotionalFilter);
-    logger.log("minValue: " + minValue);
+    BigDecimal extractedBalance = getExtractedBalance(minValueFromMinNotionalFilter,
+                                                      orderPrice,
+                                                      minValueFromLotSizeFilter);
+    logger.log("extractedBalance: " + extractedBalance);
 
-    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice(), minValue);
+    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice(), extractedBalance);
     BigDecimal minPriceTickSize = getValueFromFilter(symbolInfo, SymbolFilter::getTickSize, PRICE_FILTER);
-    createSellLimitOrder(symbolInfo, orderToExtract.getOrderPrice().add(minPriceTickSize), balance.subtract(minValue));
+    createSellLimitOrder(symbolInfo,
+                         orderToExtract.getOrderPrice().add(minPriceTickSize),
+                         balance.subtract(extractedBalance));
   }
 
-  private BigDecimal getMinValue(BigDecimal minValueFromLotSizeFilter,
-                                 BigDecimal orderPrice,
-                                 BigDecimal minValueFromMinNotionalFilter) {
-    if (minValueFromLotSizeFilter.multiply(orderPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
-      BigDecimal multiply = minValueFromLotSizeFilter.multiply(new BigDecimal("2"));
-      logger.log("Calling recursively: multiply: " + multiply);
-      return getMinValue(multiply, orderPrice, minValueFromMinNotionalFilter);
-    }
-    logger.log("Finished calling recursively: minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-    return minValueFromLotSizeFilter;
+  private BigDecimal getExtractedBalance(BigDecimal minValueFromMinNotionalFilter,
+                                         BigDecimal orderPrice,
+                                         BigDecimal minValueFromLotSizeFilter) {
+    BigDecimal notRoundedValue = minValueFromMinNotionalFilter.divide(orderPrice, 8, CEILING);
+    BigDecimal remainder = notRoundedValue.remainder(minValueFromLotSizeFilter);
+    return notRoundedValue.subtract(remainder)
+                          .add(minValueFromLotSizeFilter)
+                          .add(minValueFromLotSizeFilter);
   }
 
   private String getAssetFromSymbolInfo(SymbolInfo symbolInfo) {

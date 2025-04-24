@@ -76,7 +76,7 @@ public class CryptoTrader {
    */
   public void startTrading() {
     logger.log("***** ***** Start of trading ***** *****");
-    logger.log("Crypto trader with version " + getVersion() + " started.");
+    //    logger.log("Crypto trader with version " + getVersion() + " started.");
     List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);

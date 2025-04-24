@@ -245,7 +245,7 @@
                             <goal>write-project-properties</goal>
                         </goals>
                         <configuration>
-                            <outputFile>src/main/resources/properties-from-pom.properties</outputFile>
+                            <outputFile>properties-from-pom.properties</outputFile>
                         </configuration>
                     </execution>
                 </executions>

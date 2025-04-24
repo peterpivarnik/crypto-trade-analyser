@@ -123,7 +123,7 @@ public class CryptoTrader {
   private String getVersion() {
     try {
       final Properties properties = new Properties();
-      properties.load(new FileInputStream("src/main/resources/properties-from-pom.properties"));
+      properties.load(new FileInputStream("properties-from-pom.properties"));
       return properties.getProperty("cta-version");
     } catch (IOException e) {
       logger.log(e.getMessage());

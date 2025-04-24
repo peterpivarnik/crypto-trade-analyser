@@ -12,6 +12,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <cta-version>${project.version}</cta-version>
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
         <com.squareup.retrofit2.converter-jackson.version>2.11.0</com.squareup.retrofit2.converter-jackson.version>
@@ -19,7 +20,6 @@
         <commons.codec.commons-codec.version>1.18.0</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.17.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
-        <com.jcabi.jcabi-manifests.version>2.1.0</com.jcabi.jcabi-manifests.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.13.0-M2</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>4.0.0-M1</org.assertj.assertj-core.version>
         <org.mockito.version>5.17.0</org.mockito.version>
@@ -70,11 +70,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${org.apache.commons.commons-math3.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.jcabi</groupId>
-            <artifactId>jcabi-manifests</artifactId>
-            <version>${com.jcabi.jcabi-manifests.version}</version>
         </dependency>
 
         <dependency>
@@ -238,6 +233,22 @@
                     </ignoredVersions>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>write-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>src/main/resources/properties-from-pom.properties</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -8,7 +8,6 @@ import static java.math.RoundingMode.FLOOR;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.jcabi.manifests.Manifests;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
@@ -18,11 +17,14 @@ import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -74,8 +76,7 @@ public class CryptoTrader {
    */
   public void startTrading() {
     logger.log("***** ***** Start of trading ***** *****");
-    String implementationVersion = Manifests.read("Implementation-Version");
-    logger.log("Crypto trader with version " + implementationVersion + " started.");
+    logger.log("Crypto trader with version " + getVersion() + " started.");
     List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
@@ -117,6 +118,17 @@ public class CryptoTrader {
     logTotalAmounts(newTotalAmounts);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders);
     logger.log("Finished trading.");
+  }
+
+  private String getVersion() {
+    try {
+      final Properties properties = new Properties();
+      properties.load(new FileInputStream("src/main/resources/properties-from-pom.properties"));
+      return properties.getProperty("cta-version");
+    } catch (IOException e) {
+      logger.log(e.getMessage());
+      throw new RuntimeException(e);
+    }
   }
 
   private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {

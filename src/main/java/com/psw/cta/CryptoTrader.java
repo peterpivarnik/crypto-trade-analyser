@@ -21,6 +21,8 @@ import com.psw.cta.service.BinanceService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,7 +79,8 @@ public class CryptoTrader {
    */
   public void startTrading() {
     logger.log("***** ***** Start of trading ***** *****");
-    logger.log("Crypto trader with version " + getVersion() + " started.");
+    LocalDateTime start = LocalDateTime.now();
+    logger.log("Crypto trader with version " + getVersion() + " started at " + start + ".");
     List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
@@ -118,7 +121,14 @@ public class CryptoTrader {
     Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
     logTotalAmounts(newTotalAmounts);
     checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders);
-    logger.log("Finished trading.");
+    LocalDateTime end = LocalDateTime.now();
+    logger.log("Finished trading at " + end + ".");
+    Duration duration = Duration.between(start, end);
+    logger.log("Execution took: "
+               + duration.toSeconds()
+               + " seconds, and "
+               + duration.toMillisPart()
+               + " milliseconds.");
   }
 
   private String getVersion() {

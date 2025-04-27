@@ -12,13 +12,14 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
+import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -76,7 +77,7 @@ public class CryptoTrader {
    */
   public void startTrading() {
     logger.log("***** ***** Start of trading ***** *****");
-    //    logger.log("Crypto trader with version " + getVersion() + " started.");
+    logger.log("Crypto trader with version " + getVersion() + " started.");
     List<Order> openOrders = binanceService.getOpenOrders();
     logger.log("Number of open orders: " + openOrders.size());
     Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
@@ -121,14 +122,15 @@ public class CryptoTrader {
   }
 
   private String getVersion() {
+    final Properties properties = new Properties();
+    InputStream resourceAsStream = this.getClass().getClassLoader().getResourceAsStream("app.properties");
     try {
-      final Properties properties = new Properties();
-      properties.load(new FileInputStream("properties-from-pom.properties"));
-      return properties.getProperty("cta-version");
+      properties.load(resourceAsStream);
     } catch (IOException e) {
-      logger.log(e.getMessage());
-      throw new RuntimeException(e);
+      logger.log("Failed to load app.properties");
+      throw new CryptoTraderException(e);
     }
+    return properties.getProperty("application.version");
   }
 
   private Map<String, BigDecimal> createTotalAmounts(List<Order> openOrders) {

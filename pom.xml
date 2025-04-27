@@ -12,7 +12,6 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <cta-version>${project.version}</cta-version>
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
         <com.squareup.retrofit2.converter-jackson.version>2.11.0</com.squareup.retrofit2.converter-jackson.version>
@@ -32,7 +31,6 @@
         <checkstyle.version>10.23.0</checkstyle.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
-        <openapi-generator-maven-plugin.version>7.5.0</openapi-generator-maven-plugin.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
     </properties>
     <dependencies>
@@ -234,23 +232,13 @@
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <executions>
-                    <execution>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>write-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>properties-from-pom.properties</outputFile>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
     <scm>
         <developerConnection>scm:git:https://github.com/peterpivarnik/crypto-trade-analyser/</developerConnection>

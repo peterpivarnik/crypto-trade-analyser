@@ -260,12 +260,7 @@ public class BinanceService {
                                                       symbolInfo,
                                                       stepSizeFromLotSizeFilter);
     logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
-    NewOrderResponse response = createNewOrder(symbolInfo.getSymbol(),
-                                               BUY,
-                                               MARKET,
-                                               null,
-                                               minQuantityToBuy.toPlainString(),
-                                               null);
+    NewOrderResponse response = createNewBuyMarketOrder(symbolInfo.getSymbol(), minQuantityToBuy.toPlainString());
     logger.log("response: " + response);
     return response;
   }
@@ -331,12 +326,7 @@ public class BinanceService {
   public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
     BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-    NewOrderResponse newOrder = createNewOrder(symbolInfo.getSymbol(),
-                                               BUY,
-                                               MARKET,
-                                               null,
-                                               roundedQuantity.toPlainString(),
-                                               null);
+    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo.getSymbol(), roundedQuantity.toPlainString());
     logger.log("response: " + newOrder);
     return roundedQuantity;
   }
@@ -359,7 +349,11 @@ public class BinanceService {
    */
   public void createBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal balance) {
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
-    createNewOrder(symbolInfo.getSymbol(), BUY, MARKET, null, roundedBidQuantity.toPlainString(), null);
+    createNewBuyMarketOrder(symbolInfo.getSymbol(), roundedBidQuantity.toPlainString());
+  }
+
+  private NewOrderResponse createNewBuyMarketOrder(String symbol, String quantity) {
+    return createNewOrder(symbol, BUY, MARKET, null, quantity, null);
   }
 
   /**
@@ -372,13 +366,12 @@ public class BinanceService {
     logger.log("Sell available balance for " + symbolInfo.getSymbol() + ", quantity=" + quantity);
     String asset = getAssetFromSymbolInfo(symbolInfo);
     BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-
-    createSellMarketOrder(symbolInfo, myBalance);
+    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
+    createNewSellMarketOrder(symbolInfo.getSymbol(), roundedBidQuantity.toPlainString());
   }
 
-  private void createSellMarketOrder(SymbolInfo symbolInfo, BigDecimal balance) {
-    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
-    createNewOrder(symbolInfo.getSymbol(), SELL, MARKET, null, roundedBidQuantity.toPlainString(), null);
+  private void createNewSellMarketOrder(String symbol, String quantity) {
+    createNewOrder(symbol, SELL, MARKET, null, quantity, null);
   }
 
   /**
@@ -456,12 +449,9 @@ public class BinanceService {
     logger.log("minBalance: " + minBalance);
     BigDecimal roundedBidQuantity = roundAmount(symbolInfo, minBalance);
     BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
-    createNewOrder(symbolInfo.getSymbol(),
-                   SELL,
-                   LIMIT,
-                   GTC,
-                   roundedBidQuantity.toPlainString(),
-                   roundedPriceToSell.toPlainString());
+    createNewSellLimitOrder(symbolInfo.getSymbol(),
+                            roundedBidQuantity.toPlainString(),
+                            roundedPriceToSell.toPlainString());
   }
 
   private BigDecimal getMinBalance(BigDecimal balance, BigDecimal priceToSell, SymbolInfo symbolInfo) {
@@ -517,6 +507,10 @@ public class BinanceService {
                      .orElseThrow(() -> new CryptoTraderException("Value from filters "
                                                                   + Arrays.toString(filterTypes)
                                                                   + " not found"));
+  }
+
+  private void createNewSellLimitOrder(String symbol, String quantity, String price) {
+    createNewOrder(symbol, SELL, LIMIT, GTC, quantity, price);
   }
 
   private NewOrderResponse createNewOrder(String symbol,

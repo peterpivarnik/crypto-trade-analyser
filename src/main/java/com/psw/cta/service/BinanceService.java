@@ -291,6 +291,7 @@ public class BinanceService {
     BigDecimal minQuantityToBuy = getMinQuantityToBuy(orderWrapper.getQuantity(),
                                                       currentPrice,
                                                       minValueFromMinNotionalFilter,
+                                                      symbolInfo,
                                                       stepSizeFromLotSizeFilter);
     logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
     NewOrderResponse response = createNewOrder(symbolInfo.getSymbol(),
@@ -352,9 +353,13 @@ public class BinanceService {
   private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
                                          BigDecimal currentPrice,
                                          BigDecimal minValueFromMinNotionalFilter,
+                                         SymbolInfo symbolInfo,
                                          BigDecimal stepSize) {
     if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
-      return getMinQuantityToBuy(quantity.add(stepSize), currentPrice, minValueFromMinNotionalFilter, stepSize);
+      BigDecimal minQuantity = minValueFromMinNotionalFilter.divide(currentPrice, 8, CEILING);
+      return roundAmount(symbolInfo, minQuantity)
+          .add(stepSize)
+          .add(stepSize);
     }
     return quantity;
   }

@@ -227,7 +227,7 @@ public class SplitProcessor {
 
   private void buyAndSell(OrderWrapper orderToCancel, BigDecimal btcAmountToSpend, Crypto cryptoToBuy) {
     // 3. buy
-    BigDecimal boughtQuantity = binanceService.buy(cryptoToBuy, btcAmountToSpend);
+    BigDecimal boughtQuantity = binanceService.buyForSplit(cryptoToBuy, btcAmountToSpend);
     logger.log("boughtQuantity: " + boughtQuantity);
 
     // 4. place sell order

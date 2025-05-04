@@ -64,7 +64,7 @@ public class ExtractProcessor {
     logger.log("***** ***** Extracting first order ***** *****");
     orderWrappers.stream()
                  .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
+                 .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0003")) > 0)
                  .ifPresent(order -> extractOrder(order, exchangeInfo));
   }
 

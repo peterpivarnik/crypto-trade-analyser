@@ -178,11 +178,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   }
 
   private boolean shouldExtractMoreOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-    return allOlderThanDay(orderWrappers) && haveBtcToExtractMoreOrders(myBtcBalance);
+    return allOlderThanDay(orderWrappers) && haveEnoughBtcToExtractMoreOrders(myBtcBalance);
   }
 
   private boolean shouldExtractOneOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-    return allOlderThanDay(orderWrappers) && !haveBtcToExtractMoreOrders(myBtcBalance);
+    return allOlderThanDay(orderWrappers) && !haveEnoughBtcToExtractMoreOrders(myBtcBalance);
   }
 
   private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
@@ -191,8 +191,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                               .compareTo(new BigDecimal("24")) > 0);
   }
 
-  private boolean haveBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
-    return myBtcBalance.compareTo(new BigDecimal("0.001")) > 0;
+  private boolean haveEnoughBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
+    return myBtcBalance.compareTo(new BigDecimal("0.003")) > 0;
   }
 
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

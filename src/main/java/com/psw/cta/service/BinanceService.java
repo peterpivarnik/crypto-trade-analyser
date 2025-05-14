@@ -257,24 +257,19 @@ public class BinanceService {
     BigDecimal minQuantityToBuy = getMinQuantityToBuy(orderWrapper.getQuantity(),
                                                       currentPrice,
                                                       minValueFromMinNotionalFilter,
-                                                      symbolInfo,
                                                       stepSizeFromLotSizeFilter);
     logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
-    NewOrderResponse response = createNewBuyMarketOrder(symbolInfo.getSymbol(), minQuantityToBuy.toPlainString());
-    logger.log("response: " + response);
-    return response;
+    return createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
   }
 
   private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
                                          BigDecimal currentPrice,
                                          BigDecimal minValueFromMinNotionalFilter,
-                                         SymbolInfo symbolInfo,
                                          BigDecimal stepSize) {
     if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
       BigDecimal minQuantity = minValueFromMinNotionalFilter.divide(currentPrice, 8, CEILING);
-      return roundAmount(symbolInfo, minQuantity)
-          .add(stepSize)
-          .add(stepSize);
+      return minQuantity.add(stepSize)
+                        .add(stepSize);
     }
     return quantity;
   }
@@ -325,10 +320,8 @@ public class BinanceService {
    */
   public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
     BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
-    BigDecimal roundedQuantity = roundAmount(symbolInfo, myQuantityToBuy);
-    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo.getSymbol(), roundedQuantity.toPlainString());
-    logger.log("response: " + newOrder);
-    return roundedQuantity;
+    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo, myQuantityToBuy);
+    return new BigDecimal(newOrder.getExecutedQty());
   }
 
   private BigDecimal getMyQuantityToBuy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
@@ -345,15 +338,17 @@ public class BinanceService {
    * Create buy market order.
    *
    * @param symbolInfo order symbol informations.
-   * @param balance    balance of order
+   * @param quantity   balance of order
+   * @return new order response
    */
-  public void createBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal balance) {
-    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, balance);
-    createNewBuyMarketOrder(symbolInfo.getSymbol(), roundedBidQuantity.toPlainString());
-  }
-
-  private NewOrderResponse createNewBuyMarketOrder(String symbol, String quantity) {
-    return createNewOrder(symbol, BUY, MARKET, null, quantity, null);
+  public NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal quantity) {
+    BigDecimal roundedQuantity = roundQuantity(symbolInfo, quantity);
+    return createNewOrder(symbolInfo.getSymbol(),
+                          BUY,
+                          MARKET,
+                          null,
+                          roundedQuantity.toPlainString(),
+                          null);
   }
 
   /**
@@ -366,7 +361,7 @@ public class BinanceService {
     logger.log("Sell available balance for " + symbolInfo.getSymbol() + ", quantity=" + quantity);
     String asset = getAssetFromSymbolInfo(symbolInfo);
     BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
-    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, myBalance);
+    BigDecimal roundedBidQuantity = roundQuantity(symbolInfo, myBalance);
     createNewSellMarketOrder(symbolInfo.getSymbol(), roundedBidQuantity.toPlainString());
   }
 
@@ -447,7 +442,7 @@ public class BinanceService {
   private void createSellLimitOrder(SymbolInfo symbolInfo, BigDecimal priceToSell, BigDecimal balance) {
     BigDecimal minBalance = getMinBalance(balance, priceToSell, symbolInfo);
     logger.log("minBalance: " + minBalance);
-    BigDecimal roundedBidQuantity = roundAmount(symbolInfo, minBalance);
+    BigDecimal roundedBidQuantity = roundQuantity(symbolInfo, minBalance);
     BigDecimal roundedPriceToSell = roundPrice(symbolInfo, priceToSell);
     createNewSellLimitOrder(symbolInfo.getSymbol(),
                             roundedBidQuantity.toPlainString(),
@@ -467,9 +462,9 @@ public class BinanceService {
     return balance;
   }
 
-  private BigDecimal roundAmount(SymbolInfo symbolInfo, BigDecimal amount) {
+  private BigDecimal roundQuantity(SymbolInfo symbolInfo, BigDecimal quantity) {
     return round(symbolInfo,
-                 amount,
+                 quantity,
                  LOT_SIZE,
                  SymbolFilter::getStepSize,
                  (roundedValue, valueFromFilter) -> roundedValue);
@@ -519,15 +514,17 @@ public class BinanceService {
                                           TimeInForce timeInForce,
                                           String quantity,
                                           String price) {
-    return executeCall(binanceApi.newOrder(symbol,
-                                           orderSide,
-                                           orderType,
-                                           timeInForce,
-                                           quantity,
-                                           price,
-                                           RESULT,
-                                           DEFAULT_RECEIVING_WINDOW,
-                                           System.currentTimeMillis()));
+    NewOrderResponse response = executeCall(binanceApi.newOrder(symbol,
+                                                                        orderSide,
+                                                                        orderType,
+                                                                        timeInForce,
+                                                                        quantity,
+                                                                        price,
+                                                                        RESULT,
+                                                                        DEFAULT_RECEIVING_WINDOW,
+                                                                        currentTimeMillis()));
+    logger.log("response: " + response);
+    return response;
   }
 
   /**

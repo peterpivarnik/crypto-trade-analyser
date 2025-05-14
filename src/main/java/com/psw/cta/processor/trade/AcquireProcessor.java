@@ -55,32 +55,13 @@ public class AcquireProcessor {
   }
 
   private void acquireCrypto(Crypto crypto) {
-    // 1. get balance on account
     logger.log("Trading crypto " + crypto);
-    String symbol = crypto.getSymbolInfo().getSymbol();
     BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
-
-    // 2. get max possible buy
-    BigDecimal price = binanceService.getMinPriceFromOrderBookEntry(symbol);
-
-    // 3. calculate quantity to buy
     BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-
-    if (shouldBuyAndSell(crypto, myBtcBalance, price)) {
-      // 4. buy
-      BigDecimal quantity = binanceService.buy(crypto.getSymbolInfo(), maxBtcBalanceToBuy, price);
-
-      // 5. place sell order
+    if (haveBalanceForInitialTrading(myBtcBalance)) {
+      BigDecimal quantity = binanceService.buyWithBtcs(crypto.getSymbolInfo(), maxBtcBalanceToBuy);
       binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
     }
-  }
-
-  private boolean shouldBuyAndSell(Crypto crypto, BigDecimal myBtcBalance, BigDecimal price) {
-    return isStillValid(crypto, price) && haveBalanceForInitialTrading(myBtcBalance);
-  }
-
-  private boolean isStillValid(Crypto crypto, BigDecimal price) {
-    return price.equals(crypto.getCurrentPrice());
   }
 
   /**

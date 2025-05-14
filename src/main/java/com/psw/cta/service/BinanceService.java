@@ -17,18 +17,15 @@ import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static java.lang.System.currentTimeMillis;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
-import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
-import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
@@ -132,39 +129,6 @@ public class BinanceService {
   }
 
   /**
-   * Returns order book entry with min price.
-   *
-   * @param symbol Order symbol
-   * @return OrderBookEntry with min price
-   */
-  public BigDecimal getMinPriceFromOrderBookEntry(String symbol) {
-    logger.log("Get min order book entry for " + symbol);
-    return getOrderBook(symbol, 20)
-        .getAsks()
-        .parallelStream()
-        .map(OrderBookEntry::getPrice)
-        .map(BigDecimal::new)
-        .min(comparing(Function.identity()))
-        .orElseThrow(RuntimeException::new);
-  }
-
-  /**
-   * Returns current BNB/BTC price.
-   *
-   * @return BNB/BTC price
-   */
-  public BigDecimal getCurrentBnbBtcPrice() {
-    logger.log("Get current BNB/BTC price");
-    return getOrderBook(SYMBOL_BNB_BTC, 20)
-        .getBids()
-        .parallelStream()
-        .max(comparing(OrderBookEntry::getPrice))
-        .map(OrderBookEntry::getPrice)
-        .map(BigDecimal::new)
-        .orElseThrow(RuntimeException::new);
-  }
-
-  /**
    * Returns Kline/Candlestick bars for a symbol and provided number of units.
    *
    * @param symbol            Order symbol
@@ -239,14 +203,38 @@ public class BinanceService {
   /**
    * Buy order with provided quantity.
    *
-   * @param symbolInfo   Symbol information
-   * @param quantity quantity to buy
+   * @param symbolInfo Symbol information
+   * @param quantity   quantity to buy
    * @return order response
    */
   public NewOrderResponse buyWithQuantity(SymbolInfo symbolInfo, BigDecimal quantity) {
     logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
     BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
     logger.log("currentPrice: " + currentPrice);
+    BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
+    logger.log("minQuantityToBuy: " + minQuantityToBuy);
+    return createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
+  }
+
+  /**
+   * Buy order and return quantity of response order.
+   *
+   * @param symbolInfo Symbol information
+   * @param btcAmount  BTC amount to spend
+   * @return bought quantity
+   */
+  public BigDecimal buyWithBtcs(SymbolInfo symbolInfo, BigDecimal btcAmount) {
+    logger.log("Buy " + symbolInfo.getSymbol() + " with btc amount=" + btcAmount);
+    BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
+    logger.log("currentPrice: " + currentPrice);
+    BigDecimal myQuantity = btcAmount.divide(currentPrice, 8, CEILING);
+    BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, myQuantity, currentPrice);
+    logger.log("minQuantityToBuy: " + minQuantityToBuy);
+    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
+    return new BigDecimal(newOrder.getExecutedQty());
+  }
+
+  private BigDecimal getMinQuantityToBuy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                   SymbolFilter::getMinNotional,
                                                                   MIN_NOTIONAL,
@@ -254,84 +242,12 @@ public class BinanceService {
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
     BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
     logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
-    BigDecimal minQuantityToBuy = getMinQuantityToBuy(quantity,
-                                                      currentPrice,
-                                                      minValueFromMinNotionalFilter,
-                                                      stepSizeFromLotSizeFilter);
-    logger.log("Buy " + symbolInfo.getSymbol() + " with new quantity=" + minQuantityToBuy);
-    return createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
-  }
-
-  private BigDecimal getMinQuantityToBuy(BigDecimal quantity,
-                                         BigDecimal currentPrice,
-                                         BigDecimal minValueFromMinNotionalFilter,
-                                         BigDecimal stepSize) {
     if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
       BigDecimal minQuantity = minValueFromMinNotionalFilter.divide(currentPrice, 8, CEILING);
-      return minQuantity.add(stepSize)
-                        .add(stepSize);
+      return minQuantity.add(stepSizeFromLotSizeFilter)
+                        .add(stepSizeFromLotSizeFilter);
     }
     return quantity;
-  }
-
-  /**
-   * Buy order and return quantity of response order.
-   *
-   * @param cryptoToBuy      dto holding information about crypto to buy
-   * @param btcAmountToSpend BTC amount to spend
-   * @return bought quantity
-   */
-  public BigDecimal buyForSplit(Crypto cryptoToBuy, BigDecimal btcAmountToSpend) {
-    SymbolInfo symbolInfo = cryptoToBuy.getSymbolInfo();
-    BigDecimal cryptoToBuyCurrentPrice = cryptoToBuy.getCurrentPrice();
-    logger.log("cryptoToBuyCurrentPrice: " + cryptoToBuyCurrentPrice);
-    BigDecimal minValueFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getMinQty, LOT_SIZE);
-    logger.log("minValueFromLotSizeFilter: " + minValueFromLotSizeFilter);
-    BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
-                                                                  SymbolFilter::getMinNotional,
-                                                                  MIN_NOTIONAL,
-                                                                  NOTIONAL);
-    logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-    BigDecimal minAddition = minValueFromLotSizeFilter.multiply(cryptoToBuyCurrentPrice);
-    logger.log("minAddition: " + minAddition);
-    BigDecimal btcAmount = getMinBtcAmount(btcAmountToSpend, minAddition, minValueFromMinNotionalFilter);
-    logger.log("btcAmount: " + btcAmount);
-    return buy(symbolInfo, btcAmount, cryptoToBuyCurrentPrice);
-  }
-
-  private BigDecimal getMinBtcAmount(BigDecimal btcAmountToSpend,
-                                     BigDecimal minAddition,
-                                     BigDecimal minValueFromMinNotionalFilter) {
-    if (btcAmountToSpend.compareTo(minValueFromMinNotionalFilter) < 0) {
-      return getMinBtcAmount(btcAmountToSpend.add(minAddition),
-                             minAddition,
-                             minValueFromMinNotionalFilter);
-    }
-    return btcAmountToSpend.add(minAddition);
-  }
-
-  /**
-   * Buy order and return quantity of response order.
-   *
-   * @param symbolInfo Symbol information
-   * @param btcAmount  BTC amount
-   * @param price      price of new order
-   * @return bought quantity
-   */
-  public BigDecimal buy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
-    BigDecimal myQuantityToBuy = getMyQuantityToBuy(symbolInfo, btcAmount, price);
-    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo, myQuantityToBuy);
-    return new BigDecimal(newOrder.getExecutedQty());
-  }
-
-  private BigDecimal getMyQuantityToBuy(SymbolInfo symbolInfo, BigDecimal btcAmount, BigDecimal price) {
-    logger.log("Buy " + symbolInfo.getSymbol() + ", btcAmount=" + btcAmount + ", price=" + price);
-    BigDecimal myQuantity = btcAmount.divide(price, 8, CEILING);
-    BigDecimal minNotionalFromMinNotionalFilter = getValueFromFilter(symbolInfo,
-                                                                     SymbolFilter::getMinNotional,
-                                                                     MIN_NOTIONAL,
-                                                                     NOTIONAL);
-    return myQuantity.max(minNotionalFromMinNotionalFilter);
   }
 
   private NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal quantity) {
@@ -508,14 +424,14 @@ public class BinanceService {
                                           String quantity,
                                           String price) {
     NewOrderResponse response = executeCall(binanceApi.newOrder(symbol,
-                                                                        orderSide,
-                                                                        orderType,
-                                                                        timeInForce,
-                                                                        quantity,
-                                                                        price,
-                                                                        RESULT,
-                                                                        DEFAULT_RECEIVING_WINDOW,
-                                                                        currentTimeMillis()));
+                                                                orderSide,
+                                                                orderType,
+                                                                timeInForce,
+                                                                quantity,
+                                                                price,
+                                                                RESULT,
+                                                                DEFAULT_RECEIVING_WINDOW,
+                                                                currentTimeMillis()));
     logger.log("response: " + response);
     return response;
   }

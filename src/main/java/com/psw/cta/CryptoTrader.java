@@ -93,7 +93,7 @@ public class CryptoTrader {
     BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
     logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
     ExchangeInfo exchangeInfo = binanceService.getExchangeInfo();
-    BigDecimal currentBnbBtcPrice = binanceService.getCurrentBnbBtcPrice();
+    BigDecimal currentBnbBtcPrice = binanceService.getCurrentPrice(SYMBOL_BNB_BTC);
     logger.log("currentBnbBtcPrice: " + currentBnbBtcPrice);
     SymbolInfo bnbSymbolInfo = exchangeInfo.getSymbolInfo(SYMBOL_BNB_BTC);
     BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(currentBnbBtcPrice, bnbSymbolInfo);

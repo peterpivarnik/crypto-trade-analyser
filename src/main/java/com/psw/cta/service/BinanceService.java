@@ -237,24 +237,24 @@ public class BinanceService {
   }
 
   /**
-   * Buy order.
+   * Buy order with provided quantity.
    *
    * @param symbolInfo   Symbol information
-   * @param orderWrapper order wrapper
+   * @param quantity quantity to buy
    * @return order response
    */
-  public NewOrderResponse buyMore(SymbolInfo symbolInfo, OrderWrapper orderWrapper) {
-    logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + orderWrapper.getQuantity());
-    BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
-    logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
+  public NewOrderResponse buyWithQuantity(SymbolInfo symbolInfo, BigDecimal quantity) {
+    logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
+    BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
+    logger.log("currentPrice: " + currentPrice);
     BigDecimal minValueFromMinNotionalFilter = getValueFromFilter(symbolInfo,
                                                                   SymbolFilter::getMinNotional,
                                                                   MIN_NOTIONAL,
                                                                   NOTIONAL);
     logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
-    BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
-    logger.log("currentPrice: " + currentPrice);
-    BigDecimal minQuantityToBuy = getMinQuantityToBuy(orderWrapper.getQuantity(),
+    BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
+    logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
+    BigDecimal minQuantityToBuy = getMinQuantityToBuy(quantity,
                                                       currentPrice,
                                                       minValueFromMinNotionalFilter,
                                                       stepSizeFromLotSizeFilter);
@@ -334,14 +334,7 @@ public class BinanceService {
     return myQuantity.max(minNotionalFromMinNotionalFilter);
   }
 
-  /**
-   * Create buy market order.
-   *
-   * @param symbolInfo order symbol informations.
-   * @param quantity   balance of order
-   * @return new order response
-   */
-  public NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal quantity) {
+  private NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal quantity) {
     BigDecimal roundedQuantity = roundQuantity(symbolInfo, quantity);
     return createNewOrder(symbolInfo.getSymbol(),
                           BUY,

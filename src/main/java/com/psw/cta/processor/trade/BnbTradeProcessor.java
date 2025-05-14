@@ -46,7 +46,7 @@ public class BnbTradeProcessor {
       BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
       logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
       BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
-      binanceService.createNewBuyMarketOrder(symbolInfo, min);
+      binanceService.buyWithQuantity(symbolInfo, min);
       return binanceService.getMyBalance(ASSET_BNB);
     }
     return myBnbBalance;

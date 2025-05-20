@@ -211,9 +211,7 @@ public class BinanceService {
     logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
     BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
     logger.log("currentPrice: " + currentPrice);
-    BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
-    logger.log("minQuantityToBuy: " + minQuantityToBuy);
-    return createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
+    return buy(symbolInfo, quantity, currentPrice);
   }
 
   /**
@@ -228,10 +226,15 @@ public class BinanceService {
     BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
     logger.log("currentPrice: " + currentPrice);
     BigDecimal myQuantity = btcAmount.divide(currentPrice, 8, CEILING);
-    BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, myQuantity, currentPrice);
-    logger.log("minQuantityToBuy: " + minQuantityToBuy);
-    NewOrderResponse newOrder = createNewBuyMarketOrder(symbolInfo, minQuantityToBuy);
+    NewOrderResponse newOrder = buy(symbolInfo, myQuantity, currentPrice);
     return new BigDecimal(newOrder.getExecutedQty());
+  }
+
+  private NewOrderResponse buy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
+    BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
+    logger.log("minQuantityToBuy: " + minQuantityToBuy);
+    BigDecimal roundedQuantity = roundQuantity(symbolInfo, quantity);
+    return createNewBuyMarketOrder(symbolInfo, roundedQuantity);
   }
 
   private BigDecimal getMinQuantityToBuy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
@@ -250,8 +253,7 @@ public class BinanceService {
     return quantity;
   }
 
-  private NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal quantity) {
-    BigDecimal roundedQuantity = roundQuantity(symbolInfo, quantity);
+  private NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal roundedQuantity) {
     return createNewOrder(symbolInfo.getSymbol(),
                           BUY,
                           MARKET,

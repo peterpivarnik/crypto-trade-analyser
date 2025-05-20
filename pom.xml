@@ -14,12 +14,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <com.amazonaws.aws-lambda-java-core.version>1.2.3</com.amazonaws.aws-lambda-java-core.version>
-        <com.squareup.retrofit2.converter-jackson.version>2.11.0</com.squareup.retrofit2.converter-jackson.version>
+        <com.squareup.retrofit2.converter-jackson.version>3.0.0</com.squareup.retrofit2.converter-jackson.version>
         <com.squareup.okhttp3.version>5.0.0-alpha.14</com.squareup.okhttp3.version>
         <commons.codec.commons-codec.version>1.18.0</commons.codec.commons-codec.version>
         <org.apache.commons.commons-lang3.version>3.17.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
-        <org.junit.jupiter.junit-jupiter-api.version>5.13.0-M3</org.junit.jupiter.junit-jupiter-api.version>
+        <org.junit.jupiter.junit-jupiter-api.version>5.13.0-RC1</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>4.0.0-M1</org.assertj.assertj-core.version>
         <org.mockito.version>5.17.0</org.mockito.version>
 

@@ -233,7 +233,8 @@ public class BinanceService {
   private NewOrderResponse buy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
     BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
     logger.log("minQuantityToBuy: " + minQuantityToBuy);
-    BigDecimal roundedQuantity = roundQuantity(symbolInfo, quantity);
+    BigDecimal roundedQuantity = roundQuantity(symbolInfo, minQuantityToBuy);
+    logger.log("roundedQuantity: " + roundedQuantity);
     return createNewBuyMarketOrder(symbolInfo, roundedQuantity);
   }
 

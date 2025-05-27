@@ -50,7 +50,7 @@ public class ExtractProcessor {
   }
 
   private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
-    return myBtcBalance.multiply(new BigDecimal("1000"))
+    return myBtcBalance.multiply(new BigDecimal("500"))
                        .intValue();
   }
 

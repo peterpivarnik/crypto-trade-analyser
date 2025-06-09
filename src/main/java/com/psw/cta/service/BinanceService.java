@@ -8,24 +8,18 @@ import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
 import static com.psw.cta.dto.binance.FilterType.MIN_NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
 import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
-import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
 import static com.psw.cta.dto.binance.OrderSide.BUY;
 import static com.psw.cta.dto.binance.OrderSide.SELL;
 import static com.psw.cta.dto.binance.OrderType.LIMIT;
 import static com.psw.cta.dto.binance.OrderType.MARKET;
 import static com.psw.cta.dto.binance.TimeInForce.GTC;
-import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
-import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static java.lang.System.currentTimeMillis;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.math.RoundingMode.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
@@ -46,8 +40,6 @@ import com.psw.cta.dto.binance.TimeInForce;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.security.AuthenticationInterceptor;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -55,21 +47,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
-import okhttp3.ResponseBody;
 import org.apache.commons.lang3.tuple.Pair;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 /**
- * Implementation of Binance's REST API using Retrofit with synchronous/blocking method calls.
+ * Service providing functionality for {@link BinanceClient}.
  */
 public class BinanceService {
 
-  private final BinanceApi binanceApi;
+  private final BinanceClient binanceClient;
   private final LambdaLogger logger;
 
   /**
@@ -79,27 +64,8 @@ public class BinanceService {
    * @param secret Api secret
    */
   public BinanceService(String apiKey, String secret, LambdaLogger logger) {
-    this.binanceApi = new Retrofit.Builder().baseUrl(API_BASE_URL)
-                                            .client(getOkHttpClient(apiKey, secret))
-                                            .addConverterFactory(JacksonConverterFactory.create())
-                                            .build()
-                                            .create(BinanceApi.class);
+    this.binanceClient = new BinanceClient(apiKey, secret, logger);
     this.logger = logger;
-  }
-
-  private OkHttpClient getOkHttpClient(String apiKey, String secret) {
-    return new OkHttpClient.Builder()
-        .dispatcher(getDispatcher())
-        .pingInterval(20, SECONDS)
-        .addInterceptor(new AuthenticationInterceptor(apiKey, secret))
-        .build();
-  }
-
-  private Dispatcher getDispatcher() {
-    Dispatcher dispatcher = new Dispatcher();
-    dispatcher.setMaxRequestsPerHost(500);
-    dispatcher.setMaxRequests(500);
-    return dispatcher;
   }
 
   /**
@@ -109,7 +75,7 @@ public class BinanceService {
    */
   public ExchangeInfo getExchangeInfo() {
     logger.log("Get exchange info.");
-    return executeCall(binanceApi.getExchangeInfo());
+    return binanceClient.getExchangeInfo();
   }
 
   /**
@@ -143,11 +109,10 @@ public class BinanceService {
                                               ChronoUnit chronoUnit) {
     Instant endTime = Instant.now();
     Instant startTime = endTime.minus(numberOfTimeUnits, chronoUnit);
-    return executeCall(binanceApi.getCandlestickBars(symbol,
-                                                     interval.getIntervalId(),
-                                                     null,
-                                                     startTime.toEpochMilli(),
-                                                     endTime.toEpochMilli()));
+    return binanceClient.getCandlestickBars(symbol,
+                                            interval.getIntervalId(),
+                                            startTime.toEpochMilli(),
+                                            endTime.toEpochMilli());
   }
 
   /**
@@ -188,7 +153,7 @@ public class BinanceService {
   }
 
   private List<Candlestick> getCandlestickBars(String symbol, CandlestickInterval interval, Integer limit) {
-    return executeCall(binanceApi.getCandlestickBars(symbol, interval.getIntervalId(), limit, null, null));
+    return binanceClient.getCandlestickBars(symbol, interval.getIntervalId(), limit);
   }
 
   /**
@@ -197,7 +162,7 @@ public class BinanceService {
   public List<TickerStatistics> getAll24hTickers() {
     logger.log("Get 24 h Tickers");
     sleep(1000 * 60, logger);
-    return executeCall(binanceApi.getAll24HrPriceStatistics());
+    return binanceClient.getAll24HrPriceStatistics();
   }
 
   /**
@@ -426,15 +391,7 @@ public class BinanceService {
                                           TimeInForce timeInForce,
                                           String quantity,
                                           String price) {
-    NewOrderResponse response = executeCall(binanceApi.newOrder(symbol,
-                                                                orderSide,
-                                                                orderType,
-                                                                timeInForce,
-                                                                quantity,
-                                                                price,
-                                                                RESULT,
-                                                                DEFAULT_RECEIVING_WINDOW,
-                                                                currentTimeMillis()));
+    NewOrderResponse response = binanceClient.newOrder(symbol, orderSide, orderType, timeInForce, quantity, price);
     logger.log("response: " + response);
     return response;
   }
@@ -444,10 +401,7 @@ public class BinanceService {
    */
   public void checkOrderStatus(String symbol, Long orderId) {
     logger.log("Check order status for " + symbol + ", orderId=" + orderId);
-    executeCall(binanceApi.getOrderStatus(symbol,
-                                          orderId,
-                                          DEFAULT_RECEIVING_WINDOW,
-                                          currentTimeMillis()));
+    binanceClient.getOrderStatus(symbol, orderId);
   }
 
   /**
@@ -457,10 +411,8 @@ public class BinanceService {
    */
   public void cancelOrder(OrderWrapper orderWrapper) {
     logger.log("Cancel request for " + orderWrapper);
-    executeCall(binanceApi.cancelOrder(orderWrapper.getOrder().getSymbol(),
-                                       orderWrapper.getOrder().getClientOrderId(),
-                                       DEFAULT_RECEIVING_WINDOW,
-                                       currentTimeMillis()));
+    binanceClient.cancelOrder(orderWrapper.getOrder().getSymbol(),
+                              orderWrapper.getOrder().getClientOrderId());
   }
 
   /**
@@ -470,7 +422,7 @@ public class BinanceService {
    */
   public List<Order> getOpenOrders() {
     logger.log("Get open orders");
-    return executeCall(binanceApi.getOpenOrders(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+    return binanceClient.getOpenOrders();
   }
 
   /**
@@ -511,7 +463,7 @@ public class BinanceService {
   }
 
   private Account getAccount() {
-    return executeCall(binanceApi.getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+    return binanceClient.getAccount();
   }
 
   private Pair<BigDecimal, String> mapToAssetAndBalance(AssetBalance assetBalance) {
@@ -539,7 +491,7 @@ public class BinanceService {
   }
 
   private OrderBook getOrderBook(String symbol, Integer limit) {
-    return executeCall(binanceApi.getOrderBook(symbol, limit));
+    return binanceClient.getOrderBook(symbol, limit);
   }
 
   /**
@@ -571,7 +523,7 @@ public class BinanceService {
   private List<Trade> getMyTrades(String symbol, Long orderId) {
     logger.log("Get my trades for " + symbol + ", orderId=" + orderId);
     sleep(5 * 1000, logger);
-    return executeCall(binanceApi.getMyTrades(symbol, orderId + "", currentTimeMillis()));
+    return binanceClient.getMyTrades(symbol, orderId + "");
   }
 
   private void sleep(int millis, LambdaLogger logger) {
@@ -580,36 +532,6 @@ public class BinanceService {
       Thread.sleep(millis);
     } catch (InterruptedException e) {
       logger.log("Error during sleeping");
-    }
-  }
-
-  private <T> T executeCall(Call<T> call) {
-    Response<T> response;
-    try {
-      response = call.execute();
-    } catch (IOException e) {
-      logger.log("Exception during execution of request: " + e);
-      throw new BinanceApiException(e);
-    }
-    if (response.isSuccessful()) {
-      return response.body();
-    } else {
-      logger.log("Call failed: " + response);
-      logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
-      if (response.body() != null) {
-        logger.log("Call failed with body  " + response.body());
-      }
-      try (ResponseBody errorBody = response.errorBody()) {
-        if (errorBody != null) {
-          try {
-            logger.log("Call failed with errorBody  " + errorBody.string());
-          } catch (IOException e) {
-            logger.log("Exception during parsing response: " + e);
-            throw new BinanceApiException(e);
-          }
-        }
-      }
-      throw new BinanceApiException(response.toString());
     }
   }
 

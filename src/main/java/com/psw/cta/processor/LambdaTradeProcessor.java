@@ -71,8 +71,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     this.repeatTradingProcessor = repeatTradingProcessor;
     this.extractProcessor = extractProcessor;
     this.cancelProcessor = cancelProcessor;
-    this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
     this.logger = logger;
+    this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
   }
 
   private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {

@@ -60,11 +60,11 @@ public class BinanceService {
   /**
    * Default constructor.
    *
-   * @param apiKey Api key
-   * @param secret Api secret
+   * @param binanceClient Binance client
+   * @param logger        Lambda logger for logging errors and messages.
    */
-  public BinanceService(String apiKey, String secret, LambdaLogger logger) {
-    this.binanceClient = new BinanceClient(apiKey, secret, logger);
+  public BinanceService(BinanceClient binanceClient, LambdaLogger logger) {
+    this.binanceClient = binanceClient;
     this.logger = logger;
   }
 

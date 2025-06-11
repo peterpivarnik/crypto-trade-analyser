@@ -27,7 +27,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Trade service for AWS lambda.
+ * Trade service for AWS lambda that processes cryptocurrency trading operations.
+ * Handles splitting, acquiring, repeating, extracting and canceling trade orders
+ * based on various market conditions and trading rules.
  */
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
@@ -41,22 +43,36 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
   private final List<String> allForbiddenPairs;
 
   /**
-   * Default constructor.
+   * Constructs a new LambdaTradeProcessor with the specified dependencies.
    *
-   * @param binanceService Service providing functionality for Binance API
-   * @param forbiddenPairs forbidden pairs
-   * @param logger         logger
+   * @param binanceService         service for executing Binance API operations
+   * @param cryptoProcessor        processor for handling cryptocurrency operations
+   * @param splitProcessor         processor for splitting trade orders
+   * @param acquireProcessor       processor for acquiring new cryptocurrencies
+   * @param repeatTradingProcessor processor for handling repeated trading operations
+   * @param extractProcessor       processor for extracting trade orders
+   * @param cancelProcessor        processor for canceling trade orders
+   * @param forbiddenPairs         list of trading pairs that are forbidden for trading
+   * @param logger                 lambda logger for logging operations
    */
-  public LambdaTradeProcessor(BinanceService binanceService, List<String> forbiddenPairs, LambdaLogger logger) {
+  public LambdaTradeProcessor(BinanceService binanceService,
+                              CryptoProcessor cryptoProcessor,
+                              SplitProcessor splitProcessor,
+                              AcquireProcessor acquireProcessor,
+                              RepeatTradingProcessor repeatTradingProcessor,
+                              ExtractProcessor extractProcessor,
+                              CancelProcessor cancelProcessor,
+                              List<String> forbiddenPairs,
+                              LambdaLogger logger) {
     super(binanceService);
-    this.logger = logger;
-    this.cryptoProcessor = new CryptoProcessor(binanceService, logger);
-    this.splitProcessor = new SplitProcessor(binanceService, logger);
-    this.acquireProcessor = new AcquireProcessor(binanceService, logger);
-    this.repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
-    this.extractProcessor = new ExtractProcessor(binanceService, logger);
-    this.cancelProcessor = new CancelProcessor(binanceService, logger);
+    this.cryptoProcessor = cryptoProcessor;
+    this.splitProcessor = splitProcessor;
+    this.acquireProcessor = acquireProcessor;
+    this.repeatTradingProcessor = repeatTradingProcessor;
+    this.extractProcessor = extractProcessor;
+    this.cancelProcessor = cancelProcessor;
     this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
+    this.logger = logger;
   }
 
   private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {

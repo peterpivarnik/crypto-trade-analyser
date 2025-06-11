@@ -31,7 +31,9 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
- * Main service for start trading crypto.
+ * Main service for cryptocurrency trading operations. This class handles trading initialization,
+ * management of orders, balance tracking, and execution of trading strategies. It supports both
+ * local and AWS Lambda environments.
  */
 public class CryptoTrader {
 
@@ -43,34 +45,36 @@ public class CryptoTrader {
   /**
    * Constructor of {@link CryptoTrader} for local environment.
    *
-   * @param apiKey    ApiKey to be used for trading
-   * @param apiSecret ApiSecret to be used for trading
-   * @param logger    Logger
+   * @param binanceService    Service for interacting with Binance API
+   * @param bnbTradeProcessor Processor for BNB-specific trading operations
+   * @param tradeProcessor    Processor for handling local trading operations
+   * @param logger            Logger for recording trading operations and events
    */
-  public CryptoTrader(String apiKey,
-                      String apiSecret,
+  public CryptoTrader(BinanceService binanceService,
+                      BnbTradeProcessor bnbTradeProcessor,
+                      LocalTradeProcessor tradeProcessor,
                       LambdaLogger logger) {
-    this.binanceService = new BinanceService(apiKey, apiSecret, logger);
-    this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeProcessor = new LocalTradeProcessor(binanceService, logger);
+    this.binanceService = binanceService;
+    this.bnbTradeProcessor = bnbTradeProcessor;
+    this.tradeProcessor = tradeProcessor;
     this.logger = logger;
   }
 
   /**
    * Constructor of {@link CryptoTrader} for AWS environment.
    *
-   * @param apiKey         ApiKey to be used for trading
-   * @param apiSecret      ApiSecret to be used for trading
-   * @param forbiddenPairs Forbidden trading pairs
-   * @param logger         Logger
+   * @param binanceService    Service for interacting with Binance API
+   * @param bnbTradeProcessor Processor for BNB-specific trading operations
+   * @param tradeProcessor    Processor for handling Lambda trading operations
+   * @param logger            Logger for recording trading operations and events
    */
-  public CryptoTrader(String apiKey,
-                      String apiSecret,
-                      List<String> forbiddenPairs,
+  public CryptoTrader(BinanceService binanceService,
+                      BnbTradeProcessor bnbTradeProcessor,
+                      LambdaTradeProcessor tradeProcessor,
                       LambdaLogger logger) {
-    this.binanceService = new BinanceService(apiKey, apiSecret, logger);
-    this.bnbTradeProcessor = new BnbTradeProcessor(binanceService, logger);
-    this.tradeProcessor = new LambdaTradeProcessor(binanceService, forbiddenPairs, logger);
+    this.binanceService = binanceService;
+    this.bnbTradeProcessor = bnbTradeProcessor;
+    this.tradeProcessor = tradeProcessor;
     this.logger = logger;
   }
 

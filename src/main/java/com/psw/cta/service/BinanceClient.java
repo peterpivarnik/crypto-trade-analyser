@@ -1,10 +1,8 @@
 package com.psw.cta.service;
 
 import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
-import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;
 import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
@@ -20,17 +18,11 @@ import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.dto.binance.TimeInForce;
 import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
-import com.psw.cta.security.AuthenticationInterceptor;
 import java.io.IOException;
 import java.util.List;
-import okhttp3.Dispatcher;
-import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
-
 
 /**
  * Client for interacting with Binance API. Provides methods for executing trading operations,
@@ -44,31 +36,12 @@ public class BinanceClient {
   /**
    * Creates a new BinanceClient instance with authentication credentials and logging.
    *
-   * @param apiKey The API key for Binance authentication
-   * @param secret The secret key for Binance authentication
    * @param logger Logger for recording client operations
+   * @param binanceApi Retrofit interface for Binance API
    */
-  public BinanceClient(String apiKey, String secret, LambdaLogger logger) {
+  public BinanceClient(LambdaLogger logger, BinanceApi binanceApi) {
     this.logger = logger;
-    this.binanceApi = new Retrofit.Builder().baseUrl(API_BASE_URL)
-                                            .client(getOkHttpClient(apiKey, secret))
-                                            .addConverterFactory(JacksonConverterFactory.create())
-                                            .build()
-                                            .create(BinanceApi.class);
-  }
-
-  private OkHttpClient getOkHttpClient(String apiKey, String secret) {
-    return new OkHttpClient.Builder().dispatcher(getDispatcher())
-                                     .pingInterval(20, SECONDS)
-                                     .addInterceptor(new AuthenticationInterceptor(apiKey, secret))
-                                     .build();
-  }
-
-  private Dispatcher getDispatcher() {
-    Dispatcher dispatcher = new Dispatcher();
-    dispatcher.setMaxRequestsPerHost(500);
-    dispatcher.setMaxRequests(500);
-    return dispatcher;
+    this.binanceApi = binanceApi;
   }
 
   /**

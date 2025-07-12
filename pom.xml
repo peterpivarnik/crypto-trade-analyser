@@ -17,7 +17,7 @@
         <com.squareup.retrofit2.converter-jackson.version>3.0.0</com.squareup.retrofit2.converter-jackson.version>
         <com.squareup.okhttp3.version>5.0.0-alpha.16</com.squareup.okhttp3.version>
         <commons.codec.commons-codec.version>1.18.0</commons.codec.commons-codec.version>
-        <org.apache.commons.commons-lang3.version>3.17.0</org.apache.commons.commons-lang3.version>
+        <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
         <org.apache.commons.commons-math3.version>3.6.1</org.apache.commons.commons-math3.version>
         <org.junit.jupiter.junit-jupiter-api.version>5.13.1</org.junit.jupiter.junit-jupiter-api.version>
         <org.assertj.assertj-core.version>4.0.0-M1</org.assertj.assertj-core.version>

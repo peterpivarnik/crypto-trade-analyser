@@ -50,7 +50,7 @@ public class BinanceClient {
    * @return Exchange information containing trading rules and symbol details
    */
   public ExchangeInfo getExchangeInfo() {
-    return executeCall(binanceApi.getExchangeInfo());
+    return executeCall(binanceApi.getExchangeInfo("SPOT"));
   }
 
   /**

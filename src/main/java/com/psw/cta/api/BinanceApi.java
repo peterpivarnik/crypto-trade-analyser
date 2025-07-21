@@ -33,8 +33,8 @@ public interface BinanceApi {
    *
    * @return exchange info
    */
-  @GET("/api/v1/exchangeInfo")
-  Call<ExchangeInfo> getExchangeInfo();
+  @GET("/api/v3/exchangeInfo")
+  Call<ExchangeInfo> getExchangeInfo(@Query("permissions") String permissions);
 
   /**
    * Return order book of symbol.

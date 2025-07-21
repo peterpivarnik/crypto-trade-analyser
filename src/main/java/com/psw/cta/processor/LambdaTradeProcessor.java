@@ -126,17 +126,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
-      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-      splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
-      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
-    } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
-      repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
-    } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
-      extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
-    } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
-      extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
     } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
@@ -145,6 +134,17 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
         acquireProcessor.initTrading(cryptos);
       }
+    } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
+      repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
+    } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
+      repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
+    } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
+      extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
+    } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
+      extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
+    } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
+      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+      splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
       cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
     }

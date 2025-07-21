@@ -129,14 +129,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
       List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
       splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-    } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
-      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-      splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
-      BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
-      if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
-        cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-        acquireProcessor.initTrading(cryptos);
-      }
     } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
       repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
     } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
@@ -145,6 +137,14 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
       extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
     } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
       extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
+    } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
+      List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+      splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+      BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
+      if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
+        cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+        acquireProcessor.initTrading(cryptos);
+      }
     } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
       cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
     }

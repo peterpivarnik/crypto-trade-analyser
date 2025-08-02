@@ -275,7 +275,7 @@ public class OrderWrapper {
            + format("orderAmount=%-11s", bigDecimalToString(orderBtcAmount))
            + format("neededAmount=%-11s", bigDecimalToString(neededBtcAmount))
            + format("currentAmount=%-11s", bigDecimalToString(currentBtcAmount))
-           + format("quantity=%-7s", bigDecimalToString(quantity))
+           + format("quantity=%-8s", bigDecimalToString(quantity))
            + format("currentPrice=%-11s", bigDecimalToString(currentPrice))
            + format("orderPrice=%-11s", bigDecimalToString(orderPrice))
            + format("priceToSell=%-11s", bigDecimalToString(priceToSell))

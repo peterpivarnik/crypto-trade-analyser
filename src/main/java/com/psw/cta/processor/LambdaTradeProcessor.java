@@ -201,19 +201,20 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     return allOlderThanDay(orderWrappers) && !haveEnoughBtcToExtractMoreOrders(myBtcBalance);
   }
 
-  private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
-    return orderWrappers.stream()
-                        .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
-                                                              .compareTo(new BigDecimal("24")) > 0);
-  }
-
   private boolean haveEnoughBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
     return myBtcBalance.compareTo(new BigDecimal("0.003")) > 0;
   }
 
   private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-    return allRemainWaitingTimeLessThanZero(orderWrappers)
+    return allOlderThanDay(orderWrappers)
+           && allRemainWaitingTimeLessThanZero(orderWrappers)
            && allNeededBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
+  }
+
+  private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
+    return orderWrappers.stream()
+                        .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
+                                                              .compareTo(new BigDecimal("24")) > 0);
   }
 
   private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {

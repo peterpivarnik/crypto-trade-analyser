@@ -15,30 +15,30 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OrderBookEntry {
 
-  private String price;
-  private String qty;
+    private String price;
+    private String qty;
 
-  public String getPrice() {
-    return price;
-  }
+    public String getPrice() {
+        return price;
+    }
 
-  public void setPrice(String price) {
-    this.price = price;
-  }
+    public void setPrice(String price) {
+        this.price = price;
+    }
 
-  public String getQty() {
-    return qty;
-  }
+    public String getQty() {
+        return qty;
+    }
 
-  public void setQty(String qty) {
-    this.qty = qty;
-  }
+    public void setQty(String qty) {
+        this.qty = qty;
+    }
 
-  @Override
-  public String toString() {
-    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
-        .append("price", price)
-        .append("qty", qty)
-        .toString();
-  }
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
+            .append("price", price)
+            .append("qty", qty)
+            .toString();
+    }
 }

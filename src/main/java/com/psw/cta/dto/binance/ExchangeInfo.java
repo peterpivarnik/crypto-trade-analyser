@@ -14,30 +14,30 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ExchangeInfo {
 
-  private List<SymbolInfo> symbols;
+    private List<SymbolInfo> symbols;
 
-  public List<SymbolInfo> getSymbols() {
-    return symbols;
-  }
+    public List<SymbolInfo> getSymbols() {
+        return symbols;
+    }
 
-  /**
-   * Returns Symbol information.
-   *
-   * @param symbol the symbol to obtain information for (e.g. ETHBTC)
-   * @return symbol exchange information
-   */
-  public SymbolInfo getSymbolInfo(String symbol) {
-    return symbols.stream()
-                  .filter(symbolInfo -> symbolInfo.getSymbol().equals(symbol))
-                  .findFirst()
-                  .orElseThrow(() -> new BinanceApiException(
-                      "Unable to obtain information for symbol " + symbol));
-  }
+    /**
+     * Returns Symbol information.
+     *
+     * @param symbol the symbol to obtain information for (e.g. ETHBTC)
+     * @return symbol exchange information
+     */
+    public SymbolInfo getSymbolInfo(String symbol) {
+        return symbols.stream()
+                      .filter(symbolInfo -> symbolInfo.getSymbol().equals(symbol))
+                      .findFirst()
+                      .orElseThrow(() -> new BinanceApiException(
+                          "Unable to obtain information for symbol " + symbol));
+    }
 
-  @Override
-  public String toString() {
-    return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
-        .append("symbols", symbols)
-        .toString();
-  }
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, TO_STRING_BUILDER_STYLE)
+            .append("symbols", symbols)
+            .toString();
+    }
 }

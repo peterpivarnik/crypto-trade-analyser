@@ -16,39 +16,39 @@ import java.math.BigDecimal;
  */
 public class BnbTradeProcessor {
 
-  public static final BigDecimal MIN_BNB_BALANCE = new BigDecimal("2");
-  public static final BigDecimal MAX_BNB_BALANCE_TO_BUY = ONE;
+    public static final BigDecimal MIN_BNB_BALANCE = new BigDecimal("2");
+    public static final BigDecimal MAX_BNB_BALANCE_TO_BUY = ONE;
 
-  private final LambdaLogger logger;
-  private final BinanceService binanceService;
+    private final LambdaLogger logger;
+    private final BinanceService binanceService;
 
-  /**
-   * Default constructor.
-   *
-   * @param binanceService service for {@link BinanceApi}
-   * @param logger logger
-   */
-  public BnbTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
-    this.logger = logger;
-    this.binanceService = binanceService;
-  }
-
-  /**
-   * Buy BNB to be used for fees on binance exchange.
-   *
-   * @return Actual amount of BNB
-   */
-  public BigDecimal buyBnB(BigDecimal currentBnbBtcPrice, SymbolInfo symbolInfo) {
-    BigDecimal myBnbBalance = binanceService.getMyBalance(ASSET_BNB);
-    if (myBnbBalance.compareTo(MIN_BNB_BALANCE) < 0) {
-      logger.log("***** ***** Buying BNB ***** *****");
-      BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
-      BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
-      logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
-      BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
-      binanceService.buyWithQuantity(symbolInfo, min);
-      return binanceService.getMyBalance(ASSET_BNB);
+    /**
+     * Default constructor.
+     *
+     * @param binanceService service for {@link BinanceApi}
+     * @param logger         logger
+     */
+    public BnbTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
+        this.logger = logger;
+        this.binanceService = binanceService;
     }
-    return myBnbBalance;
-  }
+
+    /**
+     * Buy BNB to be used for fees on binance exchange.
+     *
+     * @return Actual amount of BNB
+     */
+    public BigDecimal buyBnB(BigDecimal currentBnbBtcPrice, SymbolInfo symbolInfo) {
+        BigDecimal myBnbBalance = binanceService.getMyBalance(ASSET_BNB);
+        if (myBnbBalance.compareTo(MIN_BNB_BALANCE) < 0) {
+            logger.log("***** ***** Buying BNB ***** *****");
+            BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+            BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
+            logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
+            BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
+            binanceService.buyWithQuantity(symbolInfo, min);
+            return binanceService.getMyBalance(ASSET_BNB);
+        }
+        return myBnbBalance;
+    }
 }

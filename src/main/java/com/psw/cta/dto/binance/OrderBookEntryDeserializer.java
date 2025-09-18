@@ -12,19 +12,19 @@ import java.io.IOException;
  */
 public class OrderBookEntryDeserializer extends JsonDeserializer<OrderBookEntry> {
 
-  @Override
-  public OrderBookEntry deserialize(JsonParser jp, DeserializationContext ctx) throws IOException {
-    ObjectCodec oc = jp.getCodec();
-    JsonNode node = oc.readTree(jp);
-    final String price = node.get(0).asText();
-    final String qty = node.get(1).asText();
-    return getOrderBookEntry(price, qty);
-  }
+    @Override
+    public OrderBookEntry deserialize(JsonParser jp, DeserializationContext ctx) throws IOException {
+        ObjectCodec oc = jp.getCodec();
+        JsonNode node = oc.readTree(jp);
+        final String price = node.get(0).asText();
+        final String qty = node.get(1).asText();
+        return getOrderBookEntry(price, qty);
+    }
 
-  private OrderBookEntry getOrderBookEntry(String price, String qty) {
-    OrderBookEntry orderBookEntry = new OrderBookEntry();
-    orderBookEntry.setPrice(price);
-    orderBookEntry.setQty(qty);
-    return orderBookEntry;
-  }
+    private OrderBookEntry getOrderBookEntry(String price, String qty) {
+        OrderBookEntry orderBookEntry = new OrderBookEntry();
+        orderBookEntry.setPrice(price);
+        orderBookEntry.setQty(qty);
+        return orderBookEntry;
+    }
 }

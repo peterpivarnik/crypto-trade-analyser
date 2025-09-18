@@ -15,40 +15,41 @@ import java.util.List;
  */
 public class CancelProcessor {
 
-  private final BinanceService binanceService;
-  private final LambdaLogger logger;
+    private final BinanceService binanceService;
+    private final LambdaLogger logger;
 
-  /**
-   * Default constructor.
-   *
-   * @param binanceService service for {@link BinanceApi}
-   * @param logger logger
-   */
-  public CancelProcessor(BinanceService binanceService, LambdaLogger logger) {
-    this.binanceService = binanceService;
-    this.logger = logger;
-  }
+    /**
+     * Default constructor.
+     *
+     * @param binanceService service for {@link BinanceApi}
+     * @param logger         logger
+     */
+    public CancelProcessor(BinanceService binanceService, LambdaLogger logger) {
+        this.binanceService = binanceService;
+        this.logger = logger;
+    }
 
-  /**
-   * Cancel trade.
-   *
-   * @param orderWrappers all orders
-   * @param exchangeInfo  exchange info
-   */
-  public void cancelTrade(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
-    orderWrappers.stream()
-                 .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
-                 .ifPresent(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
-  }
+    /**
+     * Cancel trade.
+     *
+     * @param orderWrappers all orders
+     * @param exchangeInfo  exchange info
+     */
+    public void cancelTrade(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+        orderWrappers.stream()
+                     .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
+                     .ifPresent(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
+    }
 
-  private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
-    logger.log("***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
-    // 1. cancel existing order
-    binanceService.cancelOrder(orderToCancel);
+    private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
+        logger.log(
+            "***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
+        // 1. cancel existing order
+        binanceService.cancelOrder(orderToCancel);
 
-    // 2. sell cancelled order
-    BigDecimal currentQuantity = orderToCancel.getQuantity();
-    SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
-    binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
-  }
+        // 2. sell cancelled order
+        BigDecimal currentQuantity = orderToCancel.getQuantity();
+        SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
+        binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+    }
 }

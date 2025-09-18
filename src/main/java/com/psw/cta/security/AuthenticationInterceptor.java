@@ -17,56 +17,56 @@ import org.jetbrains.annotations.NotNull;
  */
 public class AuthenticationInterceptor implements Interceptor {
 
-  private final String apiKey;
-  private final String secret;
+    private final String apiKey;
+    private final String secret;
 
-  /**
-   * Default constructor.
-   *
-   * @param apiKey api key
-   * @param secret secret
-   */
-  public AuthenticationInterceptor(String apiKey, String secret) {
-    this.apiKey = apiKey;
-    this.secret = secret;
-  }
-
-  @NotNull
-  @Override
-  public Response intercept(Chain chain) throws IOException {
-    Request request = getRequest(chain.request());
-    return chain.proceed(request);
-  }
-
-  @NotNull
-  private Request getRequest(Request originalRequest) {
-    boolean isApiKeyRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_APIKEY) != null;
-    boolean isSignatureRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_SIGNED) != null;
-    String query = originalRequest.url().query();
-    Request.Builder newRequestBuilder =
-        originalRequest.newBuilder()
-                       .removeHeader(ENDPOINT_SECURITY_TYPE_APIKEY)
-                       .removeHeader(ENDPOINT_SECURITY_TYPE_SIGNED)
-                       .url(getUrl(isSignatureRequired, query, originalRequest.url()));
-    if (isApiKeyRequired || isSignatureRequired) {
-      newRequestBuilder.addHeader(API_KEY_HEADER, apiKey);
+    /**
+     * Default constructor.
+     *
+     * @param apiKey api key
+     * @param secret secret
+     */
+    public AuthenticationInterceptor(String apiKey, String secret) {
+        this.apiKey = apiKey;
+        this.secret = secret;
     }
-    return newRequestBuilder.build();
-  }
 
-  @NotNull
-  private HttpUrl getUrl(boolean isSignatureRequired, String query, HttpUrl url) {
-    if (isSignatureRequired && !StringUtils.isEmpty(query)) {
-      return getSignedUrl(query, url);
+    @NotNull
+    @Override
+    public Response intercept(Chain chain) throws IOException {
+        Request request = getRequest(chain.request());
+        return chain.proceed(request);
     }
-    return url;
-  }
 
-  @NotNull
-  private HttpUrl getSignedUrl(String query, HttpUrl url) {
-    String signature = HmacSha256Signer.sign(query, secret);
-    return url.newBuilder()
-              .addQueryParameter("signature", signature)
-              .build();
-  }
+    @NotNull
+    private Request getRequest(Request originalRequest) {
+        boolean isApiKeyRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_APIKEY) != null;
+        boolean isSignatureRequired = originalRequest.header(ENDPOINT_SECURITY_TYPE_SIGNED) != null;
+        String query = originalRequest.url().query();
+        Request.Builder newRequestBuilder =
+            originalRequest.newBuilder()
+                           .removeHeader(ENDPOINT_SECURITY_TYPE_APIKEY)
+                           .removeHeader(ENDPOINT_SECURITY_TYPE_SIGNED)
+                           .url(getUrl(isSignatureRequired, query, originalRequest.url()));
+        if (isApiKeyRequired || isSignatureRequired) {
+            newRequestBuilder.addHeader(API_KEY_HEADER, apiKey);
+        }
+        return newRequestBuilder.build();
+    }
+
+    @NotNull
+    private HttpUrl getUrl(boolean isSignatureRequired, String query, HttpUrl url) {
+        if (isSignatureRequired && !StringUtils.isEmpty(query)) {
+            return getSignedUrl(query, url);
+        }
+        return url;
+    }
+
+    @NotNull
+    private HttpUrl getSignedUrl(String query, HttpUrl url) {
+        String signature = HmacSha256Signer.sign(query, secret);
+        return url.newBuilder()
+                  .addQueryParameter("signature", signature)
+                  .build();
+    }
 }

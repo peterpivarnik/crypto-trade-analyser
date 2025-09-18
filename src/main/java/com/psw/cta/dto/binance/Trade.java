@@ -10,182 +10,182 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Trade {
 
-  /**
-   * Trade id.
-   */
-  private Long id;
+    /**
+     * Trade id.
+     */
+    private Long id;
 
-  /**
-   * Price.
-   */
-  private String price;
+    /**
+     * Price.
+     */
+    private String price;
 
-  /**
-   * Quantity.
-   */
-  private String qty;
+    /**
+     * Quantity.
+     */
+    private String qty;
 
 
-  /**
-   * Quote quantity for the trade (price * qty).
-   */
-  private String quoteQty;
+    /**
+     * Quote quantity for the trade (price * qty).
+     */
+    private String quoteQty;
 
-  /**
-   * Commission.
-   */
-  private String commission;
+    /**
+     * Commission.
+     */
+    private String commission;
 
-  /**
-   * Asset on which commission is taken.
-   */
-  private String commissionAsset;
+    /**
+     * Asset on which commission is taken.
+     */
+    private String commissionAsset;
 
-  /**
-   * Trade execution time.
-   */
-  private long time;
+    /**
+     * Trade execution time.
+     */
+    private long time;
 
-  /**
-   * The symbol of the trade.
-   */
-  private String symbol;
+    /**
+     * The symbol of the trade.
+     */
+    private String symbol;
 
-  @JsonProperty("isBuyer")
-  private boolean buyer;
+    @JsonProperty("isBuyer")
+    private boolean buyer;
 
-  @JsonProperty("isMaker")
-  private boolean maker;
+    @JsonProperty("isMaker")
+    private boolean maker;
 
-  @JsonProperty("isBestMatch")
-  private boolean bestMatch;
+    @JsonProperty("isBestMatch")
+    private boolean bestMatch;
 
-  private String orderId;
+    private String orderId;
 
-  public Long getId() {
-    return id;
-  }
-
-  @JsonSetter("id")
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  /**
-   * Set trade id.
-   *
-   * @param id Id of trade
-   */
-  @JsonSetter("tradeId")
-  public void setTradeId(Long id) {
-    if (this.id == null) {
-      setId(id);
+    public Long getId() {
+        return id;
     }
-  }
 
-  public String getPrice() {
-    return price;
-  }
+    @JsonSetter("id")
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-  public void setPrice(String price) {
-    this.price = price;
-  }
+    /**
+     * Set trade id.
+     *
+     * @param id Id of trade
+     */
+    @JsonSetter("tradeId")
+    public void setTradeId(Long id) {
+        if (this.id == null) {
+            setId(id);
+        }
+    }
 
-  public String getQty() {
-    return qty;
-  }
+    public String getPrice() {
+        return price;
+    }
 
-  public void setQty(String qty) {
-    this.qty = qty;
-  }
+    public void setPrice(String price) {
+        this.price = price;
+    }
 
-  public String getQuoteQty() {
-    return quoteQty;
-  }
+    public String getQty() {
+        return qty;
+    }
 
-  public void setQuoteQty(String quoteQty) {
-    this.quoteQty = quoteQty;
-  }
+    public void setQty(String qty) {
+        this.qty = qty;
+    }
 
-  public String getCommission() {
-    return commission;
-  }
+    public String getQuoteQty() {
+        return quoteQty;
+    }
 
-  public void setCommission(String commission) {
-    this.commission = commission;
-  }
+    public void setQuoteQty(String quoteQty) {
+        this.quoteQty = quoteQty;
+    }
 
-  public String getCommissionAsset() {
-    return commissionAsset;
-  }
+    public String getCommission() {
+        return commission;
+    }
 
-  public void setCommissionAsset(String commissionAsset) {
-    this.commissionAsset = commissionAsset;
-  }
+    public void setCommission(String commission) {
+        this.commission = commission;
+    }
 
-  public long getTime() {
-    return time;
-  }
+    public String getCommissionAsset() {
+        return commissionAsset;
+    }
 
-  public void setTime(long time) {
-    this.time = time;
-  }
+    public void setCommissionAsset(String commissionAsset) {
+        this.commissionAsset = commissionAsset;
+    }
 
-  public String getSymbol() {
-    return symbol;
-  }
+    public long getTime() {
+        return time;
+    }
 
-  public void setSymbol(String symbol) {
-    this.symbol = symbol;
-  }
+    public void setTime(long time) {
+        this.time = time;
+    }
 
-  public boolean isBuyer() {
-    return buyer;
-  }
+    public String getSymbol() {
+        return symbol;
+    }
 
-  public void setBuyer(boolean buyer) {
-    this.buyer = buyer;
-  }
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
 
-  public boolean isMaker() {
-    return maker;
-  }
+    public boolean isBuyer() {
+        return buyer;
+    }
 
-  public void setMaker(boolean maker) {
-    this.maker = maker;
-  }
+    public void setBuyer(boolean buyer) {
+        this.buyer = buyer;
+    }
 
-  public boolean isBestMatch() {
-    return bestMatch;
-  }
+    public boolean isMaker() {
+        return maker;
+    }
 
-  public void setBestMatch(boolean bestMatch) {
-    this.bestMatch = bestMatch;
-  }
+    public void setMaker(boolean maker) {
+        this.maker = maker;
+    }
 
-  public String getOrderId() {
-    return orderId;
-  }
+    public boolean isBestMatch() {
+        return bestMatch;
+    }
 
-  public void setOrderId(String orderId) {
-    this.orderId = orderId;
-  }
+    public void setBestMatch(boolean bestMatch) {
+        this.bestMatch = bestMatch;
+    }
 
-  @Override
-  public String toString() {
-    return "Trade{"
-           + "id=" + id
-           + ", price='" + price
-           + ", qty='" + qty
-           + ", quoteQty='" + quoteQty
-           + ", commission='" + commission
-           + ", commissionAsset='" + commissionAsset
-           + ", time=" + time
-           + ", symbol='" + symbol
-           + ", buyer=" + buyer
-           + ", maker=" + maker
-           + ", bestMatch=" + bestMatch
-           + ", orderId='" + orderId
-           + '}';
-  }
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    @Override
+    public String toString() {
+        return "Trade{"
+               + "id=" + id
+               + ", price='" + price
+               + ", qty='" + qty
+               + ", quoteQty='" + quoteQty
+               + ", commission='" + commission
+               + ", commissionAsset='" + commissionAsset
+               + ", time=" + time
+               + ", symbol='" + symbol
+               + ", buyer=" + buyer
+               + ", maker=" + maker
+               + ", bestMatch=" + bestMatch
+               + ", orderId='" + orderId
+               + '}';
+    }
 }

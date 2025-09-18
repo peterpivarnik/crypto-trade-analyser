@@ -17,46 +17,46 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SymbolFilter {
 
-  private FilterType filterType;
+    private FilterType filterType;
 
-  /**
-   * Defines the intervals that a price/stopPrice can be increased/decreased by.
-   */
-  private String tickSize;
+    /**
+     * Defines the intervals that a price/stopPrice can be increased/decreased by.
+     */
+    private String tickSize;
 
-  /**
-   * Defines the minimum quantity/icebergQty allowed.
-   */
-  private String minQty;
+    /**
+     * Defines the minimum quantity/icebergQty allowed.
+     */
+    private String minQty;
 
-  /**
-   * Defines the intervals that a quantity/icebergQty can be increased/decreased by.
-   */
-  private String stepSize;
+    /**
+     * Defines the intervals that a quantity/icebergQty can be increased/decreased by.
+     */
+    private String stepSize;
 
-  /**
-   * Defines the minimum notional value allowed for an order on a symbol. An order's notional value is the
-   * price * quantity.
-   */
-  private String minNotional;
+    /**
+     * Defines the minimum notional value allowed for an order on a symbol. An order's notional value is the
+     * price * quantity.
+     */
+    private String minNotional;
 
-  public FilterType getFilterType() {
-    return filterType;
-  }
+    public FilterType getFilterType() {
+        return filterType;
+    }
 
-  public String getTickSize() {
-    return tickSize;
-  }
+    public String getTickSize() {
+        return tickSize;
+    }
 
-  public String getMinQty() {
-    return minQty;
-  }
+    public String getMinQty() {
+        return minQty;
+    }
 
-  public String getStepSize() {
-    return stepSize;
-  }
+    public String getStepSize() {
+        return stepSize;
+    }
 
-  public String getMinNotional() {
-    return minNotional;
-  }
+    public String getMinNotional() {
+        return minNotional;
+    }
 }

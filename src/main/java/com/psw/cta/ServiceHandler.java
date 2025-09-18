@@ -17,27 +17,27 @@ import java.util.Map;
  */
 public class ServiceHandler implements RequestHandler<Input, Object> {
 
-  /**
-   * Handles the AWS Lambda function request by initializing trading components and starting the trading process.
-   *
-   * @param input   The input parameters for the Lambda function
-   * @param context The Lambda execution context
-   * @return String message indicating the Lambda function has been invoked
-   */
-  @Override
-  public Object handleRequest(Input input, Context context) {
-    Map<String, String> variables = System.getenv();
-    String forbiddenPairsVariable = variables.get("forbiddenPairs");
-    String apiKey = variables.get("apiKey");
-    String apiSecret = variables.get("apiSecret");
-    LambdaLogger logger = context.getLogger();
-    List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
-    CryptoTrader cryptoTrader = createCryptoTrader(apiKey, apiSecret, logger, forbiddenPairs);
-    cryptoTrader.startTrading();
-    return "Lambda Function is invoked....";
-  }
+    /**
+     * Handles the AWS Lambda function request by initializing trading components and starting the trading process.
+     *
+     * @param input   The input parameters for the Lambda function
+     * @param context The Lambda execution context
+     * @return String message indicating the Lambda function has been invoked
+     */
+    @Override
+    public Object handleRequest(Input input, Context context) {
+        Map<String, String> variables = System.getenv();
+        String forbiddenPairsVariable = variables.get("forbiddenPairs");
+        String apiKey = variables.get("apiKey");
+        String apiSecret = variables.get("apiSecret");
+        LambdaLogger logger = context.getLogger();
+        List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
+        CryptoTrader cryptoTrader = createCryptoTrader(apiKey, apiSecret, logger, forbiddenPairs);
+        cryptoTrader.startTrading();
+        return "Lambda Function is invoked....";
+    }
 
-  private List<String> splitForbiddenPairs(String forbiddenPairs) {
-    return Arrays.asList(forbiddenPairs.split(","));
-  }
+    private List<String> splitForbiddenPairs(String forbiddenPairs) {
+        return Arrays.asList(forbiddenPairs.split(","));
+    }
 }

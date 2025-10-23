@@ -123,7 +123,8 @@ public class BinanceService {
      * @param orderPricePercentage percentual price of order
      * @return candlesticks
      */
-    public List<Candlestick> getCandlesticks(Order order, BigDecimal actualWaitingTime,
+    public List<Candlestick> getCandlesticks(Order order,
+                                             BigDecimal actualWaitingTime,
                                              BigDecimal orderPricePercentage) {
         if (actualWaitingTime.compareTo(ONE) < 0) {
             return getCandlestickList(order,
@@ -150,10 +151,12 @@ public class BinanceService {
     }
 
     private int getTotalTimeUnits(BigDecimal actualWaitingTime, BigDecimal orderPricePercentage, BigDecimal divisor) {
-        BigDecimal baseTimeUnits = actualWaitingTime.divide(divisor, 8, UP).max(ONE);
-        BigDecimal timeUnitsAddition = baseTimeUnits.multiply(orderPricePercentage).divide(new BigDecimal("100"),
-                                                                                           8,
-                                                                                           UP);
+        BigDecimal baseTimeUnits = actualWaitingTime.divide(divisor, 8, UP)
+                                                    .max(ONE);
+        BigDecimal timeUnitsAddition = baseTimeUnits.multiply(orderPricePercentage)
+                                                    .divide(new BigDecimal("100"),
+                                                            8,
+                                                            UP);
         return baseTimeUnits.add(timeUnitsAddition)
                             .setScale(0, UP)
                             .intValue();

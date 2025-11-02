@@ -186,7 +186,7 @@ public class BinanceService {
         logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
         BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
         logger.log("currentPrice: " + currentPrice);
-        return buy(symbolInfo, quantity, currentPrice);
+        return roundQuantityUpAndBuy(symbolInfo, quantity, currentPrice);
     }
 
     /**
@@ -209,6 +209,16 @@ public class BinanceService {
         BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
         logger.log("minQuantityToBuy: " + minQuantityToBuy);
         BigDecimal roundedQuantity = roundQuantity(symbolInfo, minQuantityToBuy);
+        logger.log("roundedQuantity: " + roundedQuantity);
+        return createNewBuyMarketOrder(symbolInfo, roundedQuantity);
+    }
+
+    private NewOrderResponse roundQuantityUpAndBuy(SymbolInfo symbolInfo,
+                                                   BigDecimal quantity,
+                                                   BigDecimal currentPrice) {
+        BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
+        logger.log("minQuantityToBuy: " + minQuantityToBuy);
+        BigDecimal roundedQuantity = roundQuantityUp(symbolInfo, minQuantityToBuy);
         logger.log("roundedQuantity: " + roundedQuantity);
         return createNewBuyMarketOrder(symbolInfo, roundedQuantity);
     }
@@ -355,6 +365,14 @@ public class BinanceService {
                      LOT_SIZE,
                      SymbolFilter::getStepSize,
                      (roundedValue, valueFromFilter) -> roundedValue);
+    }
+
+    private BigDecimal roundQuantityUp(SymbolInfo symbolInfo, BigDecimal quantity) {
+        return round(symbolInfo,
+                     quantity,
+                     LOT_SIZE,
+                     SymbolFilter::getStepSize,
+                     BigDecimal::add);
     }
 
     private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {

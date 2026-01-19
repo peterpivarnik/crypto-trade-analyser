@@ -25,6 +25,7 @@ import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.AssetBalance;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.CandlestickInterval;
+import com.psw.cta.dto.binance.DelistResponse;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.FilterType;
 import com.psw.cta.dto.binance.NewOrderResponse;
@@ -567,5 +568,14 @@ public class BinanceService {
         return myTrades.stream()
                        .map(trade -> new BigDecimal(trade.getQty()).multiply(new BigDecimal(trade.getPrice())))
                        .reduce(ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Get the delist schedule from Binance.
+     *
+     * @return a list of delist responses containing information about symbols scheduled for delisting
+     */
+    public List<DelistResponse> getDelistSchedule() {
+        return binanceClient.getDelistSchedule();
     }
 }

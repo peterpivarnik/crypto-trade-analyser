@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.DelistResponse;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.Order;
@@ -173,6 +174,15 @@ public class BinanceClient {
      */
     public List<Trade> getMyTrades(String symbol, String orderId) {
         return executeCall(binanceApi.getMyTrades(symbol, orderId, currentTimeMillis()));
+    }
+
+    /**
+     * Retrieves the schedule of tokens to be delisted from the exchange.
+     *
+     * @return List of delist responses containing delisting schedule information
+     */
+    public List<DelistResponse> getDelistSchedule() {
+        return executeCall(binanceApi.getDelistSchedule());
     }
 
     private <T> T executeCall(Call<T> call) {

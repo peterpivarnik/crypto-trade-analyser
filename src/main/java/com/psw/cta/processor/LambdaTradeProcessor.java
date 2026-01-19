@@ -21,6 +21,7 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,17 +73,29 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         this.extractProcessor = extractProcessor;
         this.cancelProcessor = cancelProcessor;
         this.logger = logger;
-        this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs);
+        this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs, binanceService);
     }
 
-    private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs) {
+    private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs, BinanceService binanceService) {
+        Set<String> delistedPairs = binanceService.getDelistSchedule()
+                                                  .stream()
+                                                  .map(delistResponse ->
+                                                           delistResponse.getSymbols()
+                                                                         .stream()
+                                                                         .filter(symbol -> symbol.endsWith(ASSET_BTC))
+                                                                         .collect(Collectors.toSet()))
+                                                  .flatMap(Collection::stream)
+                                                  .collect(Collectors.toSet());
+        logger.log("delistedPairs:");
+        delistedPairs.forEach(logger::log);
         List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC, SYMBOL_WBTC_BTC);
-        ArrayList<String> allForbiddenPairs = new ArrayList<>();
-        allForbiddenPairs.addAll(defaultForbiddenPairs);
-        allForbiddenPairs.addAll(forbiddenPairs);
+        ArrayList<String> forbidden = new ArrayList<>();
+        forbidden.addAll(defaultForbiddenPairs);
+        forbidden.addAll(forbiddenPairs);
+        forbidden.addAll(delistedPairs);
         logger.log("ForbiddenPairs:");
-        allForbiddenPairs.forEach(logger::log);
-        return allForbiddenPairs;
+        forbidden.forEach(logger::log);
+        return forbidden;
     }
 
     /**
@@ -110,8 +123,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         BigDecimal ordersAmount = totalAmounts.values()
                                               .stream()
                                               .reduce(ZERO, BigDecimal::add);
-        List<OrderWrapper> orderWrappers = getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)
-            .collect(Collectors.toList());
+        List<OrderWrapper> orderWrappers = getOrderWrapperStream(openOrders,
+                                                                 myBtcBalance,
+                                                                 actualBalance,
+                                                                 totalAmounts)
+            .toList();
         if (!orderSymbolsToSplit.isEmpty()) {
             logger.log("***** ***** Splitting cancelled trades ***** *****");
             orderSymbolsToSplit.forEach(symbol -> {
@@ -142,7 +158,10 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
-        } else if (shouldSplitOrderForQuickerSelling(myBtcBalance, actualBalance, uniqueOpenOrdersSize, totalAmount)) {
+        } else if (shouldSplitOrderForQuickerSelling(myBtcBalance,
+                                                     actualBalance,
+                                                     uniqueOpenOrdersSize,
+                                                     totalAmount)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
         } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
@@ -192,7 +211,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private boolean shouldRebuyAnyOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
         return orderWrappers.stream()
                             .anyMatch(
-                                orderWrapper -> repeatTradingProcessor.shouldBeRebought(orderWrapper, myBtcBalance));
+                                orderWrapper -> repeatTradingProcessor.shouldBeRebought(orderWrapper,
+                                                                                        myBtcBalance));
     }
 
     private boolean shouldExtractMoreOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

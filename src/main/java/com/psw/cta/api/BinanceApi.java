@@ -5,6 +5,7 @@ import static com.psw.cta.utils.BinanceApiConstants.ENDPOINT_SECURITY_TYPE_SIGNE
 import com.psw.cta.dto.binance.Account;
 import com.psw.cta.dto.binance.CancelOrderResponse;
 import com.psw.cta.dto.binance.Candlestick;
+import com.psw.cta.dto.binance.DelistResponse;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.NewOrderResponseType;
@@ -169,4 +170,13 @@ public interface BinanceApi {
     Call<List<Trade>> getMyTrades(@Query("symbol") String symbol,
                                   @Query("orderId") String orderId,
                                   @Query("timestamp") Long timestamp);
+
+    /**
+     * Return information about scheduled delistings.
+     *
+     * @return list of scheduled delistings
+     */
+    @Headers(ENDPOINT_SECURITY_TYPE_SIGNED_HEADER)
+    @GET("/sapi/v1/spot/delist-schedule")
+    Call<List<DelistResponse>> getDelistSchedule();
 }

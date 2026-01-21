@@ -139,7 +139,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                    totalAmounts,
                                                    cryptos);
             });
-        } else if (shouldSplitOrderWithLowestOrderPrice(uniqueOpenOrdersSize, totalAmount, orderWrappers)) {
+        } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
         } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
@@ -176,28 +176,14 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .collect(Collectors.toSet());
     }
 
-    private boolean shouldSplitOrderWithLowestOrderPrice(long uniqueOpenOrdersSize,
-                                                         BigDecimal totalAmount,
-                                                         List<OrderWrapper> orderWrappers) {
-        return uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount)
-               && allOlderThanDay(orderWrappers);
+    private boolean shouldSplitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {
+        return allOrderPricePercentageHigher20(orderWrappers) && allOlderThanDay(orderWrappers);
     }
 
-    private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
-                                                      BigDecimal actualBalance,
-                                                      long uniqueOpenOrdersSize,
-                                                      BigDecimal totalAmount) {
-        return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
-               && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
-    }
-
-    private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
-        return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
-    }
-
-    private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
-                                                                      BigDecimal totalAmount) {
-        return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
+    private boolean allOrderPricePercentageHigher20(List<OrderWrapper> orderWrappers) {
+        return orderWrappers.stream()
+                            .map(OrderWrapper::getOrderPricePercentage)
+                            .allMatch(orderPricePercentage -> orderPricePercentage.compareTo(new BigDecimal("20")) > 0);
     }
 
     private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
@@ -225,6 +211,23 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
     private boolean haveEnoughBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
         return myBtcBalance.compareTo(new BigDecimal("0.003")) > 0;
+    }
+
+    private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
+                                                      BigDecimal actualBalance,
+                                                      long uniqueOpenOrdersSize,
+                                                      BigDecimal totalAmount) {
+        return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
+               && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
+    }
+
+    private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
+        return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
+    }
+
+    private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
+                                                                      BigDecimal totalAmount) {
+        return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

@@ -16,16 +16,14 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Service to split crypto to cryptos with small amount.
  */
-public class SplitProcessor {
+public class SplitProcessor implements CryptoToBuyProvider {
 
     private final BinanceService binanceService;
     private final LambdaLogger logger;
@@ -44,57 +42,57 @@ public class SplitProcessor {
     /**
      * Splits cancelled order.
      *
-     * @param orderWrappers all orders
-     * @param symbol        symbol of order to splitting
-     * @param exchangeInfo  exchange info
-     * @param totalAmounts  map of total amounts
-     * @param cryptos       cryptos for new buy
+     * @param orderWrappers   all orders
+     * @param symbol          symbol of order to splitting
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
      */
     public void splitCancelledOrder(List<OrderWrapper> orderWrappers,
                                     String symbol,
                                     ExchangeInfo exchangeInfo,
-                                    Map<String, BigDecimal> totalAmounts,
-                                    List<Crypto> cryptos) {
+                                    List<Crypto> cryptos,
+                                    Set<String> existingSymbols) {
         orderWrappers.stream()
                      .filter(orderWrapper -> orderWrapper.getOrder()
                                                          .getSymbol()
                                                          .equals(symbol))
                      .findFirst()
-                     .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, totalAmounts, cryptos));
+                     .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, cryptos, existingSymbols));
     }
 
     /**
      * Splits order with lower order price.
      *
-     * @param orderWrappers all orders
-     * @param exchangeInfo  exchange info
-     * @param totalAmounts  map of total amounts
-     * @param cryptos       cryptos for new buy
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
      */
     public void splitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers,
                                                ExchangeInfo exchangeInfo,
-                                               Map<String, BigDecimal> totalAmounts,
-                                               List<Crypto> cryptos) {
+                                               List<Crypto> cryptos,
+                                               Set<String> existingSymbols) {
         logger.log("***** ***** Splitting order with lowest order price percentage ***** *****");
         orderWrappers.stream()
                      .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
                                                          .compareTo(new BigDecimal("0.001")) > 0)
                      .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                     .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, totalAmounts, cryptos));
+                     .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, cryptos, existingSymbols));
     }
 
     /**
      * Split order when have enough BTC balance to have more orders for rebuy.
      *
-     * @param orderWrappers all orders
-     * @param exchangeInfo  exchange info
-     * @param totalAmounts  map of total amounts
-     * @param cryptos       cryptos for new buy
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
      */
     public void splitOrdersForQuickerSelling(List<OrderWrapper> orderWrappers,
                                              ExchangeInfo exchangeInfo,
-                                             Map<String, BigDecimal> totalAmounts,
-                                             List<Crypto> cryptos) {
+                                             List<Crypto> cryptos,
+                                             Set<String> existingSymbols) {
         logger.log("***** ***** Splitting trade for quicker selling ***** *****");
         Predicate<OrderWrapper> orderWrapperPredicate =
             orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
@@ -102,47 +100,47 @@ public class SplitProcessor {
         splitOrderWithHighestOrderAmount(orderWrappers,
                                          orderWrapperPredicate,
                                          exchangeInfo,
-                                         totalAmounts,
-                                         cryptos);
+                                         cryptos,
+                                         existingSymbols);
     }
 
     /**
      * Split order with the highest order btc amount.
      *
-     * @param orderWrappers all orders
-     * @param exchangeInfo  exchange info
-     * @param totalAmounts  map of total amounts
-     * @param cryptos       cryptos for new buy
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
      */
     public void splitHighestOrder(List<OrderWrapper> orderWrappers,
                                   ExchangeInfo exchangeInfo,
-                                  Map<String, BigDecimal> totalAmounts,
-                                  List<Crypto> cryptos) {
+                                  List<Crypto> cryptos,
+                                  Set<String> existingSymbols) {
         logger.log("***** ***** Splitting order with highest btc amount and init trading ***** *****");
         Predicate<OrderWrapper> orderWrapperPredicate =
             orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
         splitOrderWithHighestOrderAmount(orderWrappers,
                                          orderWrapperPredicate,
                                          exchangeInfo,
-                                         totalAmounts,
-                                         cryptos);
+                                         cryptos,
+                                         existingSymbols);
     }
 
     private void splitOrderWithHighestOrderAmount(List<OrderWrapper> orderWrappers,
                                                   Predicate<OrderWrapper> orderWrapperPredicate,
                                                   ExchangeInfo exchangeInfo,
-                                                  Map<String, BigDecimal> totalAmounts,
-                                                  List<Crypto> cryptos) {
+                                                  List<Crypto> cryptos,
+                                                  Set<String> existingSymbols) {
         orderWrappers.stream()
                      .filter(orderWrapperPredicate)
                      .max(comparing(OrderWrapper::getOrderBtcAmount))
-                     .ifPresent(orderWrapper -> split(orderWrapper, exchangeInfo, totalAmounts, cryptos));
+                     .ifPresent(orderWrapper -> split(orderWrapper, exchangeInfo, cryptos, existingSymbols));
     }
 
     private void split(OrderWrapper orderToCancel,
                        ExchangeInfo exchangeInfo,
-                       Map<String, BigDecimal> totalAmounts,
-                       List<Crypto> cryptos) {
+                       List<Crypto> cryptos,
+                       Set<String> existingSymbols) {
         logger.log("***** ***** Splitting amounts ***** *****");
 
         // 0. Check order still exist
@@ -164,19 +162,8 @@ public class SplitProcessor {
         binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
 
         BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
-        List<Crypto> cryptosToBuy = getCryptosToBuy(totalAmounts, cryptos);
+        List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
         buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
-    }
-
-    private List<Crypto> getCryptosToBuy(Map<String, BigDecimal> totalAmounts, List<Crypto> cryptos) {
-        Set<String> existingSymbols = totalAmounts.keySet();
-        return cryptos.stream()
-                      .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
-                      .map(Crypto::calculateSlopeData)
-                      .filter(crypto -> crypto.getPriceCountToSlope().compareTo(ZERO) < 0)
-                      .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
-                      .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
-                      .collect(Collectors.toList());
     }
 
     private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,

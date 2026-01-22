@@ -12,6 +12,7 @@ import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.processor.trade.CancelProcessor;
 import com.psw.cta.processor.trade.CryptoProcessor;
+import com.psw.cta.processor.trade.DivideProcessor;
 import com.psw.cta.processor.trade.ExtractProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
@@ -30,6 +31,13 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
  * and setups for handling market trades through Binance API integration.
  */
 public class IocProvider {
+
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private IocProvider() {
+    }
 
     /**
      * Creates CryptoTrader instance with lambda trade processor and forbidden pairs.
@@ -113,6 +121,7 @@ public class IocProvider {
                                         new RepeatTradingProcessor(binanceService, logger),
                                         new ExtractProcessor(binanceService, logger),
                                         new CancelProcessor(binanceService, logger),
+                                        new DivideProcessor(binanceService, logger),
                                         forbiddenPairs,
                                         logger);
     }

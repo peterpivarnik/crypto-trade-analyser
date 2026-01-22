@@ -11,9 +11,11 @@ import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
+import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.CancelProcessor;
 import com.psw.cta.processor.trade.CryptoProcessor;
+import com.psw.cta.processor.trade.DivideProcessor;
 import com.psw.cta.processor.trade.ExtractProcessor;
 import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
@@ -41,6 +43,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private final RepeatTradingProcessor repeatTradingProcessor;
     private final ExtractProcessor extractProcessor;
     private final CancelProcessor cancelProcessor;
+    private final DivideProcessor divideProcessor;
     private final List<String> allForbiddenPairs;
 
     /**
@@ -53,6 +56,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
      * @param repeatTradingProcessor processor for handling repeated trading operations
      * @param extractProcessor       processor for extracting trade orders
      * @param cancelProcessor        processor for canceling trade orders
+     * @param divideProcessor        processor for dividing trade orders
      * @param forbiddenPairs         list of trading pairs that are forbidden for trading
      * @param logger                 lambda logger for logging operations
      */
@@ -63,6 +67,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                 RepeatTradingProcessor repeatTradingProcessor,
                                 ExtractProcessor extractProcessor,
                                 CancelProcessor cancelProcessor,
+                                DivideProcessor divideProcessor,
                                 List<String> forbiddenPairs,
                                 LambdaLogger logger) {
         super(binanceService);
@@ -72,6 +77,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         this.repeatTradingProcessor = repeatTradingProcessor;
         this.extractProcessor = extractProcessor;
         this.cancelProcessor = cancelProcessor;
+        this.divideProcessor = divideProcessor;
         this.logger = logger;
         this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs, binanceService);
     }
@@ -128,23 +134,23 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                  actualBalance,
                                                                  totalAmounts)
             .toList();
+        Set<String> symbolsToNotSplit = getSymbolsToNotSplit(orderWrappers, orderSymbolsToSplit);
+        orderSymbolsToSplit.removeAll(symbolsToNotSplit);
         if (!orderSymbolsToSplit.isEmpty()) {
             logger.log("***** ***** Splitting cancelled trades ***** *****");
             orderSymbolsToSplit.forEach(symbol -> {
-                List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo,
-                                                                  allForbiddenPairs);
+                List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
                 splitProcessor.splitCancelledOrder(orderWrappers,
                                                    symbol,
                                                    exchangeInfo,
-                                                   totalAmounts,
-                                                   cryptos);
+                                                   cryptos, totalAmounts.keySet());
             });
         } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+            splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
             BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
             if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
                 cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
@@ -163,9 +169,20 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                      uniqueOpenOrdersSize,
                                                      totalAmount)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, totalAmounts, cryptos);
+            splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
             cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
+        }
+        if (!symbolsToNotSplit.isEmpty()) {
+            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            String message = symbolsToNotSplit.stream()
+                                              .map(symbol -> divideProcessor.divide(totalAmounts.keySet(),
+                                                                                    cryptos,
+                                                                                    orderWrappers,
+                                                                                    symbol,
+                                                                                    exchangeInfo))
+                                              .collect(Collectors.joining(";", "Trades to sell: \n", "\n ASAP!"));
+            throw new CryptoTraderException(message);
         }
     }
 
@@ -174,6 +191,18 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .map(Order::getSymbol)
                          .filter(allForbiddenPairs::contains)
                          .collect(Collectors.toSet());
+    }
+
+    private Set<String> getSymbolsToNotSplit(List<OrderWrapper> orderWrappers, Set<String> orderSymbolsToSplit) {
+        return orderWrappers.stream()
+                            .filter(orderWrapper -> orderSymbolsToSplit.contains(
+                                orderWrapper.getOrder()
+                                            .getSymbol()))
+                            .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                                .compareTo(new BigDecimal("45")) > 0)
+                            .map(OrderWrapper::getOrder)
+                            .map(Order::getSymbol)
+                            .collect(Collectors.toSet());
     }
 
     private boolean shouldSplitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {

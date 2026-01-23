@@ -72,31 +72,27 @@ public class DivideProcessor implements CryptoToBuyProvider {
         BigDecimal threeParts = btcAmount.divide(new BigDecimal("16"), 8, UP).multiply(new BigDecimal("3"));
         BigDecimal rest = btcAmount.subtract(sevenParts).subtract(fiveParts).subtract(threeParts);
 
-        String preparedSellOrder1 = buyAndPrepareSell(cryptosToBuy.get(0), sevenParts, orderToCancel);
-        String preparedSellOrder2 = buyAndPrepareSell(cryptosToBuy.get(1), fiveParts, orderToCancel);
-        String preparedSellOrder3 = buyAndPrepareSell(cryptosToBuy.get(2), threeParts, orderToCancel);
-        String preparedSellOrder4 = buyAndPrepareSell(cryptosToBuy.get(3), rest, orderToCancel);
-        return preparedSellOrder1 + "\n" + preparedSellOrder2 + "\n" + preparedSellOrder3 + "\n" + preparedSellOrder4;
+        String prepared1 = prepareBuyAndSell(cryptosToBuy.get(0), sevenParts, orderToCancel);
+        String prepared2 = prepareBuyAndSell(cryptosToBuy.get(1), fiveParts, orderToCancel);
+        String prepared3 = prepareBuyAndSell(cryptosToBuy.get(2), threeParts, orderToCancel);
+        String prepared4 = prepareBuyAndSell(cryptosToBuy.get(3), rest, orderToCancel);
+        return prepared1 + "\n" + prepared2 + "\n" + prepared3 + "\n" + prepared4;
     }
 
-    private String buyAndPrepareSell(Crypto cryptoToBuy, BigDecimal btcAmountToSpend, OrderWrapper orderToCancel) {
-        // 3. buy
-        BigDecimal boughtQuantity = binanceService.buyWithBtcs(cryptoToBuy.getSymbolInfo(), btcAmountToSpend);
-        logger.log("boughtQuantity: " + boughtQuantity);
-
-        // 4. log sell order with price and quantity
+    private String prepareBuyAndSell(Crypto cryptoToBuy, BigDecimal btcAmountToSpend, OrderWrapper orderToCancel) {
+        String preparedBuyOrder = "Symbol: "
+                                  + cryptoToBuy.getSymbolInfo().getSymbol()
+                                  + ", btcAmount: "
+                                  + btcAmountToSpend;
         BigDecimal finalPriceWithProfit = cryptoToBuy.getCurrentPrice()
                                                      .multiply(orderToCancel.getOrderPrice())
                                                      .multiply(new BigDecimal("1.01"))
                                                      .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
-        logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
         String preparedSellOrder = "Symbol: "
                                    + cryptoToBuy.getSymbolInfo().getSymbol()
                                    + ", Price: "
-                                   + finalPriceWithProfit
-                                   + ", Quantity: "
-                                   + boughtQuantity;
-        logger.log(preparedSellOrder);
+                                   + finalPriceWithProfit;
+        logger.log(preparedBuyOrder + "\n" + preparedSellOrder);
         return preparedSellOrder;
     }
 }

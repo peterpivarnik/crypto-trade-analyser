@@ -137,14 +137,16 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         Set<String> symbolsToNotSplit = getSymbolsToNotSplit(orderWrappers, orderSymbolsToSplit);
         orderSymbolsToSplit.removeAll(symbolsToNotSplit);
         if (!orderSymbolsToSplit.isEmpty()) {
-            logger.log("***** ***** Splitting cancelled trades ***** *****");
-            orderSymbolsToSplit.forEach(symbol -> {
-                List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-                splitProcessor.splitCancelledOrder(orderWrappers,
-                                                   symbol,
-                                                   exchangeInfo,
-                                                   cryptos, totalAmounts.keySet());
-            });
+            logger.log("***** ***** Splitting first cancelled trade ***** *****");
+            orderSymbolsToSplit.stream()
+                               .findFirst()
+                               .ifPresent(symbol -> {
+                                   List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+                                   splitProcessor.splitCancelledOrder(orderWrappers,
+                                                                      symbol,
+                                                                      exchangeInfo,
+                                                                      cryptos, totalAmounts.keySet());
+                               });
         } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());

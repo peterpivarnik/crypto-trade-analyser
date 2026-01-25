@@ -6,8 +6,6 @@ import static java.math.RoundingMode.UP;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
-import com.psw.cta.dto.binance.ExchangeInfo;
-import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -42,30 +40,31 @@ public class DivideProcessor implements CryptoToBuyProvider {
      * @param cryptos         the list of available cryptocurrencies
      * @param orderWrappers   the list of order wrappers containing order information
      * @param symbol          the symbol of the order to divide
-     * @param exchangeInfo    the exchange information containing symbol details
      * @return a string containing details of all four prepared sell orders
      */
     public String divide(Set<String> existingSymbols,
                          List<Crypto> cryptos,
                          List<OrderWrapper> orderWrappers,
-                         String symbol,
-                         ExchangeInfo exchangeInfo) {
+                         String symbol) {
         List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
         return orderWrappers.stream()
                             .filter(orderWrapper -> orderWrapper.getOrder().getSymbol().equals(symbol))
                             .findFirst()
-                            .map(orderWrapper -> divideCrypto(orderWrapper, exchangeInfo, cryptosToBuy))
+                            .map(orderWrapper -> divideCrypto(orderWrapper, cryptosToBuy))
                             .orElseThrow();
     }
 
-    private String divideCrypto(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo, List<Crypto> cryptosToBuy) {
+    private String divideCrypto(OrderWrapper orderToCancel, List<Crypto> cryptosToBuy) {
         // 1. cancel existing order
         binanceService.cancelOrder(orderToCancel);
 
-        // 2. sell cancelled order
-        SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
+        // 2. prepare of sell cancelled order
         BigDecimal btcAmount = orderToCancel.getOrderBtcAmount();
-        binanceService.sellAvailableBalance(symbolInfoOfSellOrder, orderToCancel.getQuantity());
+        String returned = "Cancelling order: "
+                          + orderToCancel.getOrder().getSymbol()
+                          + "with quantity: "
+                          + orderToCancel.getQuantity()
+                          + "\n";
 
         BigDecimal sevenParts = btcAmount.divide(new BigDecimal("16"), 8, UP).multiply(new BigDecimal("7"));
         BigDecimal fiveParts = btcAmount.divide(new BigDecimal("16"), 8, UP).multiply(new BigDecimal("5"));
@@ -76,7 +75,7 @@ public class DivideProcessor implements CryptoToBuyProvider {
         String prepared2 = prepareBuyAndSell(cryptosToBuy.get(1), fiveParts, orderToCancel);
         String prepared3 = prepareBuyAndSell(cryptosToBuy.get(2), threeParts, orderToCancel);
         String prepared4 = prepareBuyAndSell(cryptosToBuy.get(3), rest, orderToCancel);
-        return prepared1 + "\n" + prepared2 + "\n" + prepared3 + "\n" + prepared4;
+        return returned + "\n" + prepared1 + "\n" + prepared2 + "\n" + prepared3 + "\n" + prepared4;
     }
 
     private String prepareBuyAndSell(Crypto cryptoToBuy, BigDecimal btcAmountToSpend, OrderWrapper orderToCancel) {

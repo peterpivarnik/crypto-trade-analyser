@@ -181,8 +181,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                               .map(symbol -> divideProcessor.divide(totalAmounts.keySet(),
                                                                                     cryptos,
                                                                                     orderWrappers,
-                                                                                    symbol,
-                                                                                    exchangeInfo))
+                                                                                    symbol))
                                               .collect(Collectors.joining(";", "Trades to sell: \n", "\n ASAP!"));
             throw new CryptoTraderException(message);
         }

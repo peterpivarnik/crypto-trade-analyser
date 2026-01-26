@@ -9,6 +9,7 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Service to cancel trade.
@@ -36,14 +37,31 @@ public class CancelProcessor {
      * @param exchangeInfo  exchange info
      */
     public void cancelTrade(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
+        logger.log(
+            "***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
         orderWrappers.stream()
                      .max(Comparator.comparing(OrderWrapper::getCurrentBtcAmount))
                      .ifPresent(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
     }
 
+    /**
+     * Cancel trade for symbols.
+     *
+     * @param symbolsToCancel symbols to be canceled
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     */
+    public void cancelTrade(Set<String> symbolsToCancel,
+                            List<OrderWrapper> orderWrappers,
+                            ExchangeInfo exchangeInfo) {
+        logger.log("***** ***** Cancel orders for symbols: " + symbolsToCancel + " ***** *****");
+        orderWrappers.stream()
+                     .filter(orderWrapper -> symbolsToCancel.contains(orderWrapper.getOrder().getSymbol()))
+                     .forEach(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
+
+    }
+
     private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
-        logger.log(
-            "***** ***** Cancel biggest order due all orders having negative remaining waiting time ***** *****");
         // 1. cancel existing order
         binanceService.cancelOrder(orderToCancel);
 

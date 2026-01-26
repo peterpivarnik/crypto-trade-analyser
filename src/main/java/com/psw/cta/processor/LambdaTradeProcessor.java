@@ -170,7 +170,9 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
         }
         if (!symbolsToNotSplit.isEmpty()) {
-            symbolsToNotSplit.forEach(symbol -> cancelProcessor.cancelTrade(orderWrappers, exchangeInfo));
+            symbolsToNotSplit.forEach(symbol -> cancelProcessor.cancelTrade(symbolsToNotSplit,
+                                                                            orderWrappers,
+                                                                            exchangeInfo));
         }
     }
 

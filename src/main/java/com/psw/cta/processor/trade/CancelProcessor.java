@@ -9,7 +9,6 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Service to cancel trade.
@@ -45,23 +44,12 @@ public class CancelProcessor {
     }
 
     /**
-     * Cancel trade for symbols.
+     * Cancel an existing order and sell the cancelled order's quantity.
      *
-     * @param symbolsToCancel symbols to be canceled
-     * @param orderWrappers   all orders
-     * @param exchangeInfo    exchange info
+     * @param orderToCancel the order to cancel
+     * @param exchangeInfo  exchange info containing symbol information
      */
-    public void cancelTrade(Set<String> symbolsToCancel,
-                            List<OrderWrapper> orderWrappers,
-                            ExchangeInfo exchangeInfo) {
-        logger.log("***** ***** Cancel orders for symbols: " + symbolsToCancel + " ***** *****");
-        orderWrappers.stream()
-                     .filter(orderWrapper -> symbolsToCancel.contains(orderWrapper.getOrder().getSymbol()))
-                     .forEach(orderWrapper -> cancelAndSell(orderWrapper, exchangeInfo));
-
-    }
-
-    private void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
+    public void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
         // 1. cancel existing order
         binanceService.cancelOrder(orderToCancel);
 

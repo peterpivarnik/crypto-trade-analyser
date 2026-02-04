@@ -61,13 +61,21 @@ public class RepeatTradingProcessor {
         orderWrappers.stream()
                      .filter(this::hasMinProfit)
                      .forEach(orderWrapper -> rebuySingleOrder(orderWrapper,
-                                                               (binanceService, wrapper) -> true,
+                                                               (binanceServiceParam, wrapper) -> true,
                                                                exchangeInfo));
     }
 
-    private void rebuySingleOrder(OrderWrapper orderWrapper,
-                                  BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate,
-                                  ExchangeInfo exchangeInfo) {
+    /**
+     * Rebuy a single order by cancelling the existing order and placing a new buy order,
+     * then creating a new sell order with doubled quantity.
+     *
+     * @param orderWrapper    wrapper holding the order to rebuy
+     * @param hasBtcPredicate predicate to check if there is enough BTC balance
+     * @param exchangeInfo    exchange info containing symbol details
+     */
+    public void rebuySingleOrder(OrderWrapper orderWrapper,
+                                 BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate,
+                                 ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Repeat trading ***** *****");
         logger.log("OrderWrapper: " + orderWrapper);
 
@@ -86,8 +94,8 @@ public class RepeatTradingProcessor {
 
         // 3. create new order
         BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
-        BigDecimal completeQuantityToSell =  orderWrapper.getQuantity()
-                                                         .multiply(new BigDecimal("2"));
+        BigDecimal completeQuantityToSell = orderWrapper.getQuantity()
+                                                        .multiply(new BigDecimal("2"));
         binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
     }
 

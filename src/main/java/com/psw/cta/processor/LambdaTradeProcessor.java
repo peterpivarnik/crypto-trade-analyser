@@ -128,19 +128,15 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                  actualBalance,
                                                                  totalAmounts)
             .toList();
-        Set<String> symbolsToNotSplit = getSymbolsToNotSplit(orderWrappers, orderSymbolsToSplit);
-        orderSymbolsToSplit.removeAll(symbolsToNotSplit);
         if (!orderSymbolsToSplit.isEmpty()) {
             logger.log("***** ***** Splitting first cancelled trade ***** *****");
             orderSymbolsToSplit.stream()
                                .findFirst()
-                               .ifPresent(symbol -> {
-                                   List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-                                   splitProcessor.splitCancelledOrder(orderWrappers,
-                                                                      symbol,
-                                                                      exchangeInfo,
-                                                                      cryptos, totalAmounts.keySet());
-                               });
+                               .ifPresent(symbol -> handleDelistedOrder(totalAmounts,
+                                                                        actualBalance,
+                                                                        exchangeInfo,
+                                                                        symbol,
+                                                                        orderWrappers));
         } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
@@ -169,11 +165,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
             cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
         }
-        if (!symbolsToNotSplit.isEmpty()) {
-            symbolsToNotSplit.forEach(symbol -> cancelProcessor.cancelTrade(symbolsToNotSplit,
-                                                                            orderWrappers,
-                                                                            exchangeInfo));
-        }
     }
 
     private Set<String> getOrderSymbolsToSplit(List<Order> openOrders) {
@@ -183,16 +174,26 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .collect(Collectors.toSet());
     }
 
-    private Set<String> getSymbolsToNotSplit(List<OrderWrapper> orderWrappers, Set<String> orderSymbolsToSplit) {
-        return orderWrappers.stream()
-                            .filter(orderWrapper -> orderSymbolsToSplit.contains(
-                                orderWrapper.getOrder()
-                                            .getSymbol()))
-                            .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
-                                                                .compareTo(new BigDecimal("45")) > 0)
-                            .map(OrderWrapper::getOrder)
-                            .map(Order::getSymbol)
-                            .collect(Collectors.toSet());
+    private void handleDelistedOrder(Map<String, BigDecimal> totalAmounts,
+                                     BigDecimal actualBalance,
+                                     ExchangeInfo exchangeInfo,
+                                     String symbol,
+                                     List<OrderWrapper> orderWrappers) {
+        OrderWrapper delistedOrder = orderWrappers.stream()
+                                                  .filter(orderWrapper -> orderWrapper.getOrder()
+                                                                                      .getSymbol()
+                                                                                      .equals(symbol))
+                                                  .findFirst()
+                                                  .orElseThrow();
+        if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) < 0) {
+            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            splitProcessor.splitCancelledOrder(orderWrappers, symbol, exchangeInfo, cryptos, totalAmounts.keySet());
+        } else if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) > 0
+                   && delistedOrder.getCurrentBtcAmount().compareTo(actualBalance) > 0) {
+            repeatTradingProcessor.rebuySingleOrder(delistedOrder, (binanceService, wrapper) -> true, exchangeInfo);
+        } else {
+            cancelProcessor.cancelAndSell(delistedOrder, exchangeInfo);
+        }
     }
 
     private boolean shouldSplitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {

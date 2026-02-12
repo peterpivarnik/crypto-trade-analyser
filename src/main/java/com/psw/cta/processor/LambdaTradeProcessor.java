@@ -185,10 +185,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                                       .equals(symbol))
                                                   .findFirst()
                                                   .orElseThrow();
+        logger.log("Delisted order:" + delistedOrder);
         if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) < 0) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitCancelledOrder(orderWrappers, symbol, exchangeInfo, cryptos, totalAmounts.keySet());
-        } else if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) > 0
+        } else if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) >= 0
                    && delistedOrder.getCurrentBtcAmount().compareTo(actualBalance) > 0) {
             repeatTradingProcessor.rebuySingleOrder(delistedOrder, (binanceService, wrapper) -> true, exchangeInfo);
         } else {

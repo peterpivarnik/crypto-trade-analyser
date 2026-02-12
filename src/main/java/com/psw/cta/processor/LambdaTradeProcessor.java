@@ -133,7 +133,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             orderSymbolsToSplit.stream()
                                .findFirst()
                                .ifPresent(symbol -> handleDelistedOrder(totalAmounts,
-                                                                        actualBalance,
+                                                                        myBtcBalance,
                                                                         exchangeInfo,
                                                                         symbol,
                                                                         orderWrappers));
@@ -175,7 +175,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private void handleDelistedOrder(Map<String, BigDecimal> totalAmounts,
-                                     BigDecimal actualBalance,
+                                     BigDecimal myBtcBalance,
                                      ExchangeInfo exchangeInfo,
                                      String symbol,
                                      List<OrderWrapper> orderWrappers) {
@@ -190,7 +190,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitCancelledOrder(orderWrappers, symbol, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) >= 0
-                   && delistedOrder.getCurrentBtcAmount().compareTo(actualBalance) > 0) {
+                   && delistedOrder.getCurrentBtcAmount().compareTo(myBtcBalance) > 0) {
             repeatTradingProcessor.rebuySingleOrder(delistedOrder, (binanceService, wrapper) -> true, exchangeInfo);
         } else {
             cancelProcessor.cancelAndSell(delistedOrder, exchangeInfo);

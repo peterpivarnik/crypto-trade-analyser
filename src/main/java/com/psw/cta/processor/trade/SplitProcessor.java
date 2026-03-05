@@ -186,10 +186,10 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("fibonacciNumber: " + fibonacciNumber);
         BigDecimal fibonacciAmountToSpend = fibonacciNumber.multiply(minBtcAmountToTrade);
         logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
-        Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-        logger.log("cryptoToBuy: " + cryptoToBuy);
         if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
             logger.log("Splitting normal");
+            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+            logger.log("cryptoToBuy: " + cryptoToBuy);
             buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy);
             buyAndSellWithFibonacci(orderToCancel,
                                     cryptosToBuy,
@@ -197,6 +197,8 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                     cryptoToBuyIndex + 1);
         } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0) {
             logger.log("Splitting for remaining BTC");
+            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+            logger.log("cryptoToBuy: " + cryptoToBuy);
             BigDecimal amountToSpend = minBtcAmountToTrade.multiply(new BigDecimal("2"));
             buyAndSell(orderToCancel, amountToSpend, cryptoToBuy);
             buyAndSellWithFibonacci(orderToCancel,
@@ -205,9 +207,13 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                     cryptoToBuyIndex + 1);
         } else if (fibonacciNumber.compareTo(ZERO) <= 0) {
             logger.log("Splitting for last fibonacci");
+            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+            logger.log("cryptoToBuy: " + cryptoToBuy);
             buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
         } else if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
             logger.log("Splitting for last cryptoToBuy");
+            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+            logger.log("cryptoToBuy: " + cryptoToBuy);
             buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
         }
     }

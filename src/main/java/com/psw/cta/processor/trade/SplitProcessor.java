@@ -173,6 +173,10 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
         logger.log("btcAmountToSpend: " + btcAmountToSpend);
         logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
+        if (cryptoToBuyIndex >= cryptosToBuy.size()) {
+            logger.log("No more cryptos to buy, stopping split.");
+            return;
+        }
         BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
         logger.log("minBtcAmountToTrade: " + minBtcAmountToTrade);
         BigDecimal quarterOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("4"), 8, CEILING);

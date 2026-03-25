@@ -195,7 +195,8 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                     cryptosToBuy,
                                     btcAmountToSpend.subtract(fibonacciAmountToSpend),
                                     cryptoToBuyIndex + 1);
-        } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0) {
+        } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0
+                   && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
             logger.log("Splitting for remaining BTC");
             Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
             logger.log("cryptoToBuy: " + cryptoToBuy);

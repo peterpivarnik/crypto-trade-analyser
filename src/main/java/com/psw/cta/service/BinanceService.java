@@ -232,7 +232,8 @@ public class BinanceService {
         logger.log("minValueFromMinNotionalFilter: " + minValueFromMinNotionalFilter);
         BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
         logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
-        if (quantity.multiply(currentPrice).compareTo(minValueFromMinNotionalFilter) < 0) {
+        BigDecimal minNotionalWithBuffer = minValueFromMinNotionalFilter.multiply(new BigDecimal("1.1"));
+        if (quantity.multiply(currentPrice).compareTo(minNotionalWithBuffer) < 0) {
             BigDecimal minQuantity = minValueFromMinNotionalFilter.divide(currentPrice, 8, CEILING);
             return minQuantity.add(stepSizeFromLotSizeFilter)
                               .add(stepSizeFromLotSizeFilter);

@@ -233,12 +233,10 @@ public class BinanceService {
         BigDecimal stepSizeFromLotSizeFilter = getValueFromFilter(symbolInfo, SymbolFilter::getStepSize, LOT_SIZE);
         logger.log("stepSizeFromLotSizeFilter: " + stepSizeFromLotSizeFilter);
         BigDecimal minNotionalWithBuffer = minValueFromMinNotionalFilter.multiply(new BigDecimal("1.1"));
-        if (quantity.multiply(currentPrice).compareTo(minNotionalWithBuffer) < 0) {
-            BigDecimal minQuantity = minValueFromMinNotionalFilter.divide(currentPrice, 8, CEILING);
-            return minQuantity.add(stepSizeFromLotSizeFilter)
-                              .add(stepSizeFromLotSizeFilter);
-        }
-        return quantity;
+        BigDecimal minQuantity = minNotionalWithBuffer.divide(currentPrice, 8, CEILING)
+                                                      .add(stepSizeFromLotSizeFilter)
+                                                      .add(stepSizeFromLotSizeFilter);
+        return quantity.max(minQuantity);
     }
 
     private NewOrderResponse createNewBuyMarketOrder(SymbolInfo symbolInfo, BigDecimal roundedQuantity) {

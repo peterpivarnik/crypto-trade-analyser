@@ -62,6 +62,25 @@ public class SplitProcessor implements CryptoToBuyProvider {
     }
 
     /**
+     * Splits order with high needed BTC amount (above 0.01).
+     *
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
+     */
+    public void splitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers,
+                                               ExchangeInfo exchangeInfo,
+                                               List<Crypto> cryptos,
+                                               Set<String> existingSymbols) {
+        logger.log("***** ***** Splitting order with high needed BTC amount ***** *****");
+        orderWrappers.stream()
+                     .filter(ow -> ow.getNeededBtcAmount().compareTo(new BigDecimal("0.01")) > 0)
+                     .findFirst()
+                     .ifPresent(ow -> split(ow, exchangeInfo, cryptos, existingSymbols));
+    }
+
+    /**
      * Splits order with lower order price.
      *
      * @param orderWrappers   all orders

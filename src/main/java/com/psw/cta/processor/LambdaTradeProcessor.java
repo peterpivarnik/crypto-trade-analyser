@@ -150,6 +150,17 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             }
         } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
             repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
+        } else if (shouldRebuyOrderWithHighPricePercentage(orderWrappers, myBtcBalance)) {
+            orderWrappers.stream()
+                         .filter(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
+                                       && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0)
+                         .findFirst()
+                         .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(ow,
+                                                                                  (service, wrapper) -> true,
+                                                                                  exchangeInfo));
+        } else if (shouldSplitOrderWithHighNeededAmount(orderWrappers)) {
+            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            splitProcessor.splitOrderWithHighNeededAmount(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
             repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
@@ -249,6 +260,19 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
                                                                       BigDecimal totalAmount) {
         return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
+    }
+
+    private boolean shouldRebuyOrderWithHighPricePercentage(List<OrderWrapper> orderWrappers,
+                                                            BigDecimal myBtcBalance) {
+        return orderWrappers.stream()
+                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
+                                           && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0);
+    }
+
+    private boolean shouldSplitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers) {
+        return orderWrappers.stream()
+                            .map(OrderWrapper::getNeededBtcAmount)
+                            .anyMatch(neededAmount -> neededAmount.compareTo(new BigDecimal("0.01")) > 0);
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

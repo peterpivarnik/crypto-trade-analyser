@@ -182,6 +182,10 @@ public class SplitProcessor implements CryptoToBuyProvider {
 
         BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
         List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
+        if (cryptosToBuy.size() <= 1) {
+            logger.log("Not enough cryptos to split, stopping split.");
+            return;
+        }
         buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
     }
 

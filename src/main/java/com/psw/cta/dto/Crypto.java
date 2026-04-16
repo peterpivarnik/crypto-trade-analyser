@@ -14,7 +14,6 @@ import com.psw.cta.exception.CryptoTraderException;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Object holding information about crypto.
@@ -52,7 +51,7 @@ public class Crypto {
     public Crypto calculateVolume(List<TickerStatistics> tickers) {
         this.volume = tickers.parallelStream()
                              .filter(ticker -> ticker.getSymbol().equals(symbolInfo.getSymbol()))
-                             .map(TickerStatistics::getVolume)
+                             .map(TickerStatistics::getQuoteVolume)
                              .map(BigDecimal::new)
                              .findAny()
                              .orElseThrow(() -> new CryptoTraderException("Ticker with symbol: "
@@ -97,7 +96,7 @@ public class Crypto {
             return currentPrice;
         }
         return fifteenMinutesCandleStickData.stream()
-                                            .skip(size - 4)
+                                            .skip(size - 4L)
                                             .map(Candlestick::getHigh)
                                             .map(BigDecimal::new)
                                             .max(naturalOrder())
@@ -164,7 +163,7 @@ public class Crypto {
     private List<BigDecimal> getAveragePrices(List<Candlestick> threeMonthsCandleStickData) {
         return threeMonthsCandleStickData.parallelStream()
                                          .map(this::getAveragePrice)
-                                         .collect(Collectors.toList());
+                                         .toList();
     }
 
     private BigDecimal calculatePriceCountToSlope(List<BigDecimal> averagePrices) {

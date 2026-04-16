@@ -4,7 +4,6 @@ import static java.math.BigDecimal.ZERO;
 import static java.util.Comparator.comparing;
 
 import com.psw.cta.dto.Crypto;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -28,7 +27,6 @@ public interface CryptoToBuyProvider {
                       .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(Crypto::calculateSlopeData)
                       .filter(crypto -> crypto.getPriceCountToSlope().compareTo(ZERO) < 0)
-                      .filter(crypto -> crypto.getNumberOfCandles().compareTo(new BigDecimal("30")) > 0)
                       .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
                       .toList();
     }

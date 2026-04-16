@@ -13,7 +13,6 @@ import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Service providing functionality to get cryptos.
@@ -52,7 +51,7 @@ public class CryptoProcessor {
                                                                                                .getSymbol()))
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
                                            .map(crypto -> crypto.calculateVolume(tickers))
-                                           .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("100")) > 0)
+                                           .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("2")) > 0)
                                            .map(crypto -> crypto.setThreeMonthsCandleStickData(
                                                binanceService.getCandleStickData(
                                                    crypto.getSymbolInfo().getSymbol(),
@@ -66,7 +65,7 @@ public class CryptoProcessor {
                                            .filter(
                                                crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001"))
                                                          > 0)
-                                           .collect(Collectors.toList());
+                                           .toList();
         logger.log("Cryptos count: " + cryptos.size());
         return cryptos;
     }

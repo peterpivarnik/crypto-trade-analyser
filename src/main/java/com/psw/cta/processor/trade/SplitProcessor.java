@@ -11,6 +11,7 @@ import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
+import com.psw.cta.exception.AcceptedSplitCancellationException;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
@@ -183,8 +184,9 @@ public class SplitProcessor implements CryptoToBuyProvider {
         BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
         List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
         if (cryptosToBuy.size() <= 1) {
-            logger.log("Not enough cryptos to split, stopping split.");
-            return;
+            BigDecimal estimatedLoss = currentQuantity.multiply(orderToCancel.getOrderPrice())
+                                                      .subtract(totalBtcAmountToSpend);
+            throw new AcceptedSplitCancellationException(estimatedLoss);
         }
         buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
     }

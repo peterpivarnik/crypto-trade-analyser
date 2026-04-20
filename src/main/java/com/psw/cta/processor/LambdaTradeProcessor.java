@@ -5,6 +5,7 @@ import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
+import static java.time.ZoneOffset.UTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
@@ -19,6 +20,7 @@ import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -270,9 +272,12 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private boolean shouldSplitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers) {
-        return orderWrappers.stream()
-                            .map(OrderWrapper::getNeededBtcAmount)
-                            .anyMatch(neededAmount -> neededAmount.compareTo(new BigDecimal("0.01")) > 0);
+        LocalTime now = LocalTime.now(UTC);
+        return now.getHour() == 0
+               && now.getMinute() < 30
+               && orderWrappers.stream()
+                               .map(OrderWrapper::getNeededBtcAmount)
+                               .anyMatch(neededAmount -> neededAmount.compareTo(new BigDecimal("0.01")) > 0);
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

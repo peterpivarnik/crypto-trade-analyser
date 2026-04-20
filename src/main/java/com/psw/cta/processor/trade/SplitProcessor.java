@@ -186,7 +186,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
         if (cryptosToBuy.size() <= 1) {
             BigDecimal estimatedLoss = currentQuantity.multiply(orderToCancel.getOrderPrice())
                                                       .subtract(totalBtcAmountToSpend);
-            throw new AcceptedSplitCancellationException(estimatedLoss);
+            throw new AcceptedSplitCancellationException(symbol, estimatedLoss);
         }
         buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
     }

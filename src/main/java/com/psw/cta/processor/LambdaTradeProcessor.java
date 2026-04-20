@@ -275,9 +275,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         LocalTime now = LocalTime.now(UTC);
         return now.getHour() == 0
                && now.getMinute() < 30
-               && orderWrappers.stream()
-                               .map(OrderWrapper::getNeededBtcAmount)
-                               .anyMatch(neededAmount -> neededAmount.compareTo(new BigDecimal("0.01")) > 0);
+               && orderWrappers.stream().anyMatch(SplitProcessor::hasHighNeededBtcAmount);
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

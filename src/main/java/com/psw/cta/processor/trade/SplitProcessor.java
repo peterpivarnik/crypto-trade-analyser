@@ -63,7 +63,8 @@ public class SplitProcessor implements CryptoToBuyProvider {
     }
 
     /**
-     * Splits order with high needed BTC amount (above 0.01).
+     * Splits order with high needed BTC amount. Threshold scales linearly with orderPricePercentage:
+     * higher percentage (more stuck order) → lower required neededBtcAmount to trigger split.
      *
      * @param orderWrappers   all orders
      * @param exchangeInfo    exchange info
@@ -76,9 +77,23 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                                Set<String> existingSymbols) {
         logger.log("***** ***** Splitting order with high needed BTC amount ***** *****");
         orderWrappers.stream()
-                     .filter(ow -> ow.getNeededBtcAmount().compareTo(new BigDecimal("0.01")) > 0)
+                     .filter(SplitProcessor::hasHighNeededBtcAmount)
                      .findFirst()
                      .ifPresent(ow -> split(ow, exchangeInfo, cryptos, existingSymbols));
+    }
+
+    /**
+     * Checks whether the order's needed BTC amount exceeds the dynamic threshold.
+     * Threshold: max(0.002, 0.02 - 0.0004 * orderPricePercentage).
+     *
+     * @param orderWrapper order to evaluate
+     * @return true if neededBtcAmount is above the threshold
+     */
+    public static boolean hasHighNeededBtcAmount(OrderWrapper orderWrapper) {
+        BigDecimal threshold = new BigDecimal("0.02")
+            .subtract(new BigDecimal("0.0004").multiply(orderWrapper.getOrderPricePercentage()))
+            .max(new BigDecimal("0.002"));
+        return orderWrapper.getNeededBtcAmount().compareTo(threshold) > 0;
     }
 
     /**

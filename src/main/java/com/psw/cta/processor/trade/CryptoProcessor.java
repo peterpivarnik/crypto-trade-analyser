@@ -51,7 +51,7 @@ public class CryptoProcessor {
                                                                                                .getSymbol()))
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
                                            .map(crypto -> crypto.calculateVolume(tickers))
-                                           .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("2")) > 0)
+                                           .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("0.5")) > 0)
                                            .map(crypto -> crypto.setThreeMonthsCandleStickData(
                                                binanceService.getCandleStickData(
                                                    crypto.getSymbolInfo().getSymbol(),

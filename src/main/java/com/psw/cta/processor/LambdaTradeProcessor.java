@@ -4,6 +4,7 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_PAXG_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.time.ZoneOffset.UTC;
@@ -91,7 +92,10 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                   .collect(Collectors.toSet());
         logger.log("delistedPairs:");
         delistedPairs.forEach(logger::log);
-        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC, SYMBOL_WBTC_BTC, SYMBOL_PAXG_BTC);
+        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC,
+                                                           SYMBOL_WBTC_BTC,
+                                                           SYMBOL_PAXG_BTC,
+                                                           SYMBOL_XAUT_BTC);
         ArrayList<String> forbidden = new ArrayList<>();
         forbidden.addAll(defaultForbiddenPairs);
         forbidden.addAll(forbiddenPairs);

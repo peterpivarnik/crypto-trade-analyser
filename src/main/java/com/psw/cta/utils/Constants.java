@@ -13,6 +13,7 @@ public class Constants {
     public static final BigDecimal HUNDRED_PERCENT = new BigDecimal("100");
     public static final String SYMBOL_BNB_BTC = "BNBBTC";
     public static final String SYMBOL_WBTC_BTC = "WBTCBTC";
+    public static final String SYMBOL_PAXG_BTC = "PAXGBTC";
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
     public static final BigDecimal MIN_PRICE_TO_SELL_PERCENTAGE = new BigDecimal("0.5");

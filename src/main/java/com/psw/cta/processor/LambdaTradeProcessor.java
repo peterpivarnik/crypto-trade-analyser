@@ -2,6 +2,7 @@ package com.psw.cta.processor;
 
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
+import static com.psw.cta.utils.Constants.SYMBOL_PAXG_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
@@ -90,7 +91,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                   .collect(Collectors.toSet());
         logger.log("delistedPairs:");
         delistedPairs.forEach(logger::log);
-        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC, SYMBOL_WBTC_BTC);
+        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC, SYMBOL_WBTC_BTC, SYMBOL_PAXG_BTC);
         ArrayList<String> forbidden = new ArrayList<>();
         forbidden.addAll(defaultForbiddenPairs);
         forbidden.addAll(forbiddenPairs);
@@ -268,7 +269,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                             BigDecimal myBtcBalance) {
         return orderWrappers.stream()
                             .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
-                                           && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0);
+                                            && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0);
     }
 
     private boolean shouldSplitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers) {

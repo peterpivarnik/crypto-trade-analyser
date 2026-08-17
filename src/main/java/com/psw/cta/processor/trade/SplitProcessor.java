@@ -161,6 +161,28 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                          existingSymbols);
     }
 
+    /**
+     * Split orders with orderPrice percentage > 10.
+     *
+     * @param orderWrappers   all orders
+     * @param exchangeInfo    exchange info
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
+     */
+    public void splitOrdersWithOrderPricePercGreaterThen10(List<OrderWrapper> orderWrappers,
+                                                           ExchangeInfo exchangeInfo,
+                                                           List<Crypto> cryptos,
+                                                           Set<String> existingSymbols) {
+        logger.log("***** ***** Splitting orders with orderPricePercentage > 10 ***** *****");
+        Predicate<OrderWrapper> orderWrapperPredicate =
+            orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0;
+        splitOrderWithHighestOrderAmount(orderWrappers,
+                                         orderWrapperPredicate,
+                                         exchangeInfo,
+                                         cryptos,
+                                         existingSymbols);
+    }
+
     private void splitOrderWithHighestOrderAmount(List<OrderWrapper> orderWrappers,
                                                   Predicate<OrderWrapper> orderWrapperPredicate,
                                                   ExchangeInfo exchangeInfo,

@@ -180,6 +180,12 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                      totalAmount)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
+        } else if (haveOrdersWithOrderPricePercentageGreaterThan10(orderWrappers)) {
+            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            splitProcessor.splitOrdersWithOrderPricePercGreaterThen10(orderWrappers,
+                                                                      exchangeInfo,
+                                                                      cryptos,
+                                                                      totalAmounts.keySet());
         } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
             cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
         }
@@ -281,6 +287,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         return now.getHour() == 0
                && now.getMinute() < 30
                && orderWrappers.stream().anyMatch(SplitProcessor::hasHighNeededBtcAmount);
+    }
+
+    private boolean haveOrdersWithOrderPricePercentageGreaterThan10(List<OrderWrapper> orderWrappers) {
+        return orderWrappers.stream()
+                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0);
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

@@ -291,7 +291,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
     private boolean haveOrdersWithOrderPricePercentageGreaterThan10(List<OrderWrapper> orderWrappers) {
         return orderWrappers.stream()
-                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0);
+                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0
+                                            && ow.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0);
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {

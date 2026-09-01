@@ -90,7 +90,8 @@ public class RepeatTradingProcessor {
 
         // 2. buy
         SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
-        NewOrderResponse orderResponse = binanceService.buyWithQuantity(symbolInfo, orderWrapper.getQuantity());
+        NewOrderResponse orderResponse = binanceService.buyWithQuantityRoundedUp(symbolInfo,
+                                                                                 orderWrapper.getQuantity());
 
         // 3. create new order
         BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);

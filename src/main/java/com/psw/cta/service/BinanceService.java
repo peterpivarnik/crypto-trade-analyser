@@ -181,9 +181,22 @@ public class BinanceService {
      *
      * @param symbolInfo Symbol information
      * @param quantity   quantity to buy
+     */
+    public void buyWithQuantity(SymbolInfo symbolInfo, BigDecimal quantity) {
+        logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
+        BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
+        logger.log("currentPrice: " + currentPrice);
+        roundQuantityAndBuy(symbolInfo, quantity, currentPrice);
+    }
+
+    /**
+     * Buy order with provided quantity rounded up.
+     *
+     * @param symbolInfo Symbol information
+     * @param quantity   quantity to buy
      * @return order response
      */
-    public NewOrderResponse buyWithQuantity(SymbolInfo symbolInfo, BigDecimal quantity) {
+    public NewOrderResponse buyWithQuantityRoundedUp(SymbolInfo symbolInfo, BigDecimal quantity) {
         logger.log("Buy " + symbolInfo.getSymbol() + " with quantity=" + quantity);
         BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
         logger.log("currentPrice: " + currentPrice);
@@ -202,11 +215,11 @@ public class BinanceService {
         BigDecimal currentPrice = getCurrentPrice(symbolInfo.getSymbol());
         logger.log("currentPrice: " + currentPrice);
         BigDecimal myQuantity = btcAmount.divide(currentPrice, 8, CEILING);
-        NewOrderResponse newOrder = buy(symbolInfo, myQuantity, currentPrice);
+        NewOrderResponse newOrder = roundQuantityAndBuy(symbolInfo, myQuantity, currentPrice);
         return new BigDecimal(newOrder.getExecutedQty());
     }
 
-    private NewOrderResponse buy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
+    private NewOrderResponse roundQuantityAndBuy(SymbolInfo symbolInfo, BigDecimal quantity, BigDecimal currentPrice) {
         BigDecimal minQuantityToBuy = getMinQuantityToBuy(symbolInfo, quantity, currentPrice);
         logger.log("minQuantityToBuy: " + minQuantityToBuy);
         BigDecimal roundedQuantity = roundQuantity(symbolInfo, minQuantityToBuy);

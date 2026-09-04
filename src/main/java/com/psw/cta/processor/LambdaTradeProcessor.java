@@ -7,7 +7,6 @@ import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
-import static java.time.ZoneOffset.UTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
@@ -22,7 +21,6 @@ import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -283,10 +281,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private boolean shouldSplitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers) {
-        LocalTime now = LocalTime.now(UTC);
-        return now.getHour() == 0
-               && now.getMinute() < 30
-               && orderWrappers.stream().anyMatch(SplitProcessor::hasHighNeededBtcAmount);
+        return orderWrappers.stream()
+                            .anyMatch(SplitProcessor::hasHighNeededBtcAmount);
     }
 
     private boolean haveOrdersWithOrderPricePercentageGreaterThan10(List<OrderWrapper> orderWrappers) {

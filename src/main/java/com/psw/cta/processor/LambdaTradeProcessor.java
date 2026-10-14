@@ -147,7 +147,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
+            //            splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
             BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
             if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
                 cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);

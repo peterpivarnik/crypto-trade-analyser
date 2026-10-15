@@ -163,9 +163,10 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(ow,
                                                                                   (service, wrapper) -> true,
                                                                                   exchangeInfo));
-        } else if (shouldSplitOrderWithHighNeededAmount(orderWrappers)) {
-            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitOrderWithHighNeededAmount(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
+        //        } else if (shouldSplitOrderWithHighNeededAmount(orderWrappers)) {
+        //            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+        //            splitProcessor.splitOrderWithHighNeededAmount(orderWrappers,
+            //            exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
             repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {

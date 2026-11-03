@@ -527,7 +527,7 @@ public class BinanceService {
         logger.log("Get my actual balance");
         return getAccount()
             .getBalances()
-            .parallelStream()
+            .stream()
             .filter(assetBalance -> !assetBalance.getAsset().equals("NFT"))
             .map(this::mapToAssetAndBalance)
             .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)

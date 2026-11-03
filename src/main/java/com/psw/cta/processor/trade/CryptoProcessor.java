@@ -3,6 +3,7 @@ package com.psw.cta.processor.trade;
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
+import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -13,6 +14,8 @@ import com.psw.cta.dto.binance.TickerStatistics;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Service providing functionality to get cryptos.
@@ -43,8 +46,14 @@ public class CryptoProcessor {
     public List<Crypto> getCryptos(ExchangeInfo exchangeInfo, List<String> allForbiddenPairs) {
         logger.log("Get all cryptos");
         List<TickerStatistics> tickers = binanceService.getAll24hTickers();
+        Map<String, BigDecimal> askPrices = tickers.stream()
+                                                   .filter(ticker -> ticker.getAskPrice() != null)
+                                                   .collect(Collectors.toMap(TickerStatistics::getSymbol,
+                                                                             ticker -> new BigDecimal(
+                                                                                 ticker.getAskPrice()),
+                                                                             (first, second) -> first));
         List<Crypto> cryptos = exchangeInfo.getSymbols()
-                                           .parallelStream()
+                                           .stream()
                                            .map(Crypto::new)
                                            .filter(crypto -> crypto.getSymbolInfo().getSymbol().endsWith(ASSET_BTC))
                                            .filter(crypto -> !allForbiddenPairs.contains(crypto.getSymbolInfo()
@@ -52,6 +61,11 @@ public class CryptoProcessor {
                                            .filter(crypto -> crypto.getSymbolInfo().getStatus() == TRADING)
                                            .map(crypto -> crypto.calculateVolume(tickers))
                                            .filter(crypto -> crypto.getVolume().compareTo(new BigDecimal("0.5")) > 0)
+                                           .map(crypto -> crypto.setCurrentPrice(
+                                               askPrices.getOrDefault(crypto.getSymbolInfo().getSymbol(), ZERO)))
+                                           .filter(
+                                               crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001"))
+                                                         > 0)
                                            .map(crypto -> crypto.setThreeMonthsCandleStickData(
                                                binanceService.getCandleStickData(
                                                    crypto.getSymbolInfo().getSymbol(),
@@ -59,12 +73,6 @@ public class CryptoProcessor {
                                                    90L,
                                                    DAYS)))
                                            .filter(crypto -> crypto.getThreeMonthsCandleStickData().size() >= 90)
-                                           .map(crypto -> crypto.setCurrentPrice(
-                                               binanceService.getCurrentPrice(crypto.getSymbolInfo()
-                                                                                    .getSymbol())))
-                                           .filter(
-                                               crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001"))
-                                                         > 0)
                                            .toList();
         logger.log("Cryptos count: " + cryptos.size());
         return cryptos;

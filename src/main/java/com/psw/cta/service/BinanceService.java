@@ -269,17 +269,36 @@ public class BinanceService {
      *
      * @param symbolInfo Symbol information
      * @param quantity   Quantity to sell
+     * @return BTC actually received from the sale, net of commissions paid in BTC
      */
-    public void sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
+    public BigDecimal sellAvailableBalance(SymbolInfo symbolInfo, BigDecimal quantity) {
         logger.log("Sell available balance for " + symbolInfo.getSymbol() + ", quantity=" + quantity);
         String asset = getAssetFromSymbolInfo(symbolInfo);
         BigDecimal myBalance = waitUntilHaveBalance(asset, quantity);
         BigDecimal roundedBidQuantity = roundQuantity(symbolInfo, myBalance);
-        createNewSellMarketOrder(symbolInfo.getSymbol(), roundedBidQuantity.toPlainString());
+        NewOrderResponse response = createNewSellMarketOrder(symbolInfo.getSymbol(),
+                                                             roundedBidQuantity.toPlainString());
+        BigDecimal receivedBtc = getReceivedBtc(response);
+        logger.log("receivedBtc: " + receivedBtc);
+        return receivedBtc;
     }
 
-    private void createNewSellMarketOrder(String symbol, String quantity) {
-        createNewOrder(symbol, SELL, MARKET, null, quantity, null);
+    private NewOrderResponse createNewSellMarketOrder(String symbol, String quantity) {
+        return createNewOrder(symbol, SELL, MARKET, null, quantity, null);
+    }
+
+    private BigDecimal getReceivedBtc(NewOrderResponse response) {
+        BigDecimal quoteQty = new BigDecimal(response.getCummulativeQuoteQty());
+        if (response.getFills() == null) {
+            return quoteQty;
+        }
+        BigDecimal btcCommission = response.getFills()
+                                           .stream()
+                                           .filter(fill -> ASSET_BTC.equals(fill.getCommissionAsset()))
+                                           .map(Trade::getCommission)
+                                           .map(BigDecimal::new)
+                                           .reduce(ZERO, BigDecimal::add);
+        return quoteQty.subtract(btcCommission);
     }
 
     /**

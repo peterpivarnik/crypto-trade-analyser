@@ -216,9 +216,9 @@ public class SplitProcessor implements CryptoToBuyProvider {
         // 2. sell cancelled order
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
         BigDecimal currentQuantity = orderToCancel.getQuantity();
-        binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
-
-        BigDecimal totalBtcAmountToSpend = currentQuantity.multiply(orderToCancel.getCurrentPrice());
+        BigDecimal totalBtcAmountToSpend = binanceService.sellAvailableBalance(symbolInfoOfSellOrder,
+                                                                               currentQuantity);
+        logger.log("totalBtcAmountToSpend: " + totalBtcAmountToSpend);
         List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
         if (cryptosToBuy.size() <= 1) {
             BigDecimal estimatedLoss = currentQuantity.multiply(orderToCancel.getOrderPrice())

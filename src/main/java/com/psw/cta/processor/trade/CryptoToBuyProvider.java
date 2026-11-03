@@ -30,4 +30,20 @@ public interface CryptoToBuyProvider {
                       .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
                       .toList();
     }
+
+    /**
+     * Fallback when no crypto is in a downtrend: returns cryptos not in existing symbols, sorted from
+     * the flattest trend (lowest slope) to the steepest.
+     *
+     * @param cryptos         list of all available cryptocurrencies to analyze
+     * @param existingSymbols symbols to be filtered out from the list
+     * @return list of cryptocurrencies sorted from the flattest trend
+     */
+    default List<Crypto> getFlattestCryptosToBuy(List<Crypto> cryptos, Set<String> existingSymbols) {
+        return cryptos.stream()
+                      .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
+                      .map(Crypto::calculateSlopeData)
+                      .sorted(comparing(Crypto::getPriceCountToSlope).reversed())
+                      .toList();
+    }
 }

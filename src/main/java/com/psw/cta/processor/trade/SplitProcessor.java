@@ -11,7 +11,6 @@ import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.exception.AcceptedSplitCancellationException;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
@@ -210,22 +209,35 @@ public class SplitProcessor implements CryptoToBuyProvider {
             return;
         }
 
-        // 1. cancel existing order
+        // 1. find cryptos to buy before anything is sold
+        List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
+        if (cryptosToBuy.isEmpty()) {
+            logger.log("No crypto in downtrend, using cryptos with the flattest trend");
+            cryptosToBuy = getFlattestCryptosToBuy(cryptos, existingSymbols);
+        }
+        if (cryptosToBuy.isEmpty()) {
+            logger.log("No crypto available to buy, keeping order " + symbol);
+            return;
+        }
+        logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
+
+        // 2. cancel existing order
         binanceService.cancelOrder(orderToCancel);
 
-        // 2. sell cancelled order
+        // 3. sell cancelled order
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
         BigDecimal currentQuantity = orderToCancel.getQuantity();
         BigDecimal totalBtcAmountToSpend = binanceService.sellAvailableBalance(symbolInfoOfSellOrder,
                                                                                currentQuantity);
         logger.log("totalBtcAmountToSpend: " + totalBtcAmountToSpend);
-        List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
-        if (cryptosToBuy.size() <= 1) {
-            BigDecimal estimatedLoss = currentQuantity.multiply(orderToCancel.getOrderPrice())
-                                                      .subtract(totalBtcAmountToSpend);
-            throw new AcceptedSplitCancellationException(symbol, estimatedLoss);
+
+        // 4. buy new cryptos and place sell orders
+        if (cryptosToBuy.size() == 1) {
+            logger.log("Only one crypto to buy, spending whole amount");
+            buyAndSell(orderToCancel, totalBtcAmountToSpend, cryptosToBuy.get(0));
+        } else {
+            buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
         }
-        buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
     }
 
     private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,

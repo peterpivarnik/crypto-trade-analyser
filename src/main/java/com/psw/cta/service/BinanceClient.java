@@ -21,6 +21,7 @@ import com.psw.cta.dto.binance.Trade;
 import com.psw.cta.exception.BinanceApiException;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -30,6 +31,15 @@ import retrofit2.Response;
  * retrieving market data, and managing orders on the Binance exchange.
  */
 public class BinanceClient {
+
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+    private static final int HTTP_IP_BANNED = 418;
+    private static final String RETRY_AFTER_HEADER = "Retry-After";
+    private static final String USED_WEIGHT_HEADER = "X-MBX-USED-WEIGHT-1M";
+    private static final int MAX_RATE_LIMIT_RETRIES = 2;
+    private static final long MAX_RETRY_AFTER_SECONDS = 60;
+    private static final long DEFAULT_RETRY_AFTER_SECONDS = 10;
+    private static final int WEIGHT_THROTTLE_THRESHOLD = 4800;
 
     private final BinanceApi binanceApi;
     private final LambdaLogger logger;
@@ -51,7 +61,7 @@ public class BinanceClient {
      * @return Exchange information containing trading rules and symbol details
      */
     public ExchangeInfo getExchangeInfo() {
-        return executeCall(binanceApi.getExchangeInfo("SPOT"));
+        return executeCall(() -> binanceApi.getExchangeInfo("SPOT"));
     }
 
     /**
@@ -64,7 +74,7 @@ public class BinanceClient {
      * @return List of candlestick data
      */
     public List<Candlestick> getCandlestickBars(String symbol, String intervalId, Long startTime, Long endTime) {
-        return executeCall(binanceApi.getCandlestickBars(symbol, intervalId, null, startTime, endTime));
+        return executeCall(() -> binanceApi.getCandlestickBars(symbol, intervalId, null, startTime, endTime));
     }
 
     /**
@@ -76,7 +86,7 @@ public class BinanceClient {
      * @return List of candlestick data
      */
     public List<Candlestick> getCandlestickBars(String symbol, String intervalId, Integer limit) {
-        return executeCall(binanceApi.getCandlestickBars(symbol, intervalId, limit, null, null));
+        return executeCall(() -> binanceApi.getCandlestickBars(symbol, intervalId, limit, null, null));
     }
 
     /**
@@ -85,7 +95,7 @@ public class BinanceClient {
      * @return List of 24-hour price statistics for all symbols
      */
     public List<TickerStatistics> getAll24HrPriceStatistics() {
-        return executeCall(binanceApi.getAll24HrPriceStatistics());
+        return executeCall(() -> binanceApi.getAll24HrPriceStatistics());
     }
 
     /**
@@ -105,15 +115,15 @@ public class BinanceClient {
                                      TimeInForce timeInForce,
                                      String quantity,
                                      String price) {
-        return executeCall(binanceApi.newOrder(symbol,
-                                               orderSide,
-                                               orderType,
-                                               timeInForce,
-                                               quantity,
-                                               price,
-                                               RESULT,
-                                               DEFAULT_RECEIVING_WINDOW,
-                                               currentTimeMillis()));
+        return executeCall(() -> binanceApi.newOrder(symbol,
+                                                     orderSide,
+                                                     orderType,
+                                                     timeInForce,
+                                                     quantity,
+                                                     price,
+                                                     RESULT,
+                                                     DEFAULT_RECEIVING_WINDOW,
+                                                     currentTimeMillis()));
     }
 
     /**
@@ -123,7 +133,10 @@ public class BinanceClient {
      * @param orderId ID of the order to check
      */
     public void getOrderStatus(String symbol, Long orderId) {
-        executeCall(binanceApi.getOrderStatus(symbol, orderId, DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+        executeCall(() -> binanceApi.getOrderStatus(symbol,
+                                                   orderId,
+                                                   DEFAULT_RECEIVING_WINDOW,
+                                                   currentTimeMillis()));
     }
 
     /**
@@ -133,7 +146,10 @@ public class BinanceClient {
      * @param clientOrderId Client order ID to cancel
      */
     public void cancelOrder(String symbol, String clientOrderId) {
-        executeCall(binanceApi.cancelOrder(symbol, clientOrderId, DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+        executeCall(() -> binanceApi.cancelOrder(symbol,
+                                                 clientOrderId,
+                                                 DEFAULT_RECEIVING_WINDOW,
+                                                 currentTimeMillis()));
     }
 
     /**
@@ -142,7 +158,7 @@ public class BinanceClient {
      * @return List of currently open orders
      */
     public List<Order> getOpenOrders() {
-        return executeCall(binanceApi.getOpenOrders(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+        return executeCall(() -> binanceApi.getOpenOrders(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
     }
 
     /**
@@ -151,7 +167,7 @@ public class BinanceClient {
      * @return Account information including balances
      */
     public Account getAccount() {
-        return executeCall(binanceApi.getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
+        return executeCall(() -> binanceApi.getAccount(DEFAULT_RECEIVING_WINDOW, currentTimeMillis()));
     }
 
     /**
@@ -162,7 +178,7 @@ public class BinanceClient {
      * @return OrderBook containing bids and asks
      */
     public OrderBook getOrderBook(String symbol, Integer limit) {
-        return executeCall(binanceApi.getOrderBook(symbol, limit));
+        return executeCall(() -> binanceApi.getOrderBook(symbol, limit));
     }
 
     /**
@@ -173,7 +189,7 @@ public class BinanceClient {
      * @return List of trades for the specified order
      */
     public List<Trade> getMyTrades(String symbol, String orderId) {
-        return executeCall(binanceApi.getMyTrades(symbol, orderId, currentTimeMillis()));
+        return executeCall(() -> binanceApi.getMyTrades(symbol, orderId, currentTimeMillis()));
     }
 
     /**
@@ -182,36 +198,106 @@ public class BinanceClient {
      * @return List of delist responses containing delisting schedule information
      */
     public List<DelistResponse> getDelistSchedule() {
-        return executeCall(binanceApi.getDelistSchedule());
+        return executeCall(() -> binanceApi.getDelistSchedule());
     }
 
-    private <T> T executeCall(Call<T> call) {
-        Response<T> response;
+    /**
+     * Executes the call created by the supplier. A new call is created for every attempt, so signed
+     * requests get a fresh timestamp. HTTP 429 is retried (Binance rejects such requests without
+     * executing them, so retrying is safe even for orders), HTTP 418 (IP ban) is never retried.
+     */
+    private <T> T executeCall(Supplier<Call<T>> callSupplier) {
+        for (int attempt = 0; ; attempt++) {
+            Response<T> response = execute(callSupplier.get());
+            throttleIfNearWeightLimit(response);
+            if (response.isSuccessful()) {
+                return response.body();
+            }
+            if (response.code() == HTTP_IP_BANNED) {
+                logFailedResponse(response);
+                throw new BinanceApiException("IP banned by Binance (HTTP 418), retry after "
+                                              + response.headers().get(RETRY_AFTER_HEADER) + " s: " + response);
+            }
+            if (response.code() == HTTP_TOO_MANY_REQUESTS) {
+                long retryAfterSeconds = getRetryAfterSeconds(response);
+                if (attempt < MAX_RATE_LIMIT_RETRIES && retryAfterSeconds <= MAX_RETRY_AFTER_SECONDS) {
+                    logger.log("Rate limited (HTTP 429), retry " + (attempt + 1) + "/" + MAX_RATE_LIMIT_RETRIES
+                               + " after " + retryAfterSeconds + " s");
+                    closeErrorBody(response);
+                    sleep(retryAfterSeconds * 1000);
+                    continue;
+                }
+                logFailedResponse(response);
+                throw new BinanceApiException("Rate limited by Binance (HTTP 429), retry after "
+                                              + retryAfterSeconds + " s: " + response);
+            }
+            logFailedResponse(response);
+            throw new BinanceApiException(response.toString());
+        }
+    }
+
+    private <T> Response<T> execute(Call<T> call) {
         try {
-            response = call.execute();
+            return call.execute();
         } catch (IOException e) {
             logger.log("Exception during execution of request: " + e);
             throw new BinanceApiException(e);
         }
-        if (response.isSuccessful()) {
-            return response.body();
-        } else {
-            logger.log("Call failed: " + response);
-            logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
-            if (response.body() != null) {
-                logger.log("Call failed with body  " + response.body());
+    }
+
+    private long getRetryAfterSeconds(Response<?> response) {
+        String retryAfter = response.headers().get(RETRY_AFTER_HEADER);
+        if (retryAfter == null) {
+            return DEFAULT_RETRY_AFTER_SECONDS;
+        }
+        try {
+            return Long.parseLong(retryAfter.trim());
+        } catch (NumberFormatException e) {
+            return DEFAULT_RETRY_AFTER_SECONDS;
+        }
+    }
+
+    private void throttleIfNearWeightLimit(Response<?> response) {
+        String usedWeight = response.headers().get(USED_WEIGHT_HEADER);
+        if (usedWeight == null) {
+            return;
+        }
+        try {
+            if (Integer.parseInt(usedWeight.trim()) >= WEIGHT_THROTTLE_THRESHOLD) {
+                long millisToNextMinute = 60_000 - (currentTimeMillis() % 60_000) + 1_000;
+                logger.log("Used weight " + usedWeight + " is near the limit, waiting " + millisToNextMinute
+                           + " ms for the next minute window");
+                sleep(millisToNextMinute);
             }
-            try (ResponseBody errorBody = response.errorBody()) {
-                if (errorBody != null) {
-                    try {
-                        logger.log("Call failed with errorBody  " + errorBody.string());
-                    } catch (IOException e) {
-                        logger.log("Exception during parsing response: " + e);
-                        throw new BinanceApiException(e);
-                    }
-                }
+        } catch (NumberFormatException e) {
+            logger.log("Cannot parse " + USED_WEIGHT_HEADER + " header: " + usedWeight);
+        }
+    }
+
+    private void closeErrorBody(Response<?> response) {
+        try (ResponseBody ignored = response.errorBody()) {
+            // only closing the body to release the connection
+        }
+    }
+
+    private void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BinanceApiException(e);
+        }
+    }
+
+    private void logFailedResponse(Response<?> response) {
+        logger.log("Call failed: " + response);
+        logger.log("Call failed with code=" + response.code() + ", and status=" + response.message());
+        try (ResponseBody errorBody = response.errorBody()) {
+            if (errorBody != null) {
+                logger.log("Call failed with errorBody  " + errorBody.string());
             }
-            throw new BinanceApiException(response.toString());
+        } catch (IOException e) {
+            logger.log("Exception during parsing response: " + e);
         }
     }
 }

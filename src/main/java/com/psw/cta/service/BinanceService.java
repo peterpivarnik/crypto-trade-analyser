@@ -55,6 +55,9 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public class BinanceService {
 
+    private static final int BALANCE_WAIT_MAX_ATTEMPTS = 20;
+    private static final int BALANCE_WAIT_DELAY_MILLIS = 500;
+
     private final BinanceClient binanceClient;
     private final LambdaLogger logger;
 
@@ -330,13 +333,23 @@ public class BinanceService {
     }
 
     private BigDecimal waitUntilHaveBalance(String asset, BigDecimal quantity) {
-        BigDecimal myBalance = getMyBalance(asset);
-        if (myBalance.compareTo(quantity) >= 0) {
-            return myBalance;
-        } else {
-            sleep(500, logger);
-            return waitUntilHaveBalance(asset, quantity);
+        BigDecimal myBalance = ZERO;
+        for (int attempt = 1; attempt <= BALANCE_WAIT_MAX_ATTEMPTS; attempt++) {
+            myBalance = getMyBalance(asset);
+            if (myBalance.compareTo(quantity) >= 0) {
+                return myBalance;
+            }
+            if (attempt < BALANCE_WAIT_MAX_ATTEMPTS) {
+                sleep(BALANCE_WAIT_DELAY_MILLIS, logger);
+            }
         }
+        if (myBalance.compareTo(ZERO) > 0) {
+            logger.log("Balance for " + asset + " did not reach " + quantity + " after "
+                       + BALANCE_WAIT_MAX_ATTEMPTS + " attempts, using available balance " + myBalance);
+            return myBalance;
+        }
+        throw new CryptoTraderException("No balance for " + asset + " after " + BALANCE_WAIT_MAX_ATTEMPTS
+                                        + " attempts, expected " + quantity);
     }
 
     private BigDecimal getExtractedBalance(BigDecimal minValueFromMinNotionalFilter,

@@ -153,6 +153,24 @@ class LambdaTradeProcessorTest {
     }
 
     @Test
+    void shouldRebuyOrdersBeforeSplittingOrderWithLowestOrderPrice() {
+        when(repeatTradingProcessor.shouldBeRebought(any(), any())).thenReturn(true);
+
+        tradeOldOrder("0.00013", "0.001");
+
+        verify(repeatTradingProcessor).rebuyOrders(any(), any(), eq(exchangeInfo));
+        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldRebuyOrderWithHighLossBeforeSplittingOrderWithLowestOrderPrice() {
+        tradeOldOrder("0.00016", "10", "0.01", "0.01");
+
+        verify(repeatTradingProcessor).rebuySingleOrder(any(), any(), eq(exchangeInfo));
+        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+    }
+
+    @Test
     void shouldContinueWithExtractWhenNoOrderIsBigEnoughToSplit() {
         tradeOldOrder("0.00013", "5", "0.001", "0.00065");
 
@@ -184,26 +202,50 @@ class LambdaTradeProcessorTest {
 
     @Test
     void shouldCheckCurrentBtcBalanceWhenRebuyingOrderWithHighLoss() {
-        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
-        Order order = order();
-        order.setSymbol(ACTIVE_SYMBOL);
-        order.setPrice("0.0002");
-
-        tradeProcessor.trade(List.of(order),
-                             Map.of(ACTIVE_SYMBOL, new BigDecimal("0.002")),
-                             new BigDecimal("0.005"),
-                             new BigDecimal("2"),
-                             exchangeInfo,
-                             1L,
-                             0);
+        tradeNewOrder("0.0002", "0.02");
 
         ArgumentCaptor<OrderWrapper> wrapper = ArgumentCaptor.forClass(OrderWrapper.class);
         ArgumentCaptor<BiPredicate<BinanceService, OrderWrapper>> hasBtc = ArgumentCaptor.captor();
         verify(repeatTradingProcessor).rebuySingleOrder(wrapper.capture(), hasBtc.capture(), eq(exchangeInfo));
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0009"));
+        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0119"));
         assertThat(hasBtc.getValue().test(binanceService, wrapper.getValue())).isFalse();
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0011"));
+        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0121"));
         assertThat(hasBtc.getValue().test(binanceService, wrapper.getValue())).isTrue();
+    }
+
+    @Test
+    void shouldRebuyOrderWithHighLossWithoutWaiting() {
+        tradeNewOrder("0.00016", "0.01");
+
+        verify(repeatTradingProcessor).rebuySingleOrder(any(), any(), eq(exchangeInfo));
+    }
+
+    @Test
+    void shouldNotRebuyOrderWithHighLossWithoutNeededBtcAmount() {
+        tradeNewOrder("0.00016", "0.005");
+
+        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+    }
+
+    @Test
+    void shouldNotRebuyOrderWithLossBelowThreshold() {
+        tradeNewOrder("0.00014", "0.01");
+
+        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+    }
+
+    private void tradeNewOrder(String orderPrice, String btcBalance) {
+        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        Order order = order();
+        order.setSymbol(ACTIVE_SYMBOL);
+        order.setPrice(orderPrice);
+        tradeProcessor.trade(List.of(order),
+                             Map.of(ACTIVE_SYMBOL, new BigDecimal("0.01")),
+                             new BigDecimal(btcBalance),
+                             new BigDecimal("2"),
+                             exchangeInfo,
+                             1L,
+                             0);
     }
 
     private void tradeOldOrder(String orderPrice, String btcBalance) {

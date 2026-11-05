@@ -31,7 +31,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
     private static final BigDecimal MIN_BTC_BALANCE_TO_EXTRACT = new BigDecimal("0.0002");
     private static final BigDecimal MIN_BTC_BALANCE_TO_EXTRACT_MORE_ORDERS = new BigDecimal("0.003");
-    private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_REBUY_HIGH_LOSS = new BigDecimal("40");
+    private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_REBUY_HIGH_LOSS = new BigDecimal("30");
     private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_SELL_FORBIDDEN_ORDER = new BigDecimal("45");
     private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_OF_ALL_ORDERS_TO_SPLIT = new BigDecimal("20");
     private static final BigDecimal MIN_BTC_TO_ORDERS_RATIO_TO_REBUY_ALL = new BigDecimal("3");
@@ -115,9 +115,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                            exchangeInfo,
                                                                            symbol,
                                                                            orderWrappers));
-        } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
-            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldAcquireNewCryptos(uniqueOpenOrdersSize, minOpenOrders)) {
             BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
             if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
@@ -133,10 +130,13 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(
                              ow,
                              (service, wrapper) -> service.getMyBalance(ASSET_BTC)
-                                                          .compareTo(wrapper.getCurrentBtcAmount()) > 0,
+                                                          .compareTo(wrapper.getNeededBtcAmount()) > 0,
                              exchangeInfo));
         } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
             repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
+        } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
+            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
@@ -242,7 +242,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
 
     private boolean canRebuyOrderWithHighLoss(OrderWrapper orderWrapper, BigDecimal myBtcBalance) {
         return orderWrapper.getOrderPricePercentage().compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_REBUY_HIGH_LOSS) > 0
-               && myBtcBalance.compareTo(orderWrapper.getCurrentBtcAmount()) > 0;
+               && myBtcBalance.compareTo(orderWrapper.getNeededBtcAmount()) > 0;
     }
 
     private boolean haveOrdersToSplitByOrderPricePercentage(List<OrderWrapper> orderWrappers) {

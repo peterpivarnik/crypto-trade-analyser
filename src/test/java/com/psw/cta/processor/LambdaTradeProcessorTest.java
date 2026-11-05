@@ -89,6 +89,16 @@ class LambdaTradeProcessorTest {
         verify(cancelProcessor, never()).cancelAndSell(any(), any());
     }
 
+    @Test
+    void shouldSellDelistedOrderWithHighLossInsteadOfRebuyingIt() {
+        when(binanceService.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.00005"));
+
+        trade();
+
+        verify(cancelProcessor).cancelAndSell(any(), eq(exchangeInfo));
+        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+    }
+
     private void trade() {
         tradeProcessor.trade(List.of(order()),
                              Map.of(SYMBOL, new BigDecimal("0.0011")),

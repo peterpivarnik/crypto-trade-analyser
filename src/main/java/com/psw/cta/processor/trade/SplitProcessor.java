@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 public class SplitProcessor implements CryptoToBuyProvider {
 
     private static final BigDecimal MAX_BTC_AMOUNT_FOR_LAST_CRYPTO = new BigDecimal("0.005");
+    private static final BigDecimal MIN_BTC_AMOUNT_TO_SPLIT = new BigDecimal("0.001");
 
     private final BinanceService binanceService;
     private final LambdaLogger logger;
@@ -109,6 +110,16 @@ public class SplitProcessor implements CryptoToBuyProvider {
     }
 
     /**
+     * Checks whether the order is big enough to be split.
+     *
+     * @param orderWrapper order to evaluate
+     * @return true if order BTC amount is above the minimal amount to split
+     */
+    public static boolean hasEnoughBtcAmountToSplit(OrderWrapper orderWrapper) {
+        return orderWrapper.getOrderBtcAmount().compareTo(MIN_BTC_AMOUNT_TO_SPLIT) > 0;
+    }
+
+    /**
      * Splits order with lower order price.
      *
      * @param orderWrappers   all orders
@@ -122,8 +133,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                                Set<String> existingSymbols) {
         logger.log("***** ***** Splitting order with lowest order price percentage ***** *****");
         orderWrappers.stream()
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                         .compareTo(new BigDecimal("0.001")) > 0)
+                     .filter(SplitProcessor::hasEnoughBtcAmountToSplit)
                      .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
                      .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, cryptos, existingSymbols));
     }
@@ -143,7 +153,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("***** ***** Splitting trade for quicker selling ***** *****");
         Predicate<OrderWrapper> orderWrapperPredicate =
             orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
-                            && orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0;
+                            && hasEnoughBtcAmountToSplit(orderWrapper);
         splitOrderWithHighestOrderAmount(orderWrappers,
                                          orderWrapperPredicate,
                                          exchangeInfo,

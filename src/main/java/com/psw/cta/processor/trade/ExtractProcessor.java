@@ -9,6 +9,7 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service to extract order in two orders.
@@ -42,11 +43,21 @@ public class ExtractProcessor {
                               ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Extracting orders ***** *****");
         orderWrappers.stream()
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0)
-                     .filter(orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0)
+                     .filter(ExtractProcessor::canBeExtracted)
                      .sorted(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
                      .limit(getNumberOfOrdersToExtract(myBtcBalance))
                      .forEach(order -> extractOrder(order, exchangeInfo));
+    }
+
+    /**
+     * Checks whether the order can be extracted when more orders are being extracted.
+     *
+     * @param orderWrapper order to evaluate
+     * @return true if order is big enough and its order price percentage is low enough
+     */
+    public static boolean canBeExtracted(OrderWrapper orderWrapper) {
+        return orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0
+               && orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
     }
 
     private int getNumberOfOrdersToExtract(BigDecimal myBtcBalance) {
@@ -62,10 +73,24 @@ public class ExtractProcessor {
      */
     public void extractOnlyFirstOrder(List<OrderWrapper> orderWrappers, ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Extracting first order ***** *****");
-        orderWrappers.stream()
-                     .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
-                     .filter(orderWrapper -> orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0003")) > 0)
-                     .ifPresent(order -> extractOrder(order, exchangeInfo));
+        getFirstOrderToExtract(orderWrappers).ifPresent(order -> extractOrder(order, exchangeInfo));
+    }
+
+    /**
+     * Checks whether the first order can be extracted.
+     *
+     * @param orderWrappers all orders
+     * @return true if order with the lowest order price percentage is big enough
+     */
+    public static boolean canExtractFirstOrder(List<OrderWrapper> orderWrappers) {
+        return getFirstOrderToExtract(orderWrappers).isPresent();
+    }
+
+    private static Optional<OrderWrapper> getFirstOrderToExtract(List<OrderWrapper> orderWrappers) {
+        return orderWrappers.stream()
+                            .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
+                            .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
+                                                                .compareTo(new BigDecimal("0.0003")) > 0);
     }
 
     private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {

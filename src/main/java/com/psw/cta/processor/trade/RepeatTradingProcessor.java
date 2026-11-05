@@ -66,8 +66,9 @@ public class RepeatTradingProcessor {
     }
 
     /**
-     * Rebuy a single order by cancelling the existing order and placing a new buy order,
-     * then creating a new sell order with doubled quantity.
+     * Rebuy a single order by placing a new buy order and cancelling the existing order,
+     * then creating a new sell order with doubled quantity. The existing order is cancelled
+     * only after the buy succeeds, so a failed buy leaves it untouched.
      *
      * @param orderWrapper    wrapper holding the order to rebuy
      * @param hasBtcPredicate predicate to check if there is enough BTC balance
@@ -85,13 +86,13 @@ public class RepeatTradingProcessor {
             logger.log("Conditions to rebuy crypto not valid.");
             return;
         }
-        // 1. cancel existing order
-        binanceService.cancelOrder(orderWrapper);
-
-        // 2. buy
+        // 1. buy
         SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
         NewOrderResponse orderResponse = binanceService.buyWithQuantityRoundedUp(symbolInfo,
                                                                                  orderWrapper.getQuantity());
+
+        // 2. cancel existing order
+        binanceService.cancelOrder(orderWrapper);
 
         // 3. create new order
         BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);

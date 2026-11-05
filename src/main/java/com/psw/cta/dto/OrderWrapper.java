@@ -174,9 +174,11 @@ public class OrderWrapper {
                                                     HALF_OF_MAX_PROFIT.doubleValue(),
                                                     maxBtcAmountToReduceProfit.doubleValue(),
                                                     HALF_OF_MIN_PROFIT.doubleValue());
-        BigDecimal btcAmountProfitPart = calculateProfitPart(orderBtcAmount,
-                                                             valueOf(regression.getSlope()),
-                                                             valueOf(regression.getIntercept()));
+        BigDecimal btcAmountProfitPart = Double.isNaN(regression.getSlope())
+                                         ? HALF_OF_MIN_PROFIT
+                                         : calculateProfitPart(orderBtcAmount,
+                                                               valueOf(regression.getSlope()),
+                                                               valueOf(regression.getIntercept()));
         BigDecimal ratioProfitPart = calculateProfitPart(btcBalanceToTotalBalanceRatio,
                                                          new BigDecimal("0.1638"),
                                                          new BigDecimal("-0.0138"));

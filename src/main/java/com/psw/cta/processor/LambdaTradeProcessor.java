@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  */
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
+    private static final BigDecimal MIN_BTC_BALANCE_TO_EXTRACT = new BigDecimal("0.0002");
+
     private final LambdaLogger logger;
     private final CryptoProcessor cryptoProcessor;
     private final SplitProcessor splitProcessor;
@@ -159,9 +161,11 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                          .filter(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
                                        && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0)
                          .findFirst()
-                         .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(ow,
-                                                                                  (service, wrapper) -> true,
-                                                                                  exchangeInfo));
+                         .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(
+                             ow,
+                             (service, wrapper) -> service.getMyBalance(ASSET_BTC)
+                                                          .compareTo(wrapper.getCurrentBtcAmount()) > 0,
+                             exchangeInfo));
         //        } else if (shouldSplitOrderWithHighNeededAmount(orderWrappers)) {
         //            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
         //            splitProcessor.splitOrderWithHighNeededAmount(orderWrappers,
@@ -222,7 +226,10 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private boolean shouldSplitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {
-        return allOrderPricePercentageHigher20(orderWrappers) && allOlderThanDay(orderWrappers);
+        return !orderWrappers.isEmpty()
+               && allOrderPricePercentageHigher20(orderWrappers)
+               && allOlderThanDay(orderWrappers)
+               && orderWrappers.stream().anyMatch(SplitProcessor::hasEnoughBtcAmountToSplit);
     }
 
     private boolean allOrderPricePercentageHigher20(List<OrderWrapper> orderWrappers) {
@@ -247,15 +254,24 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private boolean shouldExtractMoreOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-        return allOlderThanDay(orderWrappers) && haveEnoughBtcToExtractMoreOrders(myBtcBalance);
+        return allOlderThanDay(orderWrappers)
+               && haveEnoughBtcToExtractMoreOrders(myBtcBalance)
+               && orderWrappers.stream().anyMatch(ExtractProcessor::canBeExtracted);
     }
 
     private boolean shouldExtractOneOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-        return allOlderThanDay(orderWrappers) && !haveEnoughBtcToExtractMoreOrders(myBtcBalance);
+        return allOlderThanDay(orderWrappers)
+               && !haveEnoughBtcToExtractMoreOrders(myBtcBalance)
+               && !isBtcBalanceBelowMinToExtract(myBtcBalance)
+               && ExtractProcessor.canExtractFirstOrder(orderWrappers);
     }
 
     private boolean haveEnoughBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
         return myBtcBalance.compareTo(new BigDecimal("0.003")) > 0;
+    }
+
+    private boolean isBtcBalanceBelowMinToExtract(BigDecimal myBtcBalance) {
+        return myBtcBalance.compareTo(MIN_BTC_BALANCE_TO_EXTRACT) < 0;
     }
 
     private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
@@ -290,11 +306,12 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private boolean haveOrdersWithOrderPricePercentageGreaterThan10(List<OrderWrapper> orderWrappers) {
         return orderWrappers.stream()
                             .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0
-                                            && ow.getOrderBtcAmount().compareTo(new BigDecimal("0.001")) > 0);
+                                            && SplitProcessor.hasEnoughBtcAmountToSplit(ow));
     }
 
     private boolean shouldCancelTrade(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-        return allOlderThanDay(orderWrappers)
+        return isBtcBalanceBelowMinToExtract(myBtcBalance)
+               && allOlderThanDay(orderWrappers)
                && allRemainWaitingTimeLessThanZero(orderWrappers)
                && allNeededBtcAmountBiggerThanMyBtcBalance(orderWrappers, myBtcBalance);
     }

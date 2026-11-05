@@ -119,7 +119,6 @@ public class CryptoTrader {
                              actualBalance,
                              exchangeInfo,
                              uniqueOpenOrdersSize,
-                             totalAmount,
                              minOpenOrders);
         List<Order> newOpenOrders = binanceService.getOpenOrders();
         Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);

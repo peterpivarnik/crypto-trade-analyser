@@ -35,7 +35,6 @@ public class LocalTradeProcessor extends MainTradeProcessor {
                       BigDecimal actualBalance,
                       ExchangeInfo exchangeInfo,
                       long uniqueOpenOrdersSize,
-                      BigDecimal totalAmount,
                       int minOpenOrders) {
 
         BigDecimal neededBtcAmount = getOrderWrapperStream(openOrders, myBtcBalance, actualBalance, totalAmounts)

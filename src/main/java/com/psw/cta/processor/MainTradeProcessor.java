@@ -49,7 +49,6 @@ public abstract class MainTradeProcessor {
      * @param actualBalance        actual balance of all trades and my btc balance
      * @param exchangeInfo         exchange info
      * @param uniqueOpenOrdersSize number of unique open orders
-     * @param totalAmount          total amount
      * @param minOpenOrders        number of minimum of open orders
      */
     public abstract void trade(List<Order> openOrders,
@@ -58,7 +57,6 @@ public abstract class MainTradeProcessor {
                                BigDecimal actualBalance,
                                ExchangeInfo exchangeInfo,
                                long uniqueOpenOrdersSize,
-                               BigDecimal totalAmount,
                                int minOpenOrders);
 
     /**

@@ -1,6 +1,7 @@
 package com.psw.cta.processor.trade;
 
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
+import static com.psw.cta.utils.Constants.MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
@@ -17,7 +18,6 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -76,40 +76,6 @@ public class SplitProcessor implements CryptoToBuyProvider {
     }
 
     /**
-     * Splits order with high needed BTC amount. Threshold scales linearly with orderPricePercentage:
-     * higher percentage (more stuck order) → lower required neededBtcAmount to trigger split.
-     *
-     * @param orderWrappers   all orders
-     * @param exchangeInfo    exchange info
-     * @param cryptos         cryptos for new buy
-     * @param existingSymbols existing symbols
-     */
-    public void splitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers,
-                                               ExchangeInfo exchangeInfo,
-                                               List<Crypto> cryptos,
-                                               Set<String> existingSymbols) {
-        logger.log("***** ***** Splitting order with high needed BTC amount ***** *****");
-        orderWrappers.stream()
-                     .filter(SplitProcessor::hasHighNeededBtcAmount)
-                     .findFirst()
-                     .ifPresent(ow -> split(ow, exchangeInfo, cryptos, existingSymbols));
-    }
-
-    /**
-     * Checks whether the order's needed BTC amount exceeds the dynamic threshold.
-     * Threshold: max(0.002, 0.02 - 0.0004 * orderPricePercentage).
-     *
-     * @param orderWrapper order to evaluate
-     * @return true if neededBtcAmount is above the threshold
-     */
-    public static boolean hasHighNeededBtcAmount(OrderWrapper orderWrapper) {
-        BigDecimal threshold = new BigDecimal("0.02")
-            .subtract(new BigDecimal("0.0004").multiply(orderWrapper.getOrderPricePercentage()))
-            .max(new BigDecimal("0.002"));
-        return orderWrapper.getNeededBtcAmount().compareTo(threshold) > 0;
-    }
-
-    /**
      * Checks whether the order is big enough to be split.
      *
      * @param orderWrapper order to evaluate
@@ -139,51 +105,6 @@ public class SplitProcessor implements CryptoToBuyProvider {
     }
 
     /**
-     * Split order when have enough BTC balance to have more orders for rebuy.
-     *
-     * @param orderWrappers   all orders
-     * @param exchangeInfo    exchange info
-     * @param cryptos         cryptos for new buy
-     * @param existingSymbols existing symbols
-     */
-    public void splitOrdersForQuickerSelling(List<OrderWrapper> orderWrappers,
-                                             ExchangeInfo exchangeInfo,
-                                             List<Crypto> cryptos,
-                                             Set<String> existingSymbols) {
-        logger.log("***** ***** Splitting trade for quicker selling ***** *****");
-        Predicate<OrderWrapper> orderWrapperPredicate =
-            orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("5")) < 0
-                            && hasEnoughBtcAmountToSplit(orderWrapper);
-        splitOrderWithHighestOrderAmount(orderWrappers,
-                                         orderWrapperPredicate,
-                                         exchangeInfo,
-                                         cryptos,
-                                         existingSymbols);
-    }
-
-    /**
-     * Split order with the highest order btc amount.
-     *
-     * @param orderWrappers   all orders
-     * @param exchangeInfo    exchange info
-     * @param cryptos         cryptos for new buy
-     * @param existingSymbols existing symbols
-     */
-    public void splitHighestOrder(List<OrderWrapper> orderWrappers,
-                                  ExchangeInfo exchangeInfo,
-                                  List<Crypto> cryptos,
-                                  Set<String> existingSymbols) {
-        logger.log("***** ***** Splitting order with highest btc amount and init trading ***** *****");
-        Predicate<OrderWrapper> orderWrapperPredicate =
-            orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
-        splitOrderWithHighestOrderAmount(orderWrappers,
-                                         orderWrapperPredicate,
-                                         exchangeInfo,
-                                         cryptos,
-                                         existingSymbols);
-    }
-
-    /**
      * Split orders with orderPrice percentage > 10.
      *
      * @param orderWrappers   all orders
@@ -196,22 +117,9 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                                            List<Crypto> cryptos,
                                                            Set<String> existingSymbols) {
         logger.log("***** ***** Splitting orders with orderPricePercentage > 10 ***** *****");
-        Predicate<OrderWrapper> orderWrapperPredicate =
-            orderWrapper -> orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0;
-        splitOrderWithHighestOrderAmount(orderWrappers,
-                                         orderWrapperPredicate,
-                                         exchangeInfo,
-                                         cryptos,
-                                         existingSymbols);
-    }
-
-    private void splitOrderWithHighestOrderAmount(List<OrderWrapper> orderWrappers,
-                                                  Predicate<OrderWrapper> orderWrapperPredicate,
-                                                  ExchangeInfo exchangeInfo,
-                                                  List<Crypto> cryptos,
-                                                  Set<String> existingSymbols) {
         orderWrappers.stream()
-                     .filter(orderWrapperPredicate)
+                     .filter(orderWrapper -> orderWrapper.getOrderPricePercentage()
+                                                         .compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT) > 0)
                      .max(comparing(OrderWrapper::getOrderBtcAmount))
                      .ifPresent(orderWrapper -> split(orderWrapper, exchangeInfo, cryptos, existingSymbols));
     }

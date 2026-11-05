@@ -115,7 +115,6 @@ class LambdaTradeProcessorTest {
                              BigDecimal.ONE,
                              exchangeInfo,
                              0L,
-                             BigDecimal.ONE,
                              0);
 
         verify(acquireProcessor).initTrading(any());
@@ -196,7 +195,6 @@ class LambdaTradeProcessorTest {
                              new BigDecimal("2"),
                              exchangeInfo,
                              1L,
-                             new BigDecimal("2"),
                              0);
 
         ArgumentCaptor<OrderWrapper> wrapper = ArgumentCaptor.forClass(OrderWrapper.class);
@@ -226,7 +224,6 @@ class LambdaTradeProcessorTest {
                              new BigDecimal("2"),
                              exchangeInfo,
                              1L,
-                             new BigDecimal("2"),
                              0);
     }
 
@@ -237,7 +234,6 @@ class LambdaTradeProcessorTest {
                              new BigDecimal("2"),
                              exchangeInfo,
                              1L,
-                             new BigDecimal("2"),
                              0);
     }
 

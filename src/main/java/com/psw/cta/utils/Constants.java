@@ -17,6 +17,7 @@ public class Constants {
     public static final String SYMBOL_XAUT_BTC = "XAUTBTC";
     public static final String ASSET_BNB = "BNB";
     public static final String ASSET_BTC = "BTC";
+    public static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT = new BigDecimal("10");
     public static final BigDecimal MIN_PRICE_TO_SELL_PERCENTAGE = new BigDecimal("0.5");
     public static final BigDecimal MIN_PROFIT_PERCENTAGE = MIN_PRICE_TO_SELL_PERCENTAGE.divide(TWO, 8, CEILING);
     public static final BigDecimal[] FIBONACCI_SEQUENCE = new BigDecimal[] {new BigDecimal("2"),

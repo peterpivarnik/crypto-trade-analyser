@@ -1,12 +1,8 @@
 package com.psw.cta.processor;
 
 import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_PAXG_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
+import static com.psw.cta.utils.Constants.MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT;
 import static java.math.BigDecimal.ZERO;
-import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
@@ -21,9 +17,6 @@ import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +30,12 @@ import java.util.stream.Collectors;
 public class LambdaTradeProcessor extends MainTradeProcessor {
 
     private static final BigDecimal MIN_BTC_BALANCE_TO_EXTRACT = new BigDecimal("0.0002");
+    private static final BigDecimal MIN_BTC_BALANCE_TO_EXTRACT_MORE_ORDERS = new BigDecimal("0.003");
+    private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_REBUY_HIGH_LOSS = new BigDecimal("40");
+    private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_TO_SELL_FORBIDDEN_ORDER = new BigDecimal("45");
+    private static final BigDecimal MIN_ORDER_PRICE_PERCENTAGE_OF_ALL_ORDERS_TO_SPLIT = new BigDecimal("20");
+    private static final BigDecimal MIN_BTC_TO_ORDERS_RATIO_TO_REBUY_ALL = new BigDecimal("3");
+    private static final BigDecimal HOURS_IN_DAY = new BigDecimal("24");
 
     private final LambdaLogger logger;
     private final CryptoProcessor cryptoProcessor;
@@ -57,7 +56,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
      * @param repeatTradingProcessor processor for handling repeated trading operations
      * @param extractProcessor       processor for extracting trade orders
      * @param cancelProcessor        processor for canceling trade orders
-     * @param forbiddenPairs         list of trading pairs that are forbidden for trading
+     * @param allForbiddenPairs      list of all trading pairs that are forbidden for trading
      * @param logger                 lambda logger for logging operations
      */
     public LambdaTradeProcessor(BinanceService binanceService,
@@ -67,7 +66,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                 RepeatTradingProcessor repeatTradingProcessor,
                                 ExtractProcessor extractProcessor,
                                 CancelProcessor cancelProcessor,
-                                List<String> forbiddenPairs,
+                                List<String> allForbiddenPairs,
                                 LambdaLogger logger) {
         super(binanceService);
         this.cryptoProcessor = cryptoProcessor;
@@ -77,32 +76,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         this.extractProcessor = extractProcessor;
         this.cancelProcessor = cancelProcessor;
         this.logger = logger;
-        this.allForbiddenPairs = initializeForbiddenPairs(forbiddenPairs, binanceService);
-    }
-
-    private ArrayList<String> initializeForbiddenPairs(List<String> forbiddenPairs, BinanceService binanceService) {
-        Set<String> delistedPairs = binanceService.getDelistSchedule()
-                                                  .stream()
-                                                  .map(delistResponse ->
-                                                           delistResponse.getSymbols()
-                                                                         .stream()
-                                                                         .filter(symbol -> symbol.endsWith(ASSET_BTC))
-                                                                         .collect(Collectors.toSet()))
-                                                  .flatMap(Collection::stream)
-                                                  .collect(Collectors.toSet());
-        logger.log("delistedPairs:");
-        delistedPairs.forEach(logger::log);
-        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC,
-                                                           SYMBOL_WBTC_BTC,
-                                                           SYMBOL_PAXG_BTC,
-                                                           SYMBOL_XAUT_BTC);
-        ArrayList<String> forbidden = new ArrayList<>();
-        forbidden.addAll(defaultForbiddenPairs);
-        forbidden.addAll(forbiddenPairs);
-        forbidden.addAll(delistedPairs);
-        logger.log("ForbiddenPairs:");
-        forbidden.forEach(logger::log);
-        return forbidden;
+        this.allForbiddenPairs = allForbiddenPairs;
     }
 
     /**
@@ -114,7 +88,6 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
      * @param actualBalance        actual balance
      * @param exchangeInfo         exchange trading rules and symbol information
      * @param uniqueOpenOrdersSize number of unique open orders
-     * @param totalAmount          current total amount
      * @param minOpenOrders        minimum of open orders
      */
     @Override
@@ -124,9 +97,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                       BigDecimal actualBalance,
                       ExchangeInfo exchangeInfo,
                       long uniqueOpenOrdersSize,
-                      BigDecimal totalAmount,
                       int minOpenOrders) {
-        Set<String> orderSymbolsToSplit = getOrderSymbolsToSplit(openOrders);
+        Set<String> forbiddenOrderSymbols = getForbiddenOrderSymbols(openOrders);
         BigDecimal ordersAmount = totalAmounts.values()
                                               .stream()
                                               .reduce(ZERO, BigDecimal::add);
@@ -135,20 +107,18 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                  actualBalance,
                                                                  totalAmounts)
             .toList();
-        if (!orderSymbolsToSplit.isEmpty()) {
-            logger.log("***** ***** Splitting first cancelled trade ***** *****");
-            orderSymbolsToSplit.stream()
-                               .findFirst()
-                               .ifPresent(symbol -> handleDelistedOrder(totalAmounts,
-                                                                        exchangeInfo,
-                                                                        symbol,
-                                                                        orderWrappers));
+        if (!forbiddenOrderSymbols.isEmpty()) {
+            logger.log("***** ***** Handling first forbidden order ***** *****");
+            forbiddenOrderSymbols.stream()
+                                 .findFirst()
+                                 .ifPresent(symbol -> handleForbiddenOrder(totalAmounts,
+                                                                           exchangeInfo,
+                                                                           symbol,
+                                                                           orderWrappers));
         } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
-        } else if (shouldSplitHighestOrderAndBuy(uniqueOpenOrdersSize, minOpenOrders)) {
-            //            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            //            splitProcessor.splitHighestOrder(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
+        } else if (shouldAcquireNewCryptos(uniqueOpenOrdersSize, minOpenOrders)) {
             BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
             if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
                 List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
@@ -158,32 +128,20 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
             repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
         } else if (shouldRebuyOrderWithHighPricePercentage(orderWrappers, myBtcBalance)) {
             orderWrappers.stream()
-                         .filter(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
-                                       && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0)
+                         .filter(ow -> canRebuyOrderWithHighLoss(ow, myBtcBalance))
                          .findFirst()
                          .ifPresent(ow -> repeatTradingProcessor.rebuySingleOrder(
                              ow,
                              (service, wrapper) -> service.getMyBalance(ASSET_BTC)
                                                           .compareTo(wrapper.getCurrentBtcAmount()) > 0,
                              exchangeInfo));
-        //        } else if (shouldSplitOrderWithHighNeededAmount(orderWrappers)) {
-        //            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-        //            splitProcessor.splitOrderWithHighNeededAmount(orderWrappers,
-            //            exchangeInfo, cryptos, totalAmounts.keySet());
         } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
             repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
-        //        } else if (shouldSplitOrderForQuickerSelling(myBtcBalance,
-        //                                                     actualBalance,
-        //                                                     uniqueOpenOrdersSize,
-        //                                                     totalAmount)) {
-        //            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-        //            splitProcessor.splitOrdersForQuickerSelling(orderWrappers, exchangeInfo, cryptos,
-        //            totalAmounts.keySet());
-        } else if (haveOrdersWithOrderPricePercentageGreaterThan10(orderWrappers)) {
+        } else if (haveOrdersToSplitByOrderPricePercentage(orderWrappers)) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrdersWithOrderPricePercGreaterThen10(orderWrappers,
                                                                       exchangeInfo,
@@ -194,56 +152,58 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         }
     }
 
-    private Set<String> getOrderSymbolsToSplit(List<Order> openOrders) {
+    private Set<String> getForbiddenOrderSymbols(List<Order> openOrders) {
         return openOrders.stream()
                          .map(Order::getSymbol)
                          .filter(allForbiddenPairs::contains)
                          .collect(Collectors.toSet());
     }
 
-    private void handleDelistedOrder(Map<String, BigDecimal> totalAmounts,
-                                     ExchangeInfo exchangeInfo,
-                                     String symbol,
-                                     List<OrderWrapper> orderWrappers) {
-        OrderWrapper delistedOrder = orderWrappers.stream()
-                                                  .filter(orderWrapper -> orderWrapper.getOrder()
-                                                                                      .getSymbol()
-                                                                                      .equals(symbol))
-                                                  .findFirst()
-                                                  .orElseThrow();
-        logger.log("Delisted order:" + delistedOrder);
-        if (delistedOrder.getOrderPricePercentage().compareTo(new BigDecimal("45")) < 0) {
+    private void handleForbiddenOrder(Map<String, BigDecimal> totalAmounts,
+                                      ExchangeInfo exchangeInfo,
+                                      String symbol,
+                                      List<OrderWrapper> orderWrappers) {
+        OrderWrapper forbiddenOrder = orderWrappers.stream()
+                                                   .filter(orderWrapper -> orderWrapper.getOrder()
+                                                                                       .getSymbol()
+                                                                                       .equals(symbol))
+                                                   .findFirst()
+                                                   .orElseThrow();
+        logger.log("Forbidden order:" + forbiddenOrder);
+        if (forbiddenOrder.getOrderPricePercentage()
+                          .compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_SELL_FORBIDDEN_ORDER) < 0) {
             List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             if (splitProcessor.hasCryptosToBuy(cryptos, totalAmounts.keySet())) {
                 splitProcessor.splitCancelledOrder(orderWrappers, symbol, exchangeInfo, cryptos, totalAmounts.keySet());
             } else {
                 logger.log("No crypto to split into, selling order " + symbol);
-                cancelProcessor.cancelAndSell(delistedOrder, exchangeInfo);
+                cancelProcessor.cancelAndSell(forbiddenOrder, exchangeInfo);
             }
         } else {
-            cancelProcessor.cancelAndSell(delistedOrder, exchangeInfo);
+            cancelProcessor.cancelAndSell(forbiddenOrder, exchangeInfo);
         }
     }
 
     private boolean shouldSplitOrderWithLowestOrderPrice(List<OrderWrapper> orderWrappers) {
         return !orderWrappers.isEmpty()
-               && allOrderPricePercentageHigher20(orderWrappers)
+               && allOrdersHaveHighOrderPricePercentage(orderWrappers)
                && allOlderThanDay(orderWrappers)
                && orderWrappers.stream().anyMatch(SplitProcessor::hasEnoughBtcAmountToSplit);
     }
 
-    private boolean allOrderPricePercentageHigher20(List<OrderWrapper> orderWrappers) {
+    private boolean allOrdersHaveHighOrderPricePercentage(List<OrderWrapper> orderWrappers) {
         return orderWrappers.stream()
                             .map(OrderWrapper::getOrderPricePercentage)
-                            .allMatch(orderPricePercentage -> orderPricePercentage.compareTo(new BigDecimal("20")) > 0);
+                            .allMatch(percentage -> percentage.compareTo(
+                                MIN_ORDER_PRICE_PERCENTAGE_OF_ALL_ORDERS_TO_SPLIT) > 0);
     }
 
-    private boolean shouldSplitHighestOrderAndBuy(long uniqueOpenOrdersSize, long minOpenOrders) {
+    private boolean shouldAcquireNewCryptos(long uniqueOpenOrdersSize, long minOpenOrders) {
         return uniqueOpenOrdersSize <= minOpenOrders;
     }
 
     private boolean shouldRebuyAllOrders(BigDecimal myBtcBalance, BigDecimal ordersAmount) {
-        return myBtcBalance.compareTo(ordersAmount.multiply(new BigDecimal("3"))) > 0;
+        return myBtcBalance.compareTo(ordersAmount.multiply(MIN_BTC_TO_ORDERS_RATIO_TO_REBUY_ALL)) > 0;
     }
 
     private boolean shouldRebuyAnyOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
@@ -267,45 +227,28 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     private boolean haveEnoughBtcToExtractMoreOrders(BigDecimal myBtcBalance) {
-        return myBtcBalance.compareTo(new BigDecimal("0.003")) > 0;
+        return myBtcBalance.compareTo(MIN_BTC_BALANCE_TO_EXTRACT_MORE_ORDERS) > 0;
     }
 
     private boolean isBtcBalanceBelowMinToExtract(BigDecimal myBtcBalance) {
         return myBtcBalance.compareTo(MIN_BTC_BALANCE_TO_EXTRACT) < 0;
     }
 
-    private boolean shouldSplitOrderForQuickerSelling(BigDecimal myBtcBalance,
-                                                      BigDecimal actualBalance,
-                                                      long uniqueOpenOrdersSize,
-                                                      BigDecimal totalAmount) {
-        return actualBtcBalanceMoreThanHalfOfActualBalance(myBtcBalance, actualBalance)
-               && uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(uniqueOpenOrdersSize, totalAmount);
-    }
-
-    private boolean actualBtcBalanceMoreThanHalfOfActualBalance(BigDecimal myBtcBalance, BigDecimal actualBalance) {
-        return myBtcBalance.compareTo(actualBalance.divide(new BigDecimal("2"), 8, CEILING)) > 0;
-    }
-
-    private boolean uniqueOpenOrdersSizeIsLessThanHundredTotalAmounts(long uniqueOpenOrdersSize,
-                                                                      BigDecimal totalAmount) {
-        return new BigDecimal(uniqueOpenOrdersSize).compareTo(totalAmount.multiply(new BigDecimal("100"))) < 0;
-    }
-
     private boolean shouldRebuyOrderWithHighPricePercentage(List<OrderWrapper> orderWrappers,
                                                             BigDecimal myBtcBalance) {
         return orderWrappers.stream()
-                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("40")) > 0
-                                            && myBtcBalance.compareTo(ow.getCurrentBtcAmount()) > 0);
+                            .anyMatch(ow -> canRebuyOrderWithHighLoss(ow, myBtcBalance));
     }
 
-    private boolean shouldSplitOrderWithHighNeededAmount(List<OrderWrapper> orderWrappers) {
-        return orderWrappers.stream()
-                            .anyMatch(SplitProcessor::hasHighNeededBtcAmount);
+    private boolean canRebuyOrderWithHighLoss(OrderWrapper orderWrapper, BigDecimal myBtcBalance) {
+        return orderWrapper.getOrderPricePercentage().compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_REBUY_HIGH_LOSS) > 0
+               && myBtcBalance.compareTo(orderWrapper.getCurrentBtcAmount()) > 0;
     }
 
-    private boolean haveOrdersWithOrderPricePercentageGreaterThan10(List<OrderWrapper> orderWrappers) {
+    private boolean haveOrdersToSplitByOrderPricePercentage(List<OrderWrapper> orderWrappers) {
         return orderWrappers.stream()
-                            .anyMatch(ow -> ow.getOrderPricePercentage().compareTo(new BigDecimal("10")) > 0
+                            .anyMatch(ow -> ow.getOrderPricePercentage()
+                                              .compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT) > 0
                                             && SplitProcessor.hasEnoughBtcAmountToSplit(ow));
     }
 
@@ -319,7 +262,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private boolean allOlderThanDay(List<OrderWrapper> orderWrappers) {
         return orderWrappers.stream()
                             .allMatch(orderWrapper -> orderWrapper.getActualWaitingTime()
-                                                                  .compareTo(new BigDecimal("24")) > 0);
+                                                                  .compareTo(HOURS_IN_DAY) > 0);
     }
 
     private boolean allRemainWaitingTimeLessThanZero(List<OrderWrapper> orderWrappers) {

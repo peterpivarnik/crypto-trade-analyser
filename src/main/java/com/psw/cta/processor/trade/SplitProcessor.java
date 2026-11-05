@@ -1,7 +1,6 @@
 package com.psw.cta.processor.trade;
 
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
-import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
@@ -12,6 +11,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
+import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -25,6 +25,8 @@ import java.util.stream.Stream;
  */
 public class SplitProcessor implements CryptoToBuyProvider {
 
+    private static final BigDecimal MAX_BTC_AMOUNT_FOR_LAST_CRYPTO = new BigDecimal("0.005");
+
     private final BinanceService binanceService;
     private final LambdaLogger logger;
 
@@ -37,6 +39,17 @@ public class SplitProcessor implements CryptoToBuyProvider {
     public SplitProcessor(BinanceService binanceService, LambdaLogger logger) {
         this.binanceService = binanceService;
         this.logger = logger;
+    }
+
+    /**
+     * Returns whether there is any crypto an order can be split into.
+     *
+     * @param cryptos         cryptos for new buy
+     * @param existingSymbols existing symbols
+     * @return whether there is any crypto to buy
+     */
+    public boolean hasCryptosToBuy(List<Crypto> cryptos, Set<String> existingSymbols) {
+        return !getCryptosToSplitInto(cryptos, existingSymbols).isEmpty();
     }
 
     /**
@@ -210,14 +223,9 @@ public class SplitProcessor implements CryptoToBuyProvider {
         }
 
         // 1. find cryptos to buy before anything is sold
-        List<Crypto> cryptosToBuy = getCryptosToBuy(cryptos, existingSymbols);
+        List<Crypto> cryptosToBuy = getCryptosToSplitInto(cryptos, existingSymbols);
         if (cryptosToBuy.isEmpty()) {
-            logger.log("No crypto in downtrend, using cryptos with the flattest trend");
-            cryptosToBuy = getFlattestCryptosToBuy(cryptos, existingSymbols);
-        }
-        if (cryptosToBuy.isEmpty()) {
-            logger.log("No crypto available to buy, keeping order " + symbol);
-            return;
+            throw new CryptoTraderException("No crypto available to buy, keeping order " + symbol);
         }
         logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
 
@@ -232,12 +240,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("totalBtcAmountToSpend: " + totalBtcAmountToSpend);
 
         // 4. buy new cryptos and place sell orders
-        if (cryptosToBuy.size() == 1) {
-            logger.log("Only one crypto to buy, spending whole amount");
-            buyAndSell(orderToCancel, totalBtcAmountToSpend, cryptosToBuy.get(0));
-        } else {
-            buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
-        }
+        buyAndSellWithFibonacci(orderToCancel, cryptosToBuy, totalBtcAmountToSpend, 0);
     }
 
     private void buyAndSellWithFibonacci(OrderWrapper orderToCancel,
@@ -247,62 +250,48 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
         logger.log("btcAmountToSpend: " + btcAmountToSpend);
         logger.log("cryptoToBuyIndex: " + cryptoToBuyIndex);
-        if (cryptoToBuyIndex >= cryptosToBuy.size()) {
-            logger.log("No more cryptos to buy, stopping split.");
-            return;
-        }
         BigDecimal minBtcAmountToTrade = new BigDecimal("0.0001");
         logger.log("minBtcAmountToTrade: " + minBtcAmountToTrade);
+        if (btcAmountToSpend.compareTo(minBtcAmountToTrade) < 0) {
+            logger.log("Remaining BTC too low to trade, stopping split.");
+            return;
+        }
+        Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
+        logger.log("cryptoToBuy: " + cryptoToBuy);
+        if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
+            logger.log("Splitting for last cryptoToBuy");
+            buyAndSell(orderToCancel, btcAmountToSpend.min(MAX_BTC_AMOUNT_FOR_LAST_CRYPTO), cryptoToBuy);
+            return;
+        }
+        BigDecimal minBtcAmountToSplit = minBtcAmountToTrade.multiply(new BigDecimal("2"));
+        if (btcAmountToSpend.compareTo(minBtcAmountToSplit.multiply(new BigDecimal("2"))) <= 0) {
+            logger.log("Splitting for remaining BTC");
+            buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
+            return;
+        }
         BigDecimal quarterOfBtcAmountToSpend = btcAmountToSpend.divide(new BigDecimal("4"), 8, CEILING);
         logger.log("quarterOfBtcAmountToSpend: " + quarterOfBtcAmountToSpend);
         BigDecimal fibonacciAmount = quarterOfBtcAmountToSpend.multiply(new BigDecimal("10000"));
         logger.log("fibonacciAmount: " + fibonacciAmount);
-        BigDecimal fibonacciNumber = Stream.of(FIBONACCI_SEQUENCE)
-                                           .filter(number -> number.compareTo(fibonacciAmount) < 0)
-                                           .max(Comparator.naturalOrder())
-                                           .orElse(new BigDecimal("-1"));
-        logger.log("fibonacciNumber: " + fibonacciNumber);
-        BigDecimal fibonacciAmountToSpend = fibonacciNumber.multiply(minBtcAmountToTrade);
-        logger.log("fibonacciAmountToSpend: " + fibonacciAmountToSpend);
-        if (fibonacciNumber.compareTo(ZERO) > 0 && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
-            logger.log("Splitting normal");
-            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-            logger.log("cryptoToBuy: " + cryptoToBuy);
-            buyAndSell(orderToCancel, fibonacciAmountToSpend, cryptoToBuy);
-            buyAndSellWithFibonacci(orderToCancel,
-                                    cryptosToBuy,
-                                    btcAmountToSpend.subtract(fibonacciAmountToSpend),
-                                    cryptoToBuyIndex + 1);
-        } else if (btcAmountToSpend.compareTo(new BigDecimal("0.0002")) > 0
-                   && cryptoToBuyIndex < cryptosToBuy.size() - 1) {
-            logger.log("Splitting for remaining BTC");
-            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-            logger.log("cryptoToBuy: " + cryptoToBuy);
-            BigDecimal amountToSpend = minBtcAmountToTrade.multiply(new BigDecimal("2"));
-            buyAndSell(orderToCancel, amountToSpend, cryptoToBuy);
-            buyAndSellWithFibonacci(orderToCancel,
-                                    cryptosToBuy,
-                                    btcAmountToSpend.subtract(amountToSpend),
-                                    cryptoToBuyIndex + 1);
-        } else if (fibonacciNumber.compareTo(ZERO) <= 0) {
-            logger.log("Splitting for last fibonacci");
-            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-            logger.log("cryptoToBuy: " + cryptoToBuy);
-            buyAndSell(orderToCancel, minBtcAmountToTrade.multiply(new BigDecimal("2")), cryptoToBuy);
-        } else if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
-            logger.log("Splitting for last cryptoToBuy");
-            Crypto cryptoToBuy = cryptosToBuy.get(cryptoToBuyIndex);
-            logger.log("cryptoToBuy: " + cryptoToBuy);
-            buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
-        }
+        BigDecimal amountToSpend = Stream.of(FIBONACCI_SEQUENCE)
+                                         .filter(number -> number.compareTo(fibonacciAmount) < 0)
+                                         .max(Comparator.naturalOrder())
+                                         .map(minBtcAmountToTrade::multiply)
+                                         .orElse(minBtcAmountToSplit);
+        logger.log("amountToSpend: " + amountToSpend);
+        buyAndSell(orderToCancel, amountToSpend, cryptoToBuy);
+        buyAndSellWithFibonacci(orderToCancel,
+                                cryptosToBuy,
+                                btcAmountToSpend.subtract(amountToSpend),
+                                cryptoToBuyIndex + 1);
     }
 
     private void buyAndSell(OrderWrapper orderToCancel, BigDecimal btcAmountToSpend, Crypto cryptoToBuy) {
-        // 3. buy
+        // 4a. buy
         BigDecimal boughtQuantity = binanceService.buyWithBtcs(cryptoToBuy.getSymbolInfo(), btcAmountToSpend);
         logger.log("boughtQuantity: " + boughtQuantity);
 
-        // 4. place sell order
+        // 4b. place sell order
         BigDecimal finalPriceWithProfit = cryptoToBuy.getCurrentPrice()
                                                      .multiply(orderToCancel.getOrderPrice())
                                                      .multiply(new BigDecimal("1.01"))

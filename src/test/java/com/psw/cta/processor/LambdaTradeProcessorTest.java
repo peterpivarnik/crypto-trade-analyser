@@ -55,6 +55,8 @@ class LambdaTradeProcessorTest {
     @Mock
     private CancelProcessor cancelProcessor;
     @Mock
+    private ForbiddenPairsProvider forbiddenPairsProvider;
+    @Mock
     private LambdaLogger logger;
     @Mock
     private ExchangeInfo exchangeInfo;
@@ -70,8 +72,9 @@ class LambdaTradeProcessorTest {
                                                   repeatTradingProcessor,
                                                   extractProcessor,
                                                   cancelProcessor,
-                                                  List.of(SYMBOL),
+                                                  forbiddenPairsProvider,
                                                   logger);
+        lenient().when(forbiddenPairsProvider.getAllForbiddenPairs()).thenReturn(List.of(SYMBOL));
         lenient().when(binanceService.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         lenient().when(binanceService.getCandlesticks(any(), any(), any())).thenReturn(List.of(candlestick()));
     }

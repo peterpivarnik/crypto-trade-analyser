@@ -1,16 +1,12 @@
 package com.psw.cta.utils;
 
 import static com.psw.cta.utils.BinanceApiConstants.API_BASE_URL;
-import static com.psw.cta.utils.Constants.ASSET_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_PAXG_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
-import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.CryptoTrader;
 import com.psw.cta.api.BinanceApi;
+import com.psw.cta.processor.ForbiddenPairsProvider;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.OrphanBalanceChecker;
@@ -24,12 +20,7 @@ import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.security.AuthenticationInterceptor;
 import com.psw.cta.service.BinanceClient;
 import com.psw.cta.service.BinanceService;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
@@ -133,35 +124,8 @@ public class IocProvider {
                                         new RepeatTradingProcessor(binanceService, logger),
                                         new ExtractProcessor(binanceService, logger),
                                         new CancelProcessor(binanceService, logger),
-                                        getAllForbiddenPairs(binanceService, forbiddenPairs, logger),
+                                        new ForbiddenPairsProvider(binanceService, forbiddenPairs, logger),
                                         logger);
-    }
-
-    private static List<String> getAllForbiddenPairs(BinanceService binanceService,
-                                                     List<String> forbiddenPairs,
-                                                     LambdaLogger logger) {
-        Set<String> delistedPairs = binanceService.getDelistSchedule()
-                                                  .stream()
-                                                  .map(delistResponse ->
-                                                           delistResponse.getSymbols()
-                                                                         .stream()
-                                                                         .filter(symbol -> symbol.endsWith(ASSET_BTC))
-                                                                         .collect(Collectors.toSet()))
-                                                  .flatMap(Collection::stream)
-                                                  .collect(Collectors.toSet());
-        logger.log("delistedPairs:");
-        delistedPairs.forEach(logger::log);
-        List<String> defaultForbiddenPairs = Arrays.asList(SYMBOL_BNB_BTC,
-                                                           SYMBOL_WBTC_BTC,
-                                                           SYMBOL_PAXG_BTC,
-                                                           SYMBOL_XAUT_BTC);
-        List<String> forbidden = new ArrayList<>();
-        forbidden.addAll(defaultForbiddenPairs);
-        forbidden.addAll(forbiddenPairs);
-        forbidden.addAll(delistedPairs);
-        logger.log("ForbiddenPairs:");
-        forbidden.forEach(logger::log);
-        return forbidden;
     }
 
     private static LocalTradeProcessor createLocalTradeProcessor(BinanceService binanceService, LambdaLogger logger) {

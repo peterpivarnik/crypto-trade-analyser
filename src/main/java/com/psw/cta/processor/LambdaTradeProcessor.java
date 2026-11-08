@@ -45,7 +45,8 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private final RepeatTradingProcessor repeatTradingProcessor;
     private final ExtractProcessor extractProcessor;
     private final CancelProcessor cancelProcessor;
-    private final List<String> allForbiddenPairs;
+    private final ForbiddenPairsProvider forbiddenPairsProvider;
+    private List<String> allForbiddenPairs;
     private List<Crypto> loadedCryptos;
 
     /**
@@ -58,7 +59,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
      * @param repeatTradingProcessor processor for handling repeated trading operations
      * @param extractProcessor       processor for extracting trade orders
      * @param cancelProcessor        processor for canceling trade orders
-     * @param allForbiddenPairs      list of all trading pairs that are forbidden for trading
+     * @param forbiddenPairsProvider provider of trading pairs that are forbidden for trading
      * @param logger                 lambda logger for logging operations
      */
     public LambdaTradeProcessor(BinanceService binanceService,
@@ -68,7 +69,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                 RepeatTradingProcessor repeatTradingProcessor,
                                 ExtractProcessor extractProcessor,
                                 CancelProcessor cancelProcessor,
-                                List<String> allForbiddenPairs,
+                                ForbiddenPairsProvider forbiddenPairsProvider,
                                 LambdaLogger logger) {
         super(binanceService);
         this.cryptoProcessor = cryptoProcessor;
@@ -78,7 +79,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         this.extractProcessor = extractProcessor;
         this.cancelProcessor = cancelProcessor;
         this.logger = logger;
-        this.allForbiddenPairs = allForbiddenPairs;
+        this.forbiddenPairsProvider = forbiddenPairsProvider;
     }
 
     /**
@@ -101,6 +102,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                       long uniqueOpenOrdersSize,
                       int minOpenOrders) {
         loadedCryptos = null;
+        allForbiddenPairs = forbiddenPairsProvider.getAllForbiddenPairs();
         Set<String> forbiddenOrderSymbols = getForbiddenOrderSymbols(openOrders);
         BigDecimal ordersAmount = totalAmounts.values()
                                               .stream()

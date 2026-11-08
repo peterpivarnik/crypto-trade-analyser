@@ -221,23 +221,12 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>${versions-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>update-properties</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <allowMajorUpdates>true</allowMajorUpdates>
                     <ignoredVersions>
-                        <ignoredVersion>20041127.091804</ignoredVersion>
-                        <ignoredVersion>4.0.0-beta-1</ignoredVersion>
-                        <ignoredVersion>4.0.0-beta-2</ignoredVersion>
-                        <ignoredVersion>4.0.0-beta-3</ignoredVersion>
-                        <ignoredVersion>4.0.0-beta-4</ignoredVersion>
-                        <ignoredVersion>4.0.0-beta-5</ignoredVersion>
+                        <ignoredVersion>20041127\.091804</ignoredVersion>
+                        <ignoredVersion>(?i).*[-.](alpha|beta|rc|preview|snapshot)([-.]?[0-9]+)?.*</ignoredVersion>
+                        <ignoredVersion>.*-M[0-9]+.*</ignoredVersion>
                     </ignoredVersions>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>

@@ -86,10 +86,21 @@ class SplitProcessorTest {
 
     @Test
     void shouldAddFlatCryptosWhenOnlyOneCryptoIsInDowntrend() {
-        split("0.003", List.of(crypto("FLATBTC", true), crypto("DOWNBTC", false)));
+        split("0.003", List.of(crypto("DOWNBTC", "0.005", "0.001"), crypto("FLATBTC", "0.001", "0.00101")));
 
         List<Bought> bought = boughtAmounts();
-        assertThat(bought).extracting(Bought::symbol).containsExactly("DOWNBTC", "FLATBTC");
+        assertThat(bought).extracting(Bought::symbol).containsExactly("FLATBTC", "DOWNBTC");
+    }
+
+    @Test
+    void shouldGiveBiggestPartToCryptoLosingLeastValueRegardlessOfItsPrice() {
+        split("0.01", List.of(crypto("CHEAPBTC", "0.000002", "0.0000014"),
+                              crypto("MIDDLEBTC", "0.0001", "0.00009"),
+                              crypto("EXPENSIVEBTC", "0.02", "0.0198")));
+
+        List<Bought> bought = boughtAmounts();
+        assertThat(bought).extracting(Bought::symbol).containsExactly("EXPENSIVEBTC", "MIDDLEBTC", "CHEAPBTC");
+        assertThat(new BigDecimal(bought.get(0).amount())).isEqualByComparingTo("0.0021");
     }
 
     @Test
@@ -163,8 +174,23 @@ class SplitProcessorTest {
                                              .setCurrentPrice(new BigDecimal("0.001"));
     }
 
+    private Crypto crypto(String symbol, String firstPrice, String lastPrice) {
+        BigDecimal first = new BigDecimal(firstPrice);
+        BigDecimal step = new BigDecimal(lastPrice).subtract(first).divide(new BigDecimal("4"));
+        List<Candlestick> candlesticks = IntStream.range(0, 5)
+                                                  .mapToObj(day -> candlestick(first.add(step.multiply(
+                                                      new BigDecimal(day)))))
+                                                  .toList();
+        return new Crypto(symbolInfo(symbol)).setThreeMonthsCandleStickData(candlesticks)
+                                             .setCurrentPrice(new BigDecimal("0.001"));
+    }
+
     private Candlestick candlestick(int price) {
-        String value = new BigDecimal("0.001").multiply(new BigDecimal(price)).toPlainString();
+        return candlestick(new BigDecimal("0.001").multiply(new BigDecimal(price)));
+    }
+
+    private Candlestick candlestick(BigDecimal price) {
+        String value = price.toPlainString();
         Candlestick candlestick = new Candlestick();
         candlestick.setOpen(value);
         candlestick.setHigh(value);

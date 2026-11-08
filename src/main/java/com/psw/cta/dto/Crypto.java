@@ -30,7 +30,7 @@ public class Crypto {
     private BigDecimal priceToSellPercentage;
     private BigDecimal lastThreeHighAverage;
     private BigDecimal previousThreeHighAverage;
-    private BigDecimal priceCountToSlope;
+    private BigDecimal slopePercentagePerDay;
     private BigDecimal numberOfCandles;
 
     /**
@@ -154,29 +154,35 @@ public class Crypto {
      * @return {@link Crypto}
      */
     public Crypto calculateSlopeData() {
-        List<BigDecimal> averagePrices = getAveragePrices(threeMonthsCandleStickData);
-        this.priceCountToSlope = calculatePriceCountToSlope(averagePrices);
+        List<BigDecimal> averagePrices = threeMonthsCandleStickData.stream()
+                                                                   .map(this::getPreciseAveragePrice)
+                                                                   .toList();
+        this.slopePercentagePerDay = calculateSlopePercentagePerDay(averagePrices);
         this.numberOfCandles = new BigDecimal(threeMonthsCandleStickData.size());
         return this;
     }
 
-    private List<BigDecimal> getAveragePrices(List<Candlestick> threeMonthsCandleStickData) {
-        return threeMonthsCandleStickData.parallelStream()
-                                         .map(this::getAveragePrice)
-                                         .toList();
+    /*
+     * Returns slope of the price trend as percentage of the mean price per candle,
+     * so cryptos with different prices can be compared.
+     */
+    private BigDecimal calculateSlopePercentagePerDay(List<BigDecimal> averagePrices) {
+        double slope = getSlope(averagePrices);
+        double meanPrice = averagePrices.stream()
+                                        .mapToDouble(BigDecimal::doubleValue)
+                                        .average()
+                                        .orElse(0);
+        if (Double.isNaN(slope) || meanPrice <= 0) {
+            return ZERO;
+        }
+        return BigDecimal.valueOf(slope / meanPrice * 100).round(new MathContext(8));
     }
 
-    private BigDecimal calculatePriceCountToSlope(List<BigDecimal> averagePrices) {
-        BigDecimal priceCount = new BigDecimal(averagePrices.size(), new MathContext(8));
-        double leastSquaresSlope = getSlope(averagePrices);
-        if (Double.isNaN(leastSquaresSlope)) {
-            leastSquaresSlope = 0.00000001;
-        }
-        BigDecimal slope = new BigDecimal(String.valueOf(leastSquaresSlope), new MathContext(8));
-        if (ZERO.compareTo(slope) == 0) {
-            slope = new BigDecimal("0.00000001");
-        }
-        return priceCount.divide(slope, 8, CEILING);
+    private BigDecimal getPreciseAveragePrice(Candlestick candle) {
+        return new BigDecimal(candle.getOpen()).add(new BigDecimal(candle.getClose()))
+                                               .add(new BigDecimal(candle.getHigh()))
+                                               .add(new BigDecimal(candle.getLow()))
+                                               .divide(new BigDecimal("4"), MathContext.DECIMAL64);
     }
 
     private BigDecimal getAveragePrice(Candlestick candle) {
@@ -191,8 +197,8 @@ public class Crypto {
         return numberOfCandles;
     }
 
-    public BigDecimal getPriceCountToSlope() {
-        return priceCountToSlope;
+    public BigDecimal getSlopePercentagePerDay() {
+        return slopePercentagePerDay;
     }
 
     public List<Candlestick> getThreeMonthsCandleStickData() {
@@ -269,7 +275,9 @@ public class Crypto {
                + "priceToSellPercentage=" + priceToSellPercentage + ", "
                + "lastThreeHighAverage=" + lastThreeHighAverage + ", "
                + "previousThreeHighAverage=" + previousThreeHighAverage + ", "
-               + "priceCountToSlope=" + (priceCountToSlope != null ? priceCountToSlope.toPlainString() : null) + ", "
+               + "slopePercentagePerDay=" + (slopePercentagePerDay != null
+                                             ? slopePercentagePerDay.toPlainString()
+                                             : null) + ", "
                + "numberOfCandles=" + numberOfCandles + '}';
     }
 }

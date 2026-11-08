@@ -608,10 +608,9 @@ public class BinanceService {
     public BigDecimal getNewPriceToSell(SymbolInfo symbolInfo,
                                         NewOrderResponse orderResponse,
                                         OrderWrapper orderWrapper) {
-        List<Trade> myTrades = getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId());
         BigDecimal boughtQuantity = new BigDecimal(orderResponse.getExecutedQty());
         logger.log("boughtQuantity: " + boughtQuantity);
-        BigDecimal boughtBtcs = getBoughtBtcsFromTrades(myTrades);
+        BigDecimal boughtBtcs = getBoughtBtcs(symbolInfo, orderResponse);
         logger.log("boughtBtcs: " + boughtBtcs);
         BigDecimal boughtPrice = boughtBtcs.divide(boughtQuantity, 8, CEILING);
         logger.log("boughtPrice: " + boughtPrice);
@@ -620,6 +619,16 @@ public class BinanceService {
         BigDecimal newPriceToSell = orderWrapper.getPriceToSell().add(priceDifference);
         logger.log("newPriceToSell: " + newPriceToSell);
         return newPriceToSell;
+    }
+
+    private BigDecimal getBoughtBtcs(SymbolInfo symbolInfo, NewOrderResponse orderResponse) {
+        String spentBtcs = orderResponse.getCummulativeQuoteQty();
+        if (spentBtcs != null && !spentBtcs.isBlank() && new BigDecimal(spentBtcs).compareTo(ZERO) > 0) {
+            logger.log("Bought BTCs taken from order response");
+            return new BigDecimal(spentBtcs);
+        }
+        logger.log("Order response without bought BTCs, loading trades");
+        return getBoughtBtcsFromTrades(getMyTrades(symbolInfo.getSymbol(), orderResponse.getOrderId()));
     }
 
     private List<Trade> getMyTrades(String symbol, Long orderId) {

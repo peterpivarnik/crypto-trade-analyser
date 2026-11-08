@@ -24,7 +24,21 @@ class OrderWrapperTest {
             .isEqualByComparingTo(withFlatCandlestick.getRemainWaitingTime());
     }
 
+    @Test
+    void shouldIgnoreRestOfSymbolInWaitingTimeWhenThereAreMoreSymbolOrders() {
+        OrderWrapper withBigRest = orderWrapper(List.of(), "0.046", true);
+        OrderWrapper withSmallRest = orderWrapper(List.of(), "0.002", true);
+        OrderWrapper singleOrder = orderWrapper(List.of(), "0.046", false);
+
+        assertThat(withBigRest.getRemainWaitingTime()).isEqualByComparingTo(withSmallRest.getRemainWaitingTime());
+        assertThat(withBigRest.getRemainWaitingTime()).isLessThan(singleOrder.getRemainWaitingTime());
+    }
+
     private OrderWrapper orderWrapper(List<Candlestick> candlesticks) {
+        return orderWrapper(candlesticks, "0.0011", false);
+    }
+
+    private OrderWrapper orderWrapper(List<Candlestick> candlesticks, String totalAmount, boolean hasMoreSymbolOrders) {
         Order order = new Order();
         order.setSymbol(SYMBOL);
         order.setPrice(ORDER_PRICE.toPlainString());
@@ -36,9 +50,10 @@ class OrderWrapperTest {
                                 BigDecimal.ONE,
                                 new BigDecimal("2"),
                                 OrderWrapper.calculatePricePercentage(CURRENT_PRICE, ORDER_PRICE),
-                                Map.of(SYMBOL, new BigDecimal("0.0011")),
+                                Map.of(SYMBOL, new BigDecimal(totalAmount)),
                                 candlesticks,
-                                new BigDecimal("5"));
+                                new BigDecimal("5"),
+                                hasMoreSymbolOrders);
     }
 
     private Candlestick candlestick(BigDecimal price) {

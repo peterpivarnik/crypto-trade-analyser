@@ -8,6 +8,8 @@ import static java.time.LocalDateTime.ofInstant;
 import static java.time.ZoneId.systemDefault;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
@@ -72,6 +74,8 @@ public abstract class MainTradeProcessor {
                                                          BigDecimal myBtcBalance,
                                                          BigDecimal actualBalance,
                                                          Map<String, BigDecimal> totalAmounts) {
+        Map<String, Long> ordersCountPerSymbol = openOrders.stream()
+                                                           .collect(groupingBy(Order::getSymbol, counting()));
         return openOrders.stream()
                          .map(Order::getSymbol)
                          .distinct()
@@ -79,14 +83,19 @@ public abstract class MainTradeProcessor {
                                                   .filter(order -> order.getSymbol().equals(symbol))
                                                   .min(comparing(order -> new BigDecimal(order.getPrice()))))
                          .map(Optional::orElseThrow)
-                         .map(order -> createOrderWrapper(order, myBtcBalance, actualBalance, totalAmounts))
+                         .map(order -> createOrderWrapper(order,
+                                                          myBtcBalance,
+                                                          actualBalance,
+                                                          totalAmounts,
+                                                          ordersCountPerSymbol.get(order.getSymbol()) > 1))
                          .sorted(comparing(OrderWrapper::getOrderPricePercentage));
     }
 
     private OrderWrapper createOrderWrapper(Order order,
                                             BigDecimal myBtcBalance,
                                             BigDecimal actualBalance,
-                                            Map<String, BigDecimal> totalAmounts) {
+                                            Map<String, BigDecimal> totalAmounts,
+                                            boolean hasMoreSymbolOrders) {
         BigDecimal currentPrice = binanceService.getCurrentPrice(order.getSymbol());
         BigDecimal actualWaitingTime = calculateActualWaitingTime(order);
         BigDecimal orderPrice = new BigDecimal(order.getPrice());
@@ -102,7 +111,8 @@ public abstract class MainTradeProcessor {
                                 orderPricePercentage,
                                 totalAmounts,
                                 candleStickData,
-                                actualWaitingTime);
+                                actualWaitingTime,
+                                hasMoreSymbolOrders);
     }
 
     private BigDecimal calculateActualWaitingTime(Order order) {

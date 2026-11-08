@@ -301,6 +301,35 @@ class LambdaTradeProcessorTest {
                              minOpenOrders);
     }
 
+    @Test
+    void shouldNotSlowDownExtractedOrderByRestOfSymbol() {
+        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        Order extractedOrder = symbolOrder("0.00011", "1");
+        Order restOrder = symbolOrder("0.000111", "400");
+
+        tradeProcessor.trade(List.of(extractedOrder, restOrder),
+                             Map.of(ACTIVE_SYMBOL, new BigDecimal("0.0445")),
+                             new BigDecimal("0.001"),
+                             new BigDecimal("2"),
+                             exchangeInfo,
+                             1L,
+                             0);
+
+        ArgumentCaptor<OrderWrapper> wrapper = ArgumentCaptor.forClass(OrderWrapper.class);
+        verify(repeatTradingProcessor).shouldBeRebought(wrapper.capture(), any());
+        assertThat(wrapper.getValue().getQuantity()).isEqualByComparingTo("1");
+        assertThat(wrapper.getValue().getRemainWaitingTime()).isNegative();
+    }
+
+    private Order symbolOrder(String price, String quantity) {
+        Order order = order();
+        order.setSymbol(ACTIVE_SYMBOL);
+        order.setPrice(price);
+        order.setOrigQty(quantity);
+        order.setTime(System.currentTimeMillis() - 30L * 3_600_000L);
+        return order;
+    }
+
     private void tradeOldOrder(String orderPrice, String btcBalance) {
         String totalAmount = new BigDecimal(orderPrice).multiply(BigDecimal.TEN).toPlainString();
         tradeOldOrder(orderPrice, "10", btcBalance, totalAmount);

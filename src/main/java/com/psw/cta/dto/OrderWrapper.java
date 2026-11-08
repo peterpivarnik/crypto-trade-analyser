@@ -55,6 +55,7 @@ public class OrderWrapper {
      * @param totalAmounts         all amounts
      * @param candleStickData      candle sticks
      * @param actualWaitingTime    actual waiting time of order
+     * @param hasMoreSymbolOrders  whether there are more open orders of the same symbol, e.g. after extraction
      */
     public OrderWrapper(Order order,
                         BigDecimal orderPrice,
@@ -64,7 +65,8 @@ public class OrderWrapper {
                         BigDecimal orderPricePercentage,
                         Map<String, BigDecimal> totalAmounts,
                         List<Candlestick> candleStickData,
-                        BigDecimal actualWaitingTime) {
+                        BigDecimal actualWaitingTime,
+                        boolean hasMoreSymbolOrders) {
         this.order = order;
         this.currentPrice = currentPrice;
         this.orderPrice = orderPrice;
@@ -86,7 +88,8 @@ public class OrderWrapper {
                                                             this.orderBtcAmount,
                                                             this.orderPricePercentage,
                                                             candleStickData,
-                                                            this.currentPrice);
+                                                            this.currentPrice,
+                                                            hasMoreSymbolOrders);
         this.remainWaitingTime = calculateRemainWaitingTime(minWaitingTime, this.actualWaitingTime);
     }
 
@@ -139,11 +142,13 @@ public class OrderWrapper {
                                                BigDecimal orderBtcAmount,
                                                BigDecimal orderPricePercentage,
                                                List<Candlestick> candleStickData,
-                                               BigDecimal currentPrice) {
+                                               BigDecimal currentPrice,
+                                               boolean hasMoreSymbolOrders) {
         String symbol = order.getSymbol();
         BigDecimal oldMinWaitingTime = calculateOldMinWaitingTime(totalAmounts.get(symbol),
                                                                   orderBtcAmount,
-                                                                  orderPricePercentage);
+                                                                  orderPricePercentage,
+                                                                  hasMoreSymbolOrders);
         BigDecimal min = candleStickData.stream()
                                         .map(Candlestick::getLow)
                                         .map(BigDecimal::new)
@@ -188,8 +193,10 @@ public class OrderWrapper {
 
     private BigDecimal calculateOldMinWaitingTime(BigDecimal totalSymbolAmount,
                                                   BigDecimal orderBtcAmount,
-                                                  BigDecimal orderPricePercentage) {
-        BigDecimal totalWaitingTime = getTimeFromAmount(totalSymbolAmount);
+                                                  BigDecimal orderPricePercentage,
+                                                  boolean hasMoreSymbolOrders) {
+        // Extracted small order is rebought cheaply, so the rest of the symbol must not slow it down
+        BigDecimal totalWaitingTime = hasMoreSymbolOrders ? BigDecimal.ZERO : getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
         BigDecimal waitingTime = totalWaitingTime.add(orderWaitingTime);
         BigDecimal timeVariable = getTimeVariable(orderPricePercentage);

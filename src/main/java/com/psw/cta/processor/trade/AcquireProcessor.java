@@ -12,6 +12,7 @@ import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Service for acquire crypto.
@@ -33,36 +34,44 @@ public class AcquireProcessor {
     }
 
     /**
-     * Initial buy of crypto.
+     * Initial buy of crypto. Cryptos with existing orders are skipped.
      *
-     * @param cryptos cryptos for initial trading
+     * @param cryptos         cryptos for initial trading
+     * @param existingSymbols symbols of existing orders
+     * @return symbols of bought cryptos
      */
-    public void initTrading(List<Crypto> cryptos) {
+    public List<String> initTrading(List<Crypto> cryptos, Set<String> existingSymbols) {
         logger.log("***** ***** Initial trading ***** *****");
-        cryptos.stream()
-               .map(crypto -> {
-                   List<Candlestick> candleStickData = binanceService.getCandleStickData(
-                       crypto.getSymbolInfo().getSymbol(),
-                       FIFTEEN_MINUTES,
-                       96L * 15L,
-                       MINUTES);
-                   return crypto.calculateDataFromCandlesticks(candleStickData);
-               })
-               .filter(crypto -> crypto.getLastThreeHighAverage().compareTo(crypto.getPreviousThreeHighAverage()) > 0)
-               .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
-               .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
-               .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
-               .forEach(this::acquireCrypto);
+        return cryptos.stream()
+                      .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
+                      .map(crypto -> {
+                          List<Candlestick> candleStickData = binanceService.getCandleStickData(
+                              crypto.getSymbolInfo().getSymbol(),
+                              FIFTEEN_MINUTES,
+                              96L * 15L,
+                              MINUTES);
+                          return crypto.calculateDataFromCandlesticks(candleStickData);
+                      })
+                      .filter(crypto -> crypto.getLastThreeHighAverage()
+                                              .compareTo(crypto.getPreviousThreeHighAverage()) > 0)
+                      .filter(crypto -> crypto.getPriceToSellPercentage().compareTo(MIN_PRICE_TO_SELL_PERCENTAGE) > 0)
+                      .filter(crypto -> crypto.getSumPercentageDifferences1h().compareTo(new BigDecimal("4")) < 0)
+                      .filter(crypto -> crypto.getSumPercentageDifferences10h().compareTo(new BigDecimal("400")) < 0)
+                      .filter(this::acquireCrypto)
+                      .map(crypto -> crypto.getSymbolInfo().getSymbol())
+                      .toList();
     }
 
-    private void acquireCrypto(Crypto crypto) {
+    private boolean acquireCrypto(Crypto crypto) {
         logger.log("Trading crypto " + crypto);
         BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
         BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
-        if (haveBalanceForInitialTrading(myBtcBalance)) {
-            BigDecimal quantity = binanceService.buyWithBtcs(crypto.getSymbolInfo(), maxBtcBalanceToBuy);
-            binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
+        if (!haveBalanceForInitialTrading(myBtcBalance)) {
+            return false;
         }
+        BigDecimal quantity = binanceService.buyWithBtcs(crypto.getSymbolInfo(), maxBtcBalanceToBuy);
+        binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
+        return true;
     }
 
     /**

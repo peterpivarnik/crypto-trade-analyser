@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,7 +119,7 @@ class LambdaTradeProcessorTest {
                              0L,
                              0);
 
-        verify(acquireProcessor).initTrading(any());
+        verify(acquireProcessor).initTrading(any(), any());
         verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
     }
 
@@ -246,6 +248,54 @@ class LambdaTradeProcessorTest {
                              exchangeInfo,
                              1L,
                              0);
+    }
+
+    @Test
+    void shouldContinueWithRebuyWhenNoNewCryptoIsAcquired() {
+        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
+        when(repeatTradingProcessor.shouldBeRebought(any(), any())).thenReturn(true);
+
+        tradeNewOrderWithMinOpenOrders("0.00011", 5);
+
+        verify(acquireProcessor).initTrading(any(), eq(Set.of(ACTIVE_SYMBOL)));
+        verify(repeatTradingProcessor).rebuyOrders(any(), any(), eq(exchangeInfo));
+    }
+
+    @Test
+    void shouldNotContinueWhenNewCryptoIsAcquired() {
+        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
+        when(acquireProcessor.initTrading(any(), any())).thenReturn(List.of("AAABTC"));
+
+        tradeNewOrderWithMinOpenOrders("0.00011", 5);
+
+        verify(repeatTradingProcessor, never()).rebuyOrders(any(), any(), any());
+    }
+
+    @Test
+    void shouldLoadCryptosOnlyOnceWhenSplittingAfterAcquiring() {
+        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
+
+        tradeNewOrderWithMinOpenOrders("0.00012", 5);
+
+        verify(splitProcessor).splitOrdersWithOrderPricePercGreaterThen10(any(), eq(exchangeInfo), any(), any());
+        verify(cryptoProcessor, times(1)).getCryptos(any(), any());
+    }
+
+    private void tradeNewOrderWithMinOpenOrders(String orderPrice, int minOpenOrders) {
+        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        Order order = order();
+        order.setSymbol(ACTIVE_SYMBOL);
+        order.setPrice(orderPrice);
+        tradeProcessor.trade(List.of(order),
+                             Map.of(ACTIVE_SYMBOL, new BigDecimal("0.01")),
+                             new BigDecimal("0.01"),
+                             new BigDecimal("2"),
+                             exchangeInfo,
+                             1L,
+                             minOpenOrders);
     }
 
     private void tradeOldOrder(String orderPrice, String btcBalance) {

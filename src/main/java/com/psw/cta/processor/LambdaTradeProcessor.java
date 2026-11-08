@@ -17,6 +17,7 @@ import com.psw.cta.processor.trade.RepeatTradingProcessor;
 import com.psw.cta.processor.trade.SplitProcessor;
 import com.psw.cta.service.BinanceService;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     private final ExtractProcessor extractProcessor;
     private final CancelProcessor cancelProcessor;
     private final List<String> allForbiddenPairs;
+    private List<Crypto> loadedCryptos;
 
     /**
      * Constructs a new LambdaTradeProcessor with the specified dependencies.
@@ -98,6 +100,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                       ExchangeInfo exchangeInfo,
                       long uniqueOpenOrdersSize,
                       int minOpenOrders) {
+        loadedCryptos = null;
         Set<String> forbiddenOrderSymbols = getForbiddenOrderSymbols(openOrders);
         BigDecimal ordersAmount = totalAmounts.values()
                                               .stream()
@@ -115,13 +118,17 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                                                                            exchangeInfo,
                                                                            symbol,
                                                                            orderWrappers));
-        } else if (shouldAcquireNewCryptos(uniqueOpenOrdersSize, minOpenOrders)) {
-            BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
-            if (acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
-                List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-                acquireProcessor.initTrading(cryptos);
+            return;
+        }
+        Set<String> existingSymbols = new HashSet<>(totalAmounts.keySet());
+        if (shouldAcquireNewCryptos(uniqueOpenOrdersSize, minOpenOrders)) {
+            List<String> acquiredSymbols = acquireNewCryptos(exchangeInfo, existingSymbols);
+            if (!acquiredSymbols.isEmpty()) {
+                return;
             }
-        } else if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
+            logger.log("No new crypto acquired, continuing with other trades");
+        }
+        if (shouldRebuyAllOrders(myBtcBalance, ordersAmount)) {
             repeatTradingProcessor.rebuyAllOrders(orderWrappers, exchangeInfo);
         } else if (shouldRebuyOrderWithHighPricePercentage(orderWrappers, myBtcBalance)) {
             orderWrappers.stream()
@@ -135,21 +142,39 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         } else if (shouldRebuyAnyOrder(orderWrappers, myBtcBalance)) {
             repeatTradingProcessor.rebuyOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldSplitOrderWithLowestOrderPrice(orderWrappers)) {
-            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
-            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers, exchangeInfo, cryptos, totalAmounts.keySet());
+            splitProcessor.splitOrderWithLowestOrderPrice(orderWrappers,
+                                                          exchangeInfo,
+                                                          getCryptos(exchangeInfo),
+                                                          existingSymbols);
         } else if (shouldExtractMoreOrders(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOrders(orderWrappers, myBtcBalance, exchangeInfo);
         } else if (shouldExtractOneOrder(orderWrappers, myBtcBalance)) {
             extractProcessor.extractOnlyFirstOrder(orderWrappers, exchangeInfo);
         } else if (haveOrdersToSplitByOrderPricePercentage(orderWrappers)) {
-            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
             splitProcessor.splitOrdersWithOrderPricePercGreaterThen10(orderWrappers,
                                                                       exchangeInfo,
-                                                                      cryptos,
-                                                                      totalAmounts.keySet());
+                                                                      getCryptos(exchangeInfo),
+                                                                      existingSymbols);
         } else if (shouldCancelTrade(orderWrappers, myBtcBalance)) {
             cancelProcessor.cancelTrade(orderWrappers, exchangeInfo);
         }
+    }
+
+    private List<String> acquireNewCryptos(ExchangeInfo exchangeInfo, Set<String> existingSymbols) {
+        BigDecimal myBalance = binanceService.getMyBalance(ASSET_BTC);
+        if (!acquireProcessor.haveBalanceForInitialTrading(myBalance)) {
+            return List.of();
+        }
+        List<String> acquiredSymbols = acquireProcessor.initTrading(getCryptos(exchangeInfo), existingSymbols);
+        existingSymbols.addAll(acquiredSymbols);
+        return acquiredSymbols;
+    }
+
+    private List<Crypto> getCryptos(ExchangeInfo exchangeInfo) {
+        if (loadedCryptos == null) {
+            loadedCryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+        }
+        return loadedCryptos;
     }
 
     private Set<String> getForbiddenOrderSymbols(List<Order> openOrders) {
@@ -172,7 +197,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
         logger.log("Forbidden order:" + forbiddenOrder);
         if (forbiddenOrder.getOrderPricePercentage()
                           .compareTo(MIN_ORDER_PRICE_PERCENTAGE_TO_SELL_FORBIDDEN_ORDER) < 0) {
-            List<Crypto> cryptos = cryptoProcessor.getCryptos(exchangeInfo, allForbiddenPairs);
+            List<Crypto> cryptos = getCryptos(exchangeInfo);
             if (splitProcessor.hasCryptosToBuy(cryptos, totalAmounts.keySet())) {
                 splitProcessor.splitCancelledOrder(orderWrappers, symbol, exchangeInfo, cryptos, totalAmounts.keySet());
             } else {

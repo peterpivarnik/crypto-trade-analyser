@@ -45,7 +45,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
@@ -533,6 +535,33 @@ public class BinanceService {
             .filter(pair -> pair.getLeft().compareTo(ZERO) > 0)
             .map(this::mapToBtcBalance)
             .reduce(ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Returns free balances per asset, only assets with positive free balance are included.
+     *
+     * @return free balance per asset
+     */
+    public Map<String, BigDecimal> getMyFreeBalances() {
+        logger.log("Get my free balances");
+        Map<String, BigDecimal> freeBalances = new LinkedHashMap<>();
+        getAccount().getBalances()
+                    .stream()
+                    .filter(assetBalance -> !assetBalance.getAsset().equals("NFT"))
+                    .filter(assetBalance -> new BigDecimal(assetBalance.getFree()).compareTo(ZERO) > 0)
+                    .forEach(assetBalance -> freeBalances.put(assetBalance.getAsset(),
+                                                              new BigDecimal(assetBalance.getFree())));
+        return freeBalances;
+    }
+
+    /**
+     * Returns minimal order value in BTC for the symbol.
+     *
+     * @param symbolInfo symbol information
+     * @return minimal order value
+     */
+    public BigDecimal getMinNotional(SymbolInfo symbolInfo) {
+        return getValueFromFilter(symbolInfo, SymbolFilter::getMinNotional, MIN_NOTIONAL, NOTIONAL);
     }
 
     private Account getAccount() {

@@ -13,6 +13,7 @@ import com.psw.cta.CryptoTrader;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
+import com.psw.cta.processor.OrphanBalanceChecker;
 import com.psw.cta.processor.trade.AcquireProcessor;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.processor.trade.CancelProcessor;
@@ -66,7 +67,8 @@ public class IocProvider {
         BinanceService binanceService = createBinanceService(binanceClient, logger);
         BnbTradeProcessor bnbTradeProcessor = createBnbTradeProcessor(binanceService, logger);
         LambdaTradeProcessor tradeProcessor = createLambdaTradeProcessor(binanceService, forbiddenPairs, logger);
-        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, logger);
+        OrphanBalanceChecker orphanBalanceChecker = new OrphanBalanceChecker(binanceService, logger);
+        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, orphanBalanceChecker, logger);
     }
 
     /**
@@ -83,7 +85,8 @@ public class IocProvider {
         BinanceService binanceService = createBinanceService(binanceClient, logger);
         BnbTradeProcessor bnbTradeProcessor = createBnbTradeProcessor(binanceService, logger);
         LocalTradeProcessor tradeProcessor = createLocalTradeProcessor(binanceService, logger);
-        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, logger);
+        OrphanBalanceChecker orphanBalanceChecker = new OrphanBalanceChecker(binanceService, logger);
+        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, orphanBalanceChecker, logger);
     }
 
     private static BinanceApi createBinanceApi(String apiKey, String apiSecret) {

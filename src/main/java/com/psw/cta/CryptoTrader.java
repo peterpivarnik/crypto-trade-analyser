@@ -16,6 +16,7 @@ import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
+import com.psw.cta.processor.OrphanBalanceChecker;
 import com.psw.cta.processor.trade.BnbTradeProcessor;
 import com.psw.cta.service.BinanceService;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -41,22 +43,26 @@ public class CryptoTrader {
     private final BinanceService binanceService;
     private final LambdaLogger logger;
     private final MainTradeProcessor tradeProcessor;
+    private final OrphanBalanceChecker orphanBalanceChecker;
 
     /**
      * Constructor of {@link CryptoTrader} for local environment.
      *
      * @param binanceService    Service for interacting with Binance API
      * @param bnbTradeProcessor Processor for BNB-specific trading operations
-     * @param tradeProcessor    Processor for handling local trading operations
-     * @param logger            Logger for recording trading operations and events
+     * @param tradeProcessor       Processor for handling local trading operations
+     * @param orphanBalanceChecker Checker of free balances without sell order
+     * @param logger               Logger for recording trading operations and events
      */
     public CryptoTrader(BinanceService binanceService,
                         BnbTradeProcessor bnbTradeProcessor,
                         LocalTradeProcessor tradeProcessor,
+                        OrphanBalanceChecker orphanBalanceChecker,
                         LambdaLogger logger) {
         this.binanceService = binanceService;
         this.bnbTradeProcessor = bnbTradeProcessor;
         this.tradeProcessor = tradeProcessor;
+        this.orphanBalanceChecker = orphanBalanceChecker;
         this.logger = logger;
     }
 
@@ -65,16 +71,19 @@ public class CryptoTrader {
      *
      * @param binanceService    Service for interacting with Binance API
      * @param bnbTradeProcessor Processor for BNB-specific trading operations
-     * @param tradeProcessor    Processor for handling Lambda trading operations
-     * @param logger            Logger for recording trading operations and events
+     * @param tradeProcessor       Processor for handling Lambda trading operations
+     * @param orphanBalanceChecker Checker of free balances without sell order
+     * @param logger               Logger for recording trading operations and events
      */
     public CryptoTrader(BinanceService binanceService,
                         BnbTradeProcessor bnbTradeProcessor,
                         LambdaTradeProcessor tradeProcessor,
+                        OrphanBalanceChecker orphanBalanceChecker,
                         LambdaLogger logger) {
         this.binanceService = binanceService;
         this.bnbTradeProcessor = bnbTradeProcessor;
         this.tradeProcessor = tradeProcessor;
+        this.orphanBalanceChecker = orphanBalanceChecker;
         this.logger = logger;
     }
 
@@ -123,7 +132,12 @@ public class CryptoTrader {
         List<Order> newOpenOrders = binanceService.getOpenOrders();
         Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
         logTotalAmounts(newTotalAmounts);
-        checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders);
+        List<String> problems = new ArrayList<>();
+        checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders).ifPresent(problems::add);
+        List<String> orphanBalances = orphanBalanceChecker.findOrphanBalances(exchangeInfo);
+        if (!orphanBalances.isEmpty()) {
+            problems.add("Orphan balances: " + String.join("; ", orphanBalances) + ".");
+        }
         LocalDateTime end = LocalDateTime.now();
         logger.log("Finished trading at " + end + ".");
         Duration duration = Duration.between(start, end);
@@ -132,6 +146,9 @@ public class CryptoTrader {
                    + " seconds, and "
                    + duration.toMillisPart()
                    + " milliseconds.");
+        if (!problems.isEmpty()) {
+            throw new BinanceApiException(String.join(" ", problems));
+        }
     }
 
     private String getVersion() {
@@ -187,7 +204,7 @@ public class CryptoTrader {
         return myBtcBalance.multiply(new BigDecimal("50")).intValue();
     }
 
-    private void checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders) {
+    private Optional<String> checkOldAndNewAmount(BigDecimal ordersAndBtcAmount, List<Order> newOpenOrders) {
         Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
         BigDecimal newOrdersAmount = newTotalAmounts.values()
                                                     .stream()
@@ -200,13 +217,15 @@ public class CryptoTrader {
         if (ordersAndBtcAmountDifference.compareTo(ZERO) > 0) {
             logger.log("ordersAndBtcAmountDifference: " + ordersAndBtcAmountDifference);
         } else if (ordersAndBtcAmountDifference.compareTo(ZERO) < 0) {
-            throw new BinanceApiException("New amount lower than before trading! Old amount : "
-                                          + ordersAndBtcAmount
-                                          + ". New amount: "
-                                          + newOrdersAndBtcAmount
-                                          + ". Difference: "
-                                          + ordersAndBtcAmountDifference);
+            return Optional.of("New amount lower than before trading! Old amount : "
+                               + ordersAndBtcAmount
+                               + ". New amount: "
+                               + newOrdersAndBtcAmount
+                               + ". Difference: "
+                               + ordersAndBtcAmountDifference
+                               + ".");
         }
+        return Optional.empty();
     }
 
     private BigDecimal getQuantity(Order order) {

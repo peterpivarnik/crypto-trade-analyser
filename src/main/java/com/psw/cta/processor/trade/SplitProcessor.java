@@ -25,7 +25,6 @@ import java.util.stream.Stream;
  */
 public class SplitProcessor implements CryptoToBuyProvider {
 
-    private static final BigDecimal MAX_BTC_AMOUNT_FOR_LAST_CRYPTO = new BigDecimal("0.005");
     private static final BigDecimal MIN_BTC_AMOUNT_TO_SPLIT = new BigDecimal("0.001");
 
     private final BinanceService binanceService;
@@ -178,7 +177,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("cryptoToBuy: " + cryptoToBuy);
         if (cryptoToBuyIndex == cryptosToBuy.size() - 1) {
             logger.log("Splitting for last cryptoToBuy");
-            buyAndSell(orderToCancel, btcAmountToSpend.min(MAX_BTC_AMOUNT_FOR_LAST_CRYPTO), cryptoToBuy);
+            buyAndSell(orderToCancel, btcAmountToSpend, cryptoToBuy);
             return;
         }
         BigDecimal minBtcAmountToSplit = minBtcAmountToTrade.multiply(new BigDecimal("2"));

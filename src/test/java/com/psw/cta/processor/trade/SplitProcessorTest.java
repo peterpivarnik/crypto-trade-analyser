@@ -78,10 +78,10 @@ class SplitProcessorTest {
     }
 
     @Test
-    void shouldCapAmountSpentOnLastCrypto() {
+    void shouldSpendWholeBigAmountOnOnlyCrypto() {
         split("0.05", List.of(crypto("AAABTC", false)));
 
-        assertBoughtAmounts(new Bought("AAABTC", "0.005"));
+        assertBoughtAmounts(new Bought("AAABTC", "0.05"));
     }
 
     @Test

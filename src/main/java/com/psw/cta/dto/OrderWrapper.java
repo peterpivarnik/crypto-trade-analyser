@@ -148,7 +148,7 @@ public class OrderWrapper {
                                         .map(Candlestick::getLow)
                                         .map(BigDecimal::new)
                                         .min(comparing(Function.identity()))
-                                        .orElse(BigDecimal.ZERO);
+                                        .orElse(currentPrice);
         BigDecimal max = candleStickData.stream()
                                         .map(Candlestick::getHigh)
                                         .map(BigDecimal::new)

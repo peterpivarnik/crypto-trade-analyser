@@ -6,8 +6,10 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.psw.cta.dto.Input;
+import com.psw.cta.exception.CryptoTraderException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -27,17 +29,31 @@ public class ServiceHandler implements RequestHandler<Input, Object> {
     @Override
     public Object handleRequest(Input input, Context context) {
         Map<String, String> variables = System.getenv();
-        String forbiddenPairsVariable = variables.get("forbiddenPairs");
-        String apiKey = variables.get("apiKey");
-        String apiSecret = variables.get("apiSecret");
+        String apiKey = getRequiredVariable(variables, "apiKey");
+        String apiSecret = getRequiredVariable(variables, "apiSecret");
         LambdaLogger logger = context.getLogger();
-        List<String> forbiddenPairs = splitForbiddenPairs(forbiddenPairsVariable);
+        List<String> forbiddenPairs = splitForbiddenPairs(variables.get("forbiddenPairs"));
         CryptoTrader cryptoTrader = createCryptoTrader(apiKey, apiSecret, logger, forbiddenPairs);
         cryptoTrader.startTrading();
         return "Lambda Function is invoked....";
     }
 
-    private List<String> splitForbiddenPairs(String forbiddenPairs) {
-        return Arrays.asList(forbiddenPairs.split(","));
+    static String getRequiredVariable(Map<String, String> variables, String name) {
+        String value = variables.get(name);
+        if (value == null || value.isBlank()) {
+            throw new CryptoTraderException("Missing environment variable " + name);
+        }
+        return value;
+    }
+
+    static List<String> splitForbiddenPairs(String forbiddenPairs) {
+        if (forbiddenPairs == null) {
+            return List.of();
+        }
+        return Arrays.stream(forbiddenPairs.split(","))
+                     .map(String::trim)
+                     .map(pair -> pair.toUpperCase(Locale.ROOT))
+                     .filter(pair -> !pair.isEmpty())
+                     .toList();
     }
 }

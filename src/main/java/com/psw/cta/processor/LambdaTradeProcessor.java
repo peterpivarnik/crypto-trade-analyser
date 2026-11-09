@@ -5,6 +5,7 @@ import static com.psw.cta.utils.Constants.MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT;
 import static java.math.BigDecimal.ZERO;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -16,7 +17,6 @@ import com.psw.cta.service.ExtractService;
 import com.psw.cta.service.ForbiddenPairsService;
 import com.psw.cta.service.RepeatTradingService;
 import com.psw.cta.service.SplitService;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;

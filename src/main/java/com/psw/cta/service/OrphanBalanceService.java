@@ -6,11 +6,11 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static java.math.RoundingMode.FLOOR;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

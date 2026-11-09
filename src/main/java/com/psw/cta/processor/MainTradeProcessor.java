@@ -11,12 +11,12 @@ import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;

@@ -6,6 +6,7 @@ import static java.math.RoundingMode.CEILING;
 import static java.util.Comparator.comparing;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.OrderWrapper;
@@ -13,7 +14,6 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;

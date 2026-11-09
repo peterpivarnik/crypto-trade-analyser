@@ -7,12 +7,12 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.processor.LambdaTradeProcessor;
-import com.psw.cta.service.OrphanBalanceService;
 import com.psw.cta.service.BnbTradeService;
-import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.OrphanBalanceService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

@@ -7,11 +7,11 @@ import static java.math.BigDecimal.ZERO;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

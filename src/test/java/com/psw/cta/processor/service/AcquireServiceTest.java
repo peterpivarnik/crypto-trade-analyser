@@ -10,10 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.service.AcquireService;
 import java.math.BigDecimal;
 import java.util.List;

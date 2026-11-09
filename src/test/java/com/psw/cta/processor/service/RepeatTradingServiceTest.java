@@ -2,7 +2,6 @@ package com.psw.cta.processor.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -11,13 +10,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
-import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.service.RepeatTradingService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +68,7 @@ class RepeatTradingServiceTest {
         InOrder inOrder = inOrder(binanceAdapter);
         inOrder.verify(binanceAdapter).buyWithQuantityRoundedUp(symbolInfo, BigDecimal.TEN);
         inOrder.verify(binanceAdapter).cancelOrder(orderWrapper);
-        inOrder.verify(binanceAdapter).placeSellOrder(eq(symbolInfo), eq(newPrice), eq(new BigDecimal("20")));
+        inOrder.verify(binanceAdapter).placeSellOrder(symbolInfo, newPrice, new BigDecimal("20"));
     }
 
     @Test

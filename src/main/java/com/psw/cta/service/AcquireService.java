@@ -6,10 +6,10 @@ import static com.psw.cta.utils.Constants.MIN_PRICE_TO_SELL_PERCENTAGE;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;

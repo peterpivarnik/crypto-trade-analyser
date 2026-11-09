@@ -8,6 +8,7 @@ import static java.math.RoundingMode.FLOOR;
 import static java.util.stream.Collectors.toMap;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
@@ -16,9 +17,8 @@ import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
-import com.psw.cta.service.OrphanBalanceService;
 import com.psw.cta.service.BnbTradeService;
-import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.OrphanBalanceService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;

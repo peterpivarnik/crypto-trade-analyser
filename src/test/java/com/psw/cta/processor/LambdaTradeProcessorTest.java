@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
@@ -22,7 +23,6 @@ import com.psw.cta.service.ExtractService;
 import com.psw.cta.service.ForbiddenPairsService;
 import com.psw.cta.service.RepeatTradingService;
 import com.psw.cta.service.SplitService;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

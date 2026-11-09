@@ -7,8 +7,8 @@ import static com.psw.cta.utils.Constants.SYMBOL_WBTC_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.psw.cta.dto.binance.DelistResponse;
 import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.dto.binance.DelistResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;

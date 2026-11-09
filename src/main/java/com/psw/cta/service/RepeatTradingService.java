@@ -4,12 +4,12 @@ import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.BiPredicate;

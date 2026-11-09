@@ -6,9 +6,9 @@ import static java.math.BigDecimal.ONE;
 import static java.math.RoundingMode.CEILING;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.psw.cta.adapter.BinanceAdapter;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 
 /**

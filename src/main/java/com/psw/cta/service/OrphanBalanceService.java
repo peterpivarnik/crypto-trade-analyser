@@ -1,4 +1,4 @@
-package com.psw.cta.processor;
+package com.psw.cta.service;
 
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
 import static com.psw.cta.utils.Constants.ASSET_BNB;
@@ -10,7 +10,7 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,21 +21,21 @@ import java.util.Set;
 /**
  * Finds free balances of cryptos that have no sell order, so they are not managed by the trader.
  */
-public class OrphanBalanceChecker {
+public class OrphanBalanceService {
 
     private static final Set<String> IGNORED_ASSETS = Set.of(ASSET_BTC, ASSET_BNB);
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for Binance API
+     * @param binanceAdapter service for Binance API
      * @param logger         logger
      */
-    public OrphanBalanceChecker(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public OrphanBalanceService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -49,7 +49,7 @@ public class OrphanBalanceChecker {
     public List<String> findOrphanBalances(ExchangeInfo exchangeInfo) {
         logger.log("Check orphan balances");
         List<String> orphanBalances = new ArrayList<>();
-        for (Map.Entry<String, BigDecimal> balance : binanceService.getMyFreeBalances().entrySet()) {
+        for (Map.Entry<String, BigDecimal> balance : binanceAdapter.getMyFreeBalances().entrySet()) {
             String asset = balance.getKey();
             if (IGNORED_ASSETS.contains(asset)) {
                 continue;
@@ -63,7 +63,7 @@ public class OrphanBalanceChecker {
             Optional<BigDecimal> btcValue = getBtcValue(symbolInfo.get(), quantity);
             if (btcValue.isEmpty()) {
                 logger.log("Free balance without price: " + asset + " qty=" + toPlainString(quantity));
-            } else if (btcValue.get().compareTo(binanceService.getMinNotional(symbolInfo.get())) >= 0) {
+            } else if (btcValue.get().compareTo(binanceAdapter.getMinNotional(symbolInfo.get())) >= 0) {
                 orphanBalances.add(asset
                                    + " qty=" + toPlainString(quantity)
                                    + " value=" + toPlainString(btcValue.get()) + " BTC");
@@ -83,7 +83,7 @@ public class OrphanBalanceChecker {
 
     private Optional<BigDecimal> getBtcValue(SymbolInfo symbolInfo, BigDecimal quantity) {
         try {
-            BigDecimal price = binanceService.getCurrentPrice(symbolInfo.getSymbol());
+            BigDecimal price = binanceAdapter.getCurrentPrice(symbolInfo.getSymbol());
             return Optional.of(quantity.multiply(price).setScale(8, FLOOR));
         } catch (BinanceApiException | CryptoTraderException e) {
             return Optional.empty();

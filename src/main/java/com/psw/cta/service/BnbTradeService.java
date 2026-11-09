@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static com.psw.cta.utils.Constants.ASSET_BNB;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -8,29 +8,29 @@ import static java.math.RoundingMode.CEILING;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 
 /**
  * Service for handling with BNB.
  */
-public class BnbTradeProcessor {
+public class BnbTradeService {
 
     public static final BigDecimal MIN_BNB_BALANCE = new BigDecimal("2");
     public static final BigDecimal MAX_BNB_BALANCE_TO_BUY = ONE;
 
     private final LambdaLogger logger;
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public BnbTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
+    public BnbTradeService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
         this.logger = logger;
-        this.binanceService = binanceService;
+        this.binanceAdapter = binanceAdapter;
     }
 
     /**
@@ -39,15 +39,15 @@ public class BnbTradeProcessor {
      * @return Actual amount of BNB
      */
     public BigDecimal buyBnB(BigDecimal currentBnbBtcPrice, SymbolInfo symbolInfo) {
-        BigDecimal myBnbBalance = binanceService.getMyBalance(ASSET_BNB);
+        BigDecimal myBnbBalance = binanceAdapter.getMyBalance(ASSET_BNB);
         if (myBnbBalance.compareTo(MIN_BNB_BALANCE) < 0) {
             logger.log("***** ***** Buying BNB ***** *****");
-            BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+            BigDecimal myBtcBalance = binanceAdapter.getMyBalance(ASSET_BTC);
             BigDecimal totalPossibleBnbQuantity = myBtcBalance.divide(currentBnbBtcPrice, 8, CEILING);
             logger.log("totalPossibleBnbQuantity: " + totalPossibleBnbQuantity);
             BigDecimal min = MAX_BNB_BALANCE_TO_BUY.min(totalPossibleBnbQuantity);
-            binanceService.buyWithQuantity(symbolInfo, min);
-            return binanceService.getMyBalance(ASSET_BNB);
+            binanceAdapter.buyWithQuantity(symbolInfo, min);
+            return binanceAdapter.getMyBalance(ASSET_BNB);
         }
         return myBnbBalance;
     }

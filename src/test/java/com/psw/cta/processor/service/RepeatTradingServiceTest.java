@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.processor.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,7 +17,8 @@ import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.RepeatTradingService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,12 +28,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RepeatTradingProcessorTest {
+class RepeatTradingServiceTest {
 
     private static final String SYMBOL = "OLDBTC";
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
     private LambdaLogger logger;
     @Mock
@@ -46,11 +47,11 @@ class RepeatTradingProcessorTest {
     @Mock
     private NewOrderResponse orderResponse;
 
-    private RepeatTradingProcessor repeatTradingProcessor;
+    private RepeatTradingService repeatTradingService;
 
     @BeforeEach
     void setUp() {
-        repeatTradingProcessor = new RepeatTradingProcessor(binanceService, logger);
+        repeatTradingService = new RepeatTradingService(binanceAdapter, logger);
         lenient().when(orderWrapper.getOrder()).thenReturn(order);
         lenient().when(order.getSymbol()).thenReturn(SYMBOL);
         lenient().when(orderWrapper.getQuantity()).thenReturn(BigDecimal.TEN);
@@ -60,33 +61,33 @@ class RepeatTradingProcessorTest {
     @Test
     void shouldBuyBeforeCancellingOrderAndSellDoubledQuantity() {
         BigDecimal newPrice = new BigDecimal("0.0002");
-        when(binanceService.buyWithQuantityRoundedUp(symbolInfo, BigDecimal.TEN)).thenReturn(orderResponse);
-        when(binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper)).thenReturn(newPrice);
+        when(binanceAdapter.buyWithQuantityRoundedUp(symbolInfo, BigDecimal.TEN)).thenReturn(orderResponse);
+        when(binanceAdapter.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper)).thenReturn(newPrice);
 
-        repeatTradingProcessor.rebuySingleOrder(orderWrapper, (service, wrapper) -> true, exchangeInfo);
+        repeatTradingService.rebuySingleOrder(orderWrapper, (service, wrapper) -> true, exchangeInfo);
 
-        InOrder inOrder = inOrder(binanceService);
-        inOrder.verify(binanceService).buyWithQuantityRoundedUp(symbolInfo, BigDecimal.TEN);
-        inOrder.verify(binanceService).cancelOrder(orderWrapper);
-        inOrder.verify(binanceService).placeSellOrder(eq(symbolInfo), eq(newPrice), eq(new BigDecimal("20")));
+        InOrder inOrder = inOrder(binanceAdapter);
+        inOrder.verify(binanceAdapter).buyWithQuantityRoundedUp(symbolInfo, BigDecimal.TEN);
+        inOrder.verify(binanceAdapter).cancelOrder(orderWrapper);
+        inOrder.verify(binanceAdapter).placeSellOrder(eq(symbolInfo), eq(newPrice), eq(new BigDecimal("20")));
     }
 
     @Test
     void shouldKeepOrderWhenBuyFails() {
-        when(binanceService.buyWithQuantityRoundedUp(any(), any())).thenThrow(new BinanceApiException("No balance"));
+        when(binanceAdapter.buyWithQuantityRoundedUp(any(), any())).thenThrow(new BinanceApiException("No balance"));
 
-        assertThatThrownBy(() -> repeatTradingProcessor.rebuySingleOrder(orderWrapper,
-                                                                         (service, wrapper) -> true,
-                                                                         exchangeInfo))
+        assertThatThrownBy(() -> repeatTradingService.rebuySingleOrder(orderWrapper,
+                                                                       (service, wrapper) -> true,
+                                                                       exchangeInfo))
             .isInstanceOf(BinanceApiException.class);
 
-        verify(binanceService, never()).cancelOrder(any());
+        verify(binanceAdapter, never()).cancelOrder(any());
     }
 
     @Test
     void shouldDoNothingWhenThereIsNotEnoughBtc() {
-        repeatTradingProcessor.rebuySingleOrder(orderWrapper, (service, wrapper) -> false, exchangeInfo);
+        repeatTradingService.rebuySingleOrder(orderWrapper, (service, wrapper) -> false, exchangeInfo);
 
-        verifyNoInteractions(binanceService);
+        verifyNoInteractions(binanceAdapter);
     }
 }

@@ -5,7 +5,7 @@ import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -20,11 +20,11 @@ public class LocalTradeProcessor extends MainTradeProcessor {
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public LocalTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
-        super(binanceService);
+    public LocalTradeProcessor(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        super(binanceAdapter);
         this.logger = logger;
     }
 

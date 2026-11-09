@@ -15,13 +15,14 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.processor.trade.AcquireProcessor;
-import com.psw.cta.processor.trade.CancelProcessor;
-import com.psw.cta.processor.trade.CryptoProcessor;
-import com.psw.cta.processor.trade.ExtractProcessor;
-import com.psw.cta.processor.trade.RepeatTradingProcessor;
-import com.psw.cta.processor.trade.SplitProcessor;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.service.AcquireService;
+import com.psw.cta.service.CancelService;
+import com.psw.cta.service.CryptoService;
+import com.psw.cta.service.ExtractService;
+import com.psw.cta.service.ForbiddenPairsService;
+import com.psw.cta.service.RepeatTradingService;
+import com.psw.cta.service.SplitService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -41,21 +42,21 @@ class LambdaTradeProcessorTest {
     private static final String ACTIVE_SYMBOL = "NEWBTC";
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
-    private CryptoProcessor cryptoProcessor;
+    private CryptoService cryptoService;
     @Mock
-    private SplitProcessor splitProcessor;
+    private SplitService splitService;
     @Mock
-    private AcquireProcessor acquireProcessor;
+    private AcquireService acquireService;
     @Mock
-    private RepeatTradingProcessor repeatTradingProcessor;
+    private RepeatTradingService repeatTradingService;
     @Mock
-    private ExtractProcessor extractProcessor;
+    private ExtractService extractService;
     @Mock
-    private CancelProcessor cancelProcessor;
+    private CancelService cancelService;
     @Mock
-    private ForbiddenPairsProvider forbiddenPairsProvider;
+    private ForbiddenPairsService forbiddenPairsService;
     @Mock
     private LambdaLogger logger;
     @Mock
@@ -65,54 +66,54 @@ class LambdaTradeProcessorTest {
 
     @BeforeEach
     void setUp() {
-        tradeProcessor = new LambdaTradeProcessor(binanceService,
-                                                  cryptoProcessor,
-                                                  splitProcessor,
-                                                  acquireProcessor,
-                                                  repeatTradingProcessor,
-                                                  extractProcessor,
-                                                  cancelProcessor,
-                                                  forbiddenPairsProvider,
+        tradeProcessor = new LambdaTradeProcessor(binanceAdapter,
+                                                  cryptoService,
+                                                  splitService,
+                                                  acquireService,
+                                                  repeatTradingService,
+                                                  extractService,
+                                                  cancelService,
+                                                  forbiddenPairsService,
                                                   logger);
-        lenient().when(forbiddenPairsProvider.getAllForbiddenPairs()).thenReturn(List.of(SYMBOL));
-        lenient().when(binanceService.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.0001"));
-        lenient().when(binanceService.getCandlesticks(any(), any(), any())).thenReturn(List.of(candlestick()));
+        lenient().when(forbiddenPairsService.getAllForbiddenPairs()).thenReturn(List.of(SYMBOL));
+        lenient().when(binanceAdapter.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        lenient().when(binanceAdapter.getCandlesticks(any(), any(), any())).thenReturn(List.of(candlestick()));
     }
 
     @Test
     void shouldSellDelistedOrderWhenThereIsNoCryptoToSplitInto() {
-        when(splitProcessor.hasCryptosToBuy(any(), any())).thenReturn(false);
+        when(splitService.hasCryptosToBuy(any(), any())).thenReturn(false);
 
         trade();
 
-        verify(cancelProcessor).cancelAndSell(any(), eq(exchangeInfo));
-        verify(splitProcessor, never()).splitCancelledOrder(any(), anyString(), any(), any(), any());
+        verify(cancelService).cancelAndSell(any(), eq(exchangeInfo));
+        verify(splitService, never()).splitCancelledOrder(any(), anyString(), any(), any(), any());
     }
 
     @Test
     void shouldSplitDelistedOrderWhenThereIsCryptoToSplitInto() {
-        when(splitProcessor.hasCryptosToBuy(any(), any())).thenReturn(true);
+        when(splitService.hasCryptosToBuy(any(), any())).thenReturn(true);
 
         trade();
 
-        verify(splitProcessor).splitCancelledOrder(any(), eq(SYMBOL), eq(exchangeInfo), any(), any());
-        verify(cancelProcessor, never()).cancelAndSell(any(), any());
+        verify(splitService).splitCancelledOrder(any(), eq(SYMBOL), eq(exchangeInfo), any(), any());
+        verify(cancelService, never()).cancelAndSell(any(), any());
     }
 
     @Test
     void shouldSellDelistedOrderWithHighLossInsteadOfRebuyingIt() {
-        when(binanceService.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.00005"));
+        when(binanceAdapter.getCurrentPrice(SYMBOL)).thenReturn(new BigDecimal("0.00005"));
 
         trade();
 
-        verify(cancelProcessor).cancelAndSell(any(), eq(exchangeInfo));
-        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+        verify(cancelService).cancelAndSell(any(), eq(exchangeInfo));
+        verify(repeatTradingService, never()).rebuySingleOrder(any(), any(), any());
     }
 
     @Test
     void shouldBuyCryptosWhenThereAreNoOpenOrders() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(BigDecimal.ONE);
-        when(acquireProcessor.haveBalanceForInitialTrading(BigDecimal.ONE)).thenReturn(true);
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(BigDecimal.ONE);
+        when(acquireService.haveBalanceForInitialTrading(BigDecimal.ONE)).thenReturn(true);
 
         tradeProcessor.trade(List.of(),
                              Map.of(),
@@ -122,87 +123,87 @@ class LambdaTradeProcessorTest {
                              0L,
                              0);
 
-        verify(acquireProcessor).initTrading(any(), any());
-        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+        verify(acquireService).initTrading(any(), any());
+        verify(splitService, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
     }
 
     @Test
     void shouldCancelTradeWhenBtcBalanceIsBelowMinimum() {
         tradeOldOrder("0.00011", "0.00019999");
 
-        verify(cancelProcessor).cancelTrade(any(), eq(exchangeInfo));
-        verify(extractProcessor, never()).extractOnlyFirstOrder(any(), any());
+        verify(cancelService).cancelTrade(any(), eq(exchangeInfo));
+        verify(extractService, never()).extractOnlyFirstOrder(any(), any());
     }
 
     @Test
     void shouldExtractOrderWhenBtcBalanceIsAtMinimum() {
         tradeOldOrder("0.00011", "0.0002");
 
-        verify(extractProcessor).extractOnlyFirstOrder(any(), eq(exchangeInfo));
-        verify(cancelProcessor, never()).cancelTrade(any(), any());
+        verify(extractService).extractOnlyFirstOrder(any(), eq(exchangeInfo));
+        verify(cancelService, never()).cancelTrade(any(), any());
     }
 
     @Test
     void shouldSplitOrderBeforeCancellingTradeWhenBtcBalanceIsBelowMinimum() {
         tradeOldOrder("0.00012", "0.0001");
 
-        verify(splitProcessor).splitOrdersWithOrderPricePercGreaterThen10(any(), eq(exchangeInfo), any(), any());
-        verify(cancelProcessor, never()).cancelTrade(any(), any());
+        verify(splitService).splitOrdersWithOrderPricePercGreaterThen10(any(), eq(exchangeInfo), any(), any());
+        verify(cancelService, never()).cancelTrade(any(), any());
     }
 
     @Test
     void shouldSplitOrderWithLowestOrderPriceWhenOrderIsBigEnough() {
         tradeOldOrder("0.00013", "0.001");
 
-        verify(splitProcessor).splitOrderWithLowestOrderPrice(any(), eq(exchangeInfo), any(), any());
+        verify(splitService).splitOrderWithLowestOrderPrice(any(), eq(exchangeInfo), any(), any());
     }
 
     @Test
     void shouldRebuyOrdersBeforeSplittingOrderWithLowestOrderPrice() {
-        when(repeatTradingProcessor.shouldBeRebought(any(), any())).thenReturn(true);
+        when(repeatTradingService.shouldBeRebought(any(), any())).thenReturn(true);
 
         tradeOldOrder("0.00013", "0.001");
 
-        verify(repeatTradingProcessor).rebuyOrders(any(), any(), eq(exchangeInfo));
-        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+        verify(repeatTradingService).rebuyOrders(any(), any(), eq(exchangeInfo));
+        verify(splitService, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
     }
 
     @Test
     void shouldRebuyOrderWithHighLossBeforeSplittingOrderWithLowestOrderPrice() {
         tradeOldOrder("0.00016", "10", "0.01", "0.01");
 
-        verify(repeatTradingProcessor).rebuySingleOrder(any(), any(), eq(exchangeInfo));
-        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+        verify(repeatTradingService).rebuySingleOrder(any(), any(), eq(exchangeInfo));
+        verify(splitService, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
     }
 
     @Test
     void shouldContinueWithExtractWhenNoOrderIsBigEnoughToSplit() {
         tradeOldOrder("0.00013", "5", "0.001", "0.00065");
 
-        verify(splitProcessor, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
-        verify(cryptoProcessor, never()).getCryptos(any(), any());
-        verify(extractProcessor).extractOnlyFirstOrder(any(), eq(exchangeInfo));
+        verify(splitService, never()).splitOrderWithLowestOrderPrice(any(), any(), any(), any());
+        verify(cryptoService, never()).getCryptos(any(), any());
+        verify(extractService).extractOnlyFirstOrder(any(), eq(exchangeInfo));
     }
 
     @Test
     void shouldExtractMoreOrdersWhenThereIsOrderToExtract() {
         tradeOldOrder("0.00012", "0.0035");
 
-        verify(extractProcessor).extractOrders(any(), any(), eq(exchangeInfo));
+        verify(extractService).extractOrders(any(), any(), eq(exchangeInfo));
     }
 
     @Test
     void shouldNotExtractMoreOrdersWhenThereIsNoOrderToExtract() {
         tradeOldOrder("0.00011", "3", "0.0035", "0.01");
 
-        verify(extractProcessor, never()).extractOrders(any(), any(), any());
+        verify(extractService, never()).extractOrders(any(), any(), any());
     }
 
     @Test
     void shouldNotExtractFirstOrderWhenItIsTooSmall() {
         tradeOldOrder("0.00011", "2", "0.001", "0.01");
 
-        verify(extractProcessor, never()).extractOnlyFirstOrder(any(), any());
+        verify(extractService, never()).extractOnlyFirstOrder(any(), any());
     }
 
     @Test
@@ -210,37 +211,37 @@ class LambdaTradeProcessorTest {
         tradeNewOrder("0.0002", "0.02");
 
         ArgumentCaptor<OrderWrapper> wrapper = ArgumentCaptor.forClass(OrderWrapper.class);
-        ArgumentCaptor<BiPredicate<BinanceService, OrderWrapper>> hasBtc = ArgumentCaptor.captor();
-        verify(repeatTradingProcessor).rebuySingleOrder(wrapper.capture(), hasBtc.capture(), eq(exchangeInfo));
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0119"));
-        assertThat(hasBtc.getValue().test(binanceService, wrapper.getValue())).isFalse();
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0121"));
-        assertThat(hasBtc.getValue().test(binanceService, wrapper.getValue())).isTrue();
+        ArgumentCaptor<BiPredicate<BinanceAdapter, OrderWrapper>> hasBtc = ArgumentCaptor.captor();
+        verify(repeatTradingService).rebuySingleOrder(wrapper.capture(), hasBtc.capture(), eq(exchangeInfo));
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0119"));
+        assertThat(hasBtc.getValue().test(binanceAdapter, wrapper.getValue())).isFalse();
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0121"));
+        assertThat(hasBtc.getValue().test(binanceAdapter, wrapper.getValue())).isTrue();
     }
 
     @Test
     void shouldRebuyOrderWithHighLossWithoutWaiting() {
         tradeNewOrder("0.00016", "0.01");
 
-        verify(repeatTradingProcessor).rebuySingleOrder(any(), any(), eq(exchangeInfo));
+        verify(repeatTradingService).rebuySingleOrder(any(), any(), eq(exchangeInfo));
     }
 
     @Test
     void shouldNotRebuyOrderWithHighLossWithoutNeededBtcAmount() {
         tradeNewOrder("0.00016", "0.005");
 
-        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+        verify(repeatTradingService, never()).rebuySingleOrder(any(), any(), any());
     }
 
     @Test
     void shouldNotRebuyOrderWithLossBelowThreshold() {
         tradeNewOrder("0.00014", "0.01");
 
-        verify(repeatTradingProcessor, never()).rebuySingleOrder(any(), any(), any());
+        verify(repeatTradingService, never()).rebuySingleOrder(any(), any(), any());
     }
 
     private void tradeNewOrder(String orderPrice, String btcBalance) {
-        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        when(binanceAdapter.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         Order order = order();
         order.setSymbol(ACTIVE_SYMBOL);
         order.setPrice(orderPrice);
@@ -255,40 +256,40 @@ class LambdaTradeProcessorTest {
 
     @Test
     void shouldContinueWithRebuyWhenNoNewCryptoIsAcquired() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
-        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
-        when(repeatTradingProcessor.shouldBeRebought(any(), any())).thenReturn(true);
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireService.haveBalanceForInitialTrading(any())).thenReturn(true);
+        when(repeatTradingService.shouldBeRebought(any(), any())).thenReturn(true);
 
         tradeNewOrderWithMinOpenOrders("0.00011", 5);
 
-        verify(acquireProcessor).initTrading(any(), eq(Set.of(ACTIVE_SYMBOL)));
-        verify(repeatTradingProcessor).rebuyOrders(any(), any(), eq(exchangeInfo));
+        verify(acquireService).initTrading(any(), eq(Set.of(ACTIVE_SYMBOL)));
+        verify(repeatTradingService).rebuyOrders(any(), any(), eq(exchangeInfo));
     }
 
     @Test
     void shouldNotContinueWhenNewCryptoIsAcquired() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
-        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
-        when(acquireProcessor.initTrading(any(), any())).thenReturn(List.of("AAABTC"));
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireService.haveBalanceForInitialTrading(any())).thenReturn(true);
+        when(acquireService.initTrading(any(), any())).thenReturn(List.of("AAABTC"));
 
         tradeNewOrderWithMinOpenOrders("0.00011", 5);
 
-        verify(repeatTradingProcessor, never()).rebuyOrders(any(), any(), any());
+        verify(repeatTradingService, never()).rebuyOrders(any(), any(), any());
     }
 
     @Test
     void shouldLoadCryptosOnlyOnceWhenSplittingAfterAcquiring() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
-        when(acquireProcessor.haveBalanceForInitialTrading(any())).thenReturn(true);
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        when(acquireService.haveBalanceForInitialTrading(any())).thenReturn(true);
 
         tradeNewOrderWithMinOpenOrders("0.00012", 5);
 
-        verify(splitProcessor).splitOrdersWithOrderPricePercGreaterThen10(any(), eq(exchangeInfo), any(), any());
-        verify(cryptoProcessor, times(1)).getCryptos(any(), any());
+        verify(splitService).splitOrdersWithOrderPricePercGreaterThen10(any(), eq(exchangeInfo), any(), any());
+        verify(cryptoService, times(1)).getCryptos(any(), any());
     }
 
     private void tradeNewOrderWithMinOpenOrders(String orderPrice, int minOpenOrders) {
-        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        when(binanceAdapter.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         Order order = order();
         order.setSymbol(ACTIVE_SYMBOL);
         order.setPrice(orderPrice);
@@ -303,7 +304,7 @@ class LambdaTradeProcessorTest {
 
     @Test
     void shouldNotSlowDownExtractedOrderByRestOfSymbol() {
-        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        when(binanceAdapter.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         Order extractedOrder = symbolOrder("0.00011", "1");
         Order restOrder = symbolOrder("0.000111", "400");
 
@@ -316,7 +317,7 @@ class LambdaTradeProcessorTest {
                              0);
 
         ArgumentCaptor<OrderWrapper> wrapper = ArgumentCaptor.forClass(OrderWrapper.class);
-        verify(repeatTradingProcessor).shouldBeRebought(wrapper.capture(), any());
+        verify(repeatTradingService).shouldBeRebought(wrapper.capture(), any());
         assertThat(wrapper.getValue().getQuantity()).isEqualByComparingTo("1");
         assertThat(wrapper.getValue().getRemainWaitingTime()).isNegative();
     }
@@ -336,7 +337,7 @@ class LambdaTradeProcessorTest {
     }
 
     private void tradeOldOrder(String orderPrice, String quantity, String btcBalance, String totalAmount) {
-        when(binanceService.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
+        when(binanceAdapter.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         Order order = order();
         order.setSymbol(ACTIVE_SYMBOL);
         order.setPrice(orderPrice);

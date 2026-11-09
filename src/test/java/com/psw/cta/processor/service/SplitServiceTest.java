@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.processor.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,7 +16,8 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.SplitService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +31,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SplitProcessorTest {
+class SplitServiceTest {
 
     private static final String SYMBOL = "OLDBTC";
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
     private LambdaLogger logger;
     @Mock
@@ -45,11 +46,11 @@ class SplitProcessorTest {
     @Mock
     private Order order;
 
-    private SplitProcessor splitProcessor;
+    private SplitService splitService;
 
     @BeforeEach
     void setUp() {
-        splitProcessor = new SplitProcessor(binanceService, logger);
+        splitService = new SplitService(binanceAdapter, logger);
         lenient().when(orderToSplit.getOrder()).thenReturn(order);
         lenient().when(order.getSymbol()).thenReturn(SYMBOL);
         lenient().when(order.getOrderId()).thenReturn(1L);
@@ -57,7 +58,7 @@ class SplitProcessorTest {
         lenient().when(orderToSplit.getOrderPrice()).thenReturn(new BigDecimal("0.0002"));
         lenient().when(orderToSplit.getCurrentPrice()).thenReturn(new BigDecimal("0.0001"));
         lenient().when(exchangeInfo.getSymbolInfo(SYMBOL)).thenReturn(symbolInfo(SYMBOL));
-        lenient().when(binanceService.buyWithBtcs(any(), any())).thenReturn(BigDecimal.ONE);
+        lenient().when(binanceAdapter.buyWithBtcs(any(), any())).thenReturn(BigDecimal.ONE);
     }
 
     @Test
@@ -66,8 +67,8 @@ class SplitProcessorTest {
             .isInstanceOf(CryptoTraderException.class)
             .hasMessageContaining(SYMBOL);
 
-        verify(binanceService, never()).cancelOrder(any());
-        verify(binanceService, never()).sellAvailableBalance(any(), any());
+        verify(binanceAdapter, never()).cancelOrder(any());
+        verify(binanceAdapter, never()).sellAvailableBalance(any(), any());
     }
 
     @Test
@@ -132,13 +133,13 @@ class SplitProcessorTest {
     void shouldReportWhetherThereAreCryptosToBuy() {
         List<Crypto> cryptos = List.of(crypto("AAABTC", false));
 
-        assertThat(splitProcessor.hasCryptosToBuy(cryptos, Set.of())).isTrue();
-        assertThat(splitProcessor.hasCryptosToBuy(cryptos, Set.of("AAABTC"))).isFalse();
+        assertThat(splitService.hasCryptosToBuy(cryptos, Set.of())).isTrue();
+        assertThat(splitService.hasCryptosToBuy(cryptos, Set.of("AAABTC"))).isFalse();
     }
 
     private void split(String proceeds, List<Crypto> cryptos) {
-        lenient().when(binanceService.sellAvailableBalance(any(), any())).thenReturn(new BigDecimal(proceeds));
-        splitProcessor.splitCancelledOrder(List.of(orderToSplit), SYMBOL, exchangeInfo, cryptos, Set.of(SYMBOL));
+        lenient().when(binanceAdapter.sellAvailableBalance(any(), any())).thenReturn(new BigDecimal(proceeds));
+        splitService.splitCancelledOrder(List.of(orderToSplit), SYMBOL, exchangeInfo, cryptos, Set.of(SYMBOL));
     }
 
     private void assertBoughtAmounts(Bought expected) {
@@ -157,7 +158,7 @@ class SplitProcessorTest {
     private List<Bought> boughtAmounts() {
         ArgumentCaptor<SymbolInfo> symbols = ArgumentCaptor.forClass(SymbolInfo.class);
         ArgumentCaptor<BigDecimal> amounts = ArgumentCaptor.forClass(BigDecimal.class);
-        verify(binanceService, atLeast(1)).buyWithBtcs(symbols.capture(), amounts.capture());
+        verify(binanceAdapter, atLeast(1)).buyWithBtcs(symbols.capture(), amounts.capture());
         List<Bought> bought = new ArrayList<>();
         for (int i = 0; i < symbols.getAllValues().size(); i++) {
             bought.add(new Bought(symbols.getAllValues().get(i).getSymbol(),

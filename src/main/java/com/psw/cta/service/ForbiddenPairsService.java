@@ -1,4 +1,4 @@
-package com.psw.cta.processor;
+package com.psw.cta.service;
 
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.SYMBOL_BNB_BTC;
@@ -8,7 +8,7 @@ import static com.psw.cta.utils.Constants.SYMBOL_XAUT_BTC;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.binance.DelistResponse;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -21,23 +21,23 @@ import java.util.stream.Collectors;
 /**
  * Provides trading pairs which must not be traded: default pairs, configured pairs and pairs scheduled for delisting.
  */
-public class ForbiddenPairsProvider {
+public class ForbiddenPairsService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final List<String> configuredForbiddenPairs;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService           service for Binance API
+     * @param binanceAdapter           service for Binance API
      * @param configuredForbiddenPairs trading pairs configured as forbidden
      * @param logger                   logger
      */
-    public ForbiddenPairsProvider(BinanceService binanceService,
-                                  List<String> configuredForbiddenPairs,
-                                  LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public ForbiddenPairsService(BinanceAdapter binanceAdapter,
+                                 List<String> configuredForbiddenPairs,
+                                 LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.configuredForbiddenPairs = configuredForbiddenPairs;
         this.logger = logger;
     }
@@ -48,7 +48,7 @@ public class ForbiddenPairsProvider {
      * @return default, configured and delisted BTC trading pairs
      */
     public List<String> getAllForbiddenPairs() {
-        Set<String> delistedPairs = binanceService.getDelistSchedule()
+        Set<String> delistedPairs = binanceAdapter.getDelistSchedule()
                                                   .stream()
                                                   .map(DelistResponse::getSymbols)
                                                   .filter(Objects::nonNull)

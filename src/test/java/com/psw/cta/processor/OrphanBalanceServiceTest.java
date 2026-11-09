@@ -12,7 +12,8 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.SymbolStatus;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.OrphanBalanceService;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,21 +25,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class OrphanBalanceCheckerTest {
+class OrphanBalanceServiceTest {
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
     private LambdaLogger logger;
     @Mock
     private ExchangeInfo exchangeInfo;
 
-    private OrphanBalanceChecker orphanBalanceChecker;
+    private OrphanBalanceService orphanBalanceService;
 
     @BeforeEach
     void setUp() {
-        orphanBalanceChecker = new OrphanBalanceChecker(binanceService, logger);
-        lenient().when(binanceService.getMinNotional(any())).thenReturn(new BigDecimal("0.0001"));
+        orphanBalanceService = new OrphanBalanceService(binanceAdapter, logger);
+        lenient().when(binanceAdapter.getMinNotional(any())).thenReturn(new BigDecimal("0.0001"));
         lenient().when(exchangeInfo.getSymbols()).thenReturn(List.of(symbolInfo("ADABTC", TRADING),
                                                                      symbolInfo("FILBTC", TRADING),
                                                                      symbolInfo("HALTBTC", BREAK)));
@@ -47,9 +48,9 @@ class OrphanBalanceCheckerTest {
     @Test
     void shouldReportFreeBalanceWorthAtLeastMinimalOrderValue() {
         freeBalances(Map.of("ADA", "2521.5"));
-        when(binanceService.getCurrentPrice("ADABTC")).thenReturn(new BigDecimal("0.00000254"));
+        when(binanceAdapter.getCurrentPrice("ADABTC")).thenReturn(new BigDecimal("0.00000254"));
 
-        List<String> orphanBalances = orphanBalanceChecker.findOrphanBalances(exchangeInfo);
+        List<String> orphanBalances = orphanBalanceService.findOrphanBalances(exchangeInfo);
 
         assertThat(orphanBalances).containsExactly("ADA qty=2521.5 value=0.00640461 BTC");
     }
@@ -57,39 +58,39 @@ class OrphanBalanceCheckerTest {
     @Test
     void shouldIgnoreBtcAndBnb() {
         lenient().when(exchangeInfo.getSymbols()).thenReturn(List.of(symbolInfo("BNBBTC", TRADING)));
-        lenient().when(binanceService.getCurrentPrice(any())).thenReturn(BigDecimal.ONE);
+        lenient().when(binanceAdapter.getCurrentPrice(any())).thenReturn(BigDecimal.ONE);
         freeBalances(Map.of("BTC", "0.04", "BNB", "2.2"));
 
-        assertThat(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).isEmpty();
+        assertThat(orphanBalanceService.findOrphanBalances(exchangeInfo)).isEmpty();
     }
 
     @Test
     void shouldIgnoreDustBelowMinimalOrderValue() {
         freeBalances(Map.of("FIL", "0.5"));
-        when(binanceService.getCurrentPrice("FILBTC")).thenReturn(new BigDecimal("0.00001066"));
+        when(binanceAdapter.getCurrentPrice("FILBTC")).thenReturn(new BigDecimal("0.00001066"));
 
-        assertThat(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).isEmpty();
+        assertThat(orphanBalanceService.findOrphanBalances(exchangeInfo)).isEmpty();
     }
 
     @Test
     void shouldIgnoreAssetsWithoutTradingBtcPair() {
         freeBalances(Map.of("AIRDROP", "1000", "HALT", "1000"));
 
-        assertThat(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).isEmpty();
+        assertThat(orphanBalanceService.findOrphanBalances(exchangeInfo)).isEmpty();
     }
 
     @Test
     void shouldIgnoreAssetsWithoutPrice() {
         freeBalances(Map.of("ADA", "2521.5"));
-        when(binanceService.getCurrentPrice("ADABTC")).thenThrow(new CryptoTraderException("No price found!"));
+        when(binanceAdapter.getCurrentPrice("ADABTC")).thenThrow(new CryptoTraderException("No price found!"));
 
-        assertThat(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).isEmpty();
+        assertThat(orphanBalanceService.findOrphanBalances(exchangeInfo)).isEmpty();
     }
 
     private void freeBalances(Map<String, String> balances) {
         Map<String, BigDecimal> freeBalances = new LinkedHashMap<>();
         balances.forEach((asset, free) -> freeBalances.put(asset, new BigDecimal(free)));
-        when(binanceService.getMyFreeBalances()).thenReturn(freeBalances);
+        when(binanceAdapter.getMyFreeBalances()).thenReturn(freeBalances);
     }
 
     private SymbolInfo symbolInfo(String symbol, SymbolStatus status) {

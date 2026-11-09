@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.processor.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,7 +13,8 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.AcquireService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -25,54 +26,54 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AcquireProcessorTest {
+class AcquireServiceTest {
 
     private static final BigDecimal CURRENT_PRICE = new BigDecimal("0.001");
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
     private LambdaLogger logger;
 
-    private AcquireProcessor acquireProcessor;
+    private AcquireService acquireService;
 
     @BeforeEach
     void setUp() {
-        acquireProcessor = new AcquireProcessor(binanceService, logger);
-        lenient().when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
-        lenient().when(binanceService.buyWithBtcs(any(), any())).thenReturn(BigDecimal.ONE);
+        acquireService = new AcquireService(binanceAdapter, logger);
+        lenient().when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.01"));
+        lenient().when(binanceAdapter.buyWithBtcs(any(), any())).thenReturn(BigDecimal.ONE);
     }
 
     @Test
     void shouldBuyCryptoPassingFiltersAndSkipCryptoWithExistingOrder() {
-        when(binanceService.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(risingCandles());
+        when(binanceAdapter.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(risingCandles());
 
-        List<String> acquired = acquireProcessor.initTrading(List.of(crypto("NEWBTC"), crypto("HELDBTC")),
-                                                             Set.of("HELDBTC"));
+        List<String> acquired = acquireService.initTrading(List.of(crypto("NEWBTC"), crypto("HELDBTC")),
+                                                           Set.of("HELDBTC"));
 
         assertThat(acquired).containsExactly("NEWBTC");
-        verify(binanceService, never()).getCandleStickData(eq("HELDBTC"), any(), anyLong(), any());
+        verify(binanceAdapter, never()).getCandleStickData(eq("HELDBTC"), any(), anyLong(), any());
     }
 
     @Test
     void shouldReturnNothingWhenNoCryptoPassesFilters() {
-        when(binanceService.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(flatCandles());
+        when(binanceAdapter.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(flatCandles());
 
-        List<String> acquired = acquireProcessor.initTrading(List.of(crypto("NEWBTC")), Set.of());
+        List<String> acquired = acquireService.initTrading(List.of(crypto("NEWBTC")), Set.of());
 
         assertThat(acquired).isEmpty();
-        verify(binanceService, never()).buyWithBtcs(any(), any());
+        verify(binanceAdapter, never()).buyWithBtcs(any(), any());
     }
 
     @Test
     void shouldReturnNothingWhenThereIsNotEnoughBtc() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0002"));
-        when(binanceService.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(risingCandles());
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.0002"));
+        when(binanceAdapter.getCandleStickData(eq("NEWBTC"), any(), anyLong(), any())).thenReturn(risingCandles());
 
-        List<String> acquired = acquireProcessor.initTrading(List.of(crypto("NEWBTC")), Set.of());
+        List<String> acquired = acquireService.initTrading(List.of(crypto("NEWBTC")), Set.of());
 
         assertThat(acquired).isEmpty();
-        verify(binanceService, never()).buyWithBtcs(any(), any());
+        verify(binanceAdapter, never()).buyWithBtcs(any(), any());
     }
 
     private Crypto crypto(String symbol) {

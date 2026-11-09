@@ -1,11 +1,11 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -14,19 +14,19 @@ import java.util.Optional;
 /**
  * Service to extract order in two orders.
  */
-public class ExtractProcessor {
+public class ExtractService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service providing functionality for {@link BinanceApi}
+     * @param binanceAdapter service providing functionality for {@link BinanceApi}
      * @param logger         logger
      */
-    public ExtractProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public ExtractService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -43,7 +43,7 @@ public class ExtractProcessor {
                               ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Extracting orders ***** *****");
         orderWrappers.stream()
-                     .filter(ExtractProcessor::canBeExtracted)
+                     .filter(ExtractService::canBeExtracted)
                      .sorted(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
                      .limit(getNumberOfOrdersToExtract(myBtcBalance))
                      .forEach(order -> extractOrder(order, exchangeInfo));
@@ -94,8 +94,8 @@ public class ExtractProcessor {
     }
 
     private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {
-        binanceService.cancelOrder(orderToExtract);
+        binanceAdapter.cancelOrder(orderToExtract);
         SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderToExtract.getOrder().getSymbol());
-        binanceService.extractTwoSellOrders(symbolInfo, orderToExtract);
+        binanceAdapter.extractTwoSellOrders(symbolInfo, orderToExtract);
     }
 }

@@ -16,9 +16,9 @@ import com.psw.cta.exception.CryptoTraderException;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
 import com.psw.cta.processor.MainTradeProcessor;
-import com.psw.cta.processor.OrphanBalanceChecker;
-import com.psw.cta.processor.trade.BnbTradeProcessor;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.service.OrphanBalanceService;
+import com.psw.cta.service.BnbTradeService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -39,51 +39,51 @@ import java.util.stream.Collectors;
  */
 public class CryptoTrader {
 
-    private final BnbTradeProcessor bnbTradeProcessor;
-    private final BinanceService binanceService;
+    private final BnbTradeService bnbTradeService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
     private final MainTradeProcessor tradeProcessor;
-    private final OrphanBalanceChecker orphanBalanceChecker;
+    private final OrphanBalanceService orphanBalanceService;
 
     /**
      * Constructor of {@link CryptoTrader} for local environment.
      *
-     * @param binanceService    Service for interacting with Binance API
-     * @param bnbTradeProcessor Processor for BNB-specific trading operations
+     * @param binanceAdapter    Service for interacting with Binance API
+     * @param bnbTradeService Processor for BNB-specific trading operations
      * @param tradeProcessor       Processor for handling local trading operations
-     * @param orphanBalanceChecker Checker of free balances without sell order
+     * @param orphanBalanceService Checker of free balances without sell order
      * @param logger               Logger for recording trading operations and events
      */
-    public CryptoTrader(BinanceService binanceService,
-                        BnbTradeProcessor bnbTradeProcessor,
+    public CryptoTrader(BinanceAdapter binanceAdapter,
+                        BnbTradeService bnbTradeService,
                         LocalTradeProcessor tradeProcessor,
-                        OrphanBalanceChecker orphanBalanceChecker,
+                        OrphanBalanceService orphanBalanceService,
                         LambdaLogger logger) {
-        this.binanceService = binanceService;
-        this.bnbTradeProcessor = bnbTradeProcessor;
+        this.binanceAdapter = binanceAdapter;
+        this.bnbTradeService = bnbTradeService;
         this.tradeProcessor = tradeProcessor;
-        this.orphanBalanceChecker = orphanBalanceChecker;
+        this.orphanBalanceService = orphanBalanceService;
         this.logger = logger;
     }
 
     /**
      * Constructor of {@link CryptoTrader} for AWS environment.
      *
-     * @param binanceService    Service for interacting with Binance API
-     * @param bnbTradeProcessor Processor for BNB-specific trading operations
+     * @param binanceAdapter    Service for interacting with Binance API
+     * @param bnbTradeService Processor for BNB-specific trading operations
      * @param tradeProcessor       Processor for handling Lambda trading operations
-     * @param orphanBalanceChecker Checker of free balances without sell order
+     * @param orphanBalanceService Checker of free balances without sell order
      * @param logger               Logger for recording trading operations and events
      */
-    public CryptoTrader(BinanceService binanceService,
-                        BnbTradeProcessor bnbTradeProcessor,
+    public CryptoTrader(BinanceAdapter binanceAdapter,
+                        BnbTradeService bnbTradeService,
                         LambdaTradeProcessor tradeProcessor,
-                        OrphanBalanceChecker orphanBalanceChecker,
+                        OrphanBalanceService orphanBalanceService,
                         LambdaLogger logger) {
-        this.binanceService = binanceService;
-        this.bnbTradeProcessor = bnbTradeProcessor;
+        this.binanceAdapter = binanceAdapter;
+        this.bnbTradeService = bnbTradeService;
         this.tradeProcessor = tradeProcessor;
-        this.orphanBalanceChecker = orphanBalanceChecker;
+        this.orphanBalanceService = orphanBalanceService;
         this.logger = logger;
     }
 
@@ -94,7 +94,7 @@ public class CryptoTrader {
         logger.log("***** ***** Start of trading ***** *****");
         LocalDateTime start = LocalDateTime.now();
         logger.log("Crypto trader with version " + getVersion() + " started at " + start + ".");
-        List<Order> openOrders = binanceService.getOpenOrders();
+        List<Order> openOrders = binanceAdapter.getOpenOrders();
         logger.log("Number of open orders: " + openOrders.size());
         Map<String, BigDecimal> totalAmounts = createTotalAmounts(openOrders);
         logTotalAmounts(totalAmounts);
@@ -102,14 +102,14 @@ public class CryptoTrader {
                                               .stream()
                                               .reduce(ZERO, BigDecimal::add);
         logger.log("ordersAmount: " + ordersAmount);
-        BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+        BigDecimal myBtcBalance = binanceAdapter.getMyBalance(ASSET_BTC);
         BigDecimal ordersAndBtcAmount = ordersAmount.add(myBtcBalance);
         logger.log("ordersAndBtcAmount: " + ordersAndBtcAmount.stripTrailingZeros());
-        ExchangeInfo exchangeInfo = binanceService.getExchangeInfo();
-        BigDecimal currentBnbBtcPrice = binanceService.getCurrentPrice(SYMBOL_BNB_BTC);
+        ExchangeInfo exchangeInfo = binanceAdapter.getExchangeInfo();
+        BigDecimal currentBnbBtcPrice = binanceAdapter.getCurrentPrice(SYMBOL_BNB_BTC);
         logger.log("currentBnbBtcPrice: " + currentBnbBtcPrice);
         SymbolInfo bnbSymbolInfo = exchangeInfo.getSymbolInfo(SYMBOL_BNB_BTC);
-        BigDecimal bnbBalance = bnbTradeProcessor.buyBnB(currentBnbBtcPrice, bnbSymbolInfo);
+        BigDecimal bnbBalance = bnbTradeService.buyBnB(currentBnbBtcPrice, bnbSymbolInfo);
         BigDecimal bnbAmount = bnbBalance.multiply(currentBnbBtcPrice);
         BigDecimal totalAmount = ordersAndBtcAmount.add(bnbAmount);
         logger.log("totalAmount: " + totalAmount.stripTrailingZeros());
@@ -120,7 +120,7 @@ public class CryptoTrader {
                                               .distinct()
                                               .count();
         logger.log("Unique open orders: " + uniqueOpenOrdersSize);
-        BigDecimal actualBalance = binanceService.getMyActualBalance();
+        BigDecimal actualBalance = binanceAdapter.getMyActualBalance();
         logger.log("actualBalance: " + actualBalance.stripTrailingZeros());
         tradeProcessor.trade(openOrders,
                              totalAmounts,
@@ -129,12 +129,12 @@ public class CryptoTrader {
                              exchangeInfo,
                              uniqueOpenOrdersSize,
                              minOpenOrders);
-        List<Order> newOpenOrders = binanceService.getOpenOrders();
+        List<Order> newOpenOrders = binanceAdapter.getOpenOrders();
         Map<String, BigDecimal> newTotalAmounts = createTotalAmounts(newOpenOrders);
         logTotalAmounts(newTotalAmounts);
         List<String> problems = new ArrayList<>();
         checkOldAndNewAmount(ordersAndBtcAmount, newOpenOrders).ifPresent(problems::add);
-        List<String> orphanBalances = orphanBalanceChecker.findOrphanBalances(exchangeInfo);
+        List<String> orphanBalances = orphanBalanceService.findOrphanBalances(exchangeInfo);
         if (!orphanBalances.isEmpty()) {
             problems.add("Orphan balances: " + String.join("; ", orphanBalances) + ".");
         }
@@ -209,7 +209,7 @@ public class CryptoTrader {
         BigDecimal newOrdersAmount = newTotalAmounts.values()
                                                     .stream()
                                                     .reduce(ZERO, BigDecimal::add);
-        BigDecimal myNewBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+        BigDecimal myNewBtcBalance = binanceAdapter.getMyBalance(ASSET_BTC);
         BigDecimal newOrdersAndBtcAmount = newOrdersAmount.add(myNewBtcBalance);
         logger.log("newOrdersAndBtcAmount: " + newOrdersAndBtcAmount);
         BigDecimal ordersAndBtcAmountDifference = newOrdersAndBtcAmount.subtract(ordersAndBtcAmount);

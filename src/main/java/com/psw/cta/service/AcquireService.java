@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.FIFTEEN_MINUTES;
 import static com.psw.cta.utils.Constants.ASSET_BTC;
@@ -9,7 +9,7 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.Candlestick;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
@@ -17,19 +17,19 @@ import java.util.Set;
 /**
  * Service for acquire crypto.
  */
-public class AcquireProcessor {
+public class AcquireService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public AcquireProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public AcquireService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -45,7 +45,7 @@ public class AcquireProcessor {
         return cryptos.stream()
                       .filter(crypto -> !existingSymbols.contains(crypto.getSymbolInfo().getSymbol()))
                       .map(crypto -> {
-                          List<Candlestick> candleStickData = binanceService.getCandleStickData(
+                          List<Candlestick> candleStickData = binanceAdapter.getCandleStickData(
                               crypto.getSymbolInfo().getSymbol(),
                               FIFTEEN_MINUTES,
                               96L * 15L,
@@ -64,13 +64,13 @@ public class AcquireProcessor {
 
     private boolean acquireCrypto(Crypto crypto) {
         logger.log("Trading crypto " + crypto);
-        BigDecimal myBtcBalance = binanceService.getMyBalance(ASSET_BTC);
+        BigDecimal myBtcBalance = binanceAdapter.getMyBalance(ASSET_BTC);
         BigDecimal maxBtcBalanceToBuy = myBtcBalance.min(new BigDecimal("0.0002"));
         if (!haveBalanceForInitialTrading(myBtcBalance)) {
             return false;
         }
-        BigDecimal quantity = binanceService.buyWithBtcs(crypto.getSymbolInfo(), maxBtcBalanceToBuy);
-        binanceService.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
+        BigDecimal quantity = binanceAdapter.buyWithBtcs(crypto.getSymbolInfo(), maxBtcBalanceToBuy);
+        binanceAdapter.placeSellOrder(crypto.getSymbolInfo(), crypto.getPriceToSell(), quantity);
         return true;
     }
 

@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static java.util.Comparator.comparing;
 
@@ -11,7 +11,7 @@ import java.util.Set;
  * Provides methods to analyze and filter cryptocurrencies based on market conditions
  * and trading criteria to identify potential buying opportunities.
  */
-public interface CryptoToBuyProvider {
+public interface CryptoToBuyService {
 
     /**
      * Returns cryptos to split an order into, sorted from the crypto keeping its value best to the crypto

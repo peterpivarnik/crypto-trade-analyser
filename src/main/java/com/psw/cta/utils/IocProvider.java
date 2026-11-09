@@ -6,20 +6,20 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.CryptoTrader;
 import com.psw.cta.api.BinanceApi;
-import com.psw.cta.processor.ForbiddenPairsProvider;
+import com.psw.cta.service.ForbiddenPairsService;
 import com.psw.cta.processor.LambdaTradeProcessor;
 import com.psw.cta.processor.LocalTradeProcessor;
-import com.psw.cta.processor.OrphanBalanceChecker;
-import com.psw.cta.processor.trade.AcquireProcessor;
-import com.psw.cta.processor.trade.BnbTradeProcessor;
-import com.psw.cta.processor.trade.CancelProcessor;
-import com.psw.cta.processor.trade.CryptoProcessor;
-import com.psw.cta.processor.trade.ExtractProcessor;
-import com.psw.cta.processor.trade.RepeatTradingProcessor;
-import com.psw.cta.processor.trade.SplitProcessor;
+import com.psw.cta.service.OrphanBalanceService;
+import com.psw.cta.service.AcquireService;
+import com.psw.cta.service.BnbTradeService;
+import com.psw.cta.service.CancelService;
+import com.psw.cta.service.CryptoService;
+import com.psw.cta.service.ExtractService;
+import com.psw.cta.service.RepeatTradingService;
+import com.psw.cta.service.SplitService;
 import com.psw.cta.security.AuthenticationInterceptor;
-import com.psw.cta.service.BinanceClient;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceClient;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.util.List;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
@@ -55,11 +55,11 @@ public class IocProvider {
                                                   List<String> forbiddenPairs) {
         BinanceApi binanceApi = createBinanceApi(apiKey, apiSecret);
         BinanceClient binanceClient = createBinanceClient(binanceApi, logger);
-        BinanceService binanceService = createBinanceService(binanceClient, logger);
-        BnbTradeProcessor bnbTradeProcessor = createBnbTradeProcessor(binanceService, logger);
-        LambdaTradeProcessor tradeProcessor = createLambdaTradeProcessor(binanceService, forbiddenPairs, logger);
-        OrphanBalanceChecker orphanBalanceChecker = new OrphanBalanceChecker(binanceService, logger);
-        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, orphanBalanceChecker, logger);
+        BinanceAdapter binanceAdapter = createBinanceService(binanceClient, logger);
+        BnbTradeService bnbTradeService = createBnbTradeProcessor(binanceAdapter, logger);
+        LambdaTradeProcessor tradeProcessor = createLambdaTradeProcessor(binanceAdapter, forbiddenPairs, logger);
+        OrphanBalanceService orphanBalanceService = new OrphanBalanceService(binanceAdapter, logger);
+        return new CryptoTrader(binanceAdapter, bnbTradeService, tradeProcessor, orphanBalanceService, logger);
     }
 
     /**
@@ -73,11 +73,11 @@ public class IocProvider {
     public static CryptoTrader createCryptoTrader(String apiKey, String apiSecret, LambdaLogger logger) {
         BinanceApi binanceApi = createBinanceApi(apiKey, apiSecret);
         BinanceClient binanceClient = createBinanceClient(binanceApi, logger);
-        BinanceService binanceService = createBinanceService(binanceClient, logger);
-        BnbTradeProcessor bnbTradeProcessor = createBnbTradeProcessor(binanceService, logger);
-        LocalTradeProcessor tradeProcessor = createLocalTradeProcessor(binanceService, logger);
-        OrphanBalanceChecker orphanBalanceChecker = new OrphanBalanceChecker(binanceService, logger);
-        return new CryptoTrader(binanceService, bnbTradeProcessor, tradeProcessor, orphanBalanceChecker, logger);
+        BinanceAdapter binanceAdapter = createBinanceService(binanceClient, logger);
+        BnbTradeService bnbTradeService = createBnbTradeProcessor(binanceAdapter, logger);
+        LocalTradeProcessor tradeProcessor = createLocalTradeProcessor(binanceAdapter, logger);
+        OrphanBalanceService orphanBalanceService = new OrphanBalanceService(binanceAdapter, logger);
+        return new CryptoTrader(binanceAdapter, bnbTradeService, tradeProcessor, orphanBalanceService, logger);
     }
 
     private static BinanceApi createBinanceApi(String apiKey, String apiSecret) {
@@ -106,29 +106,29 @@ public class IocProvider {
         return new BinanceClient(logger, binanceApi);
     }
 
-    private static BinanceService createBinanceService(BinanceClient binanceClient, LambdaLogger logger) {
-        return new BinanceService(binanceClient, logger);
+    private static BinanceAdapter createBinanceService(BinanceClient binanceClient, LambdaLogger logger) {
+        return new BinanceAdapter(binanceClient, logger);
     }
 
-    private static BnbTradeProcessor createBnbTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
-        return new BnbTradeProcessor(binanceService, logger);
+    private static BnbTradeService createBnbTradeProcessor(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        return new BnbTradeService(binanceAdapter, logger);
     }
 
-    private static LambdaTradeProcessor createLambdaTradeProcessor(BinanceService binanceService,
+    private static LambdaTradeProcessor createLambdaTradeProcessor(BinanceAdapter binanceAdapter,
                                                                    List<String> forbiddenPairs,
                                                                    LambdaLogger logger) {
-        return new LambdaTradeProcessor(binanceService,
-                                        new CryptoProcessor(binanceService, logger),
-                                        new SplitProcessor(binanceService, logger),
-                                        new AcquireProcessor(binanceService, logger),
-                                        new RepeatTradingProcessor(binanceService, logger),
-                                        new ExtractProcessor(binanceService, logger),
-                                        new CancelProcessor(binanceService, logger),
-                                        new ForbiddenPairsProvider(binanceService, forbiddenPairs, logger),
+        return new LambdaTradeProcessor(binanceAdapter,
+                                        new CryptoService(binanceAdapter, logger),
+                                        new SplitService(binanceAdapter, logger),
+                                        new AcquireService(binanceAdapter, logger),
+                                        new RepeatTradingService(binanceAdapter, logger),
+                                        new ExtractService(binanceAdapter, logger),
+                                        new CancelService(binanceAdapter, logger),
+                                        new ForbiddenPairsService(binanceAdapter, forbiddenPairs, logger),
                                         logger);
     }
 
-    private static LocalTradeProcessor createLocalTradeProcessor(BinanceService binanceService, LambdaLogger logger) {
-        return new LocalTradeProcessor(binanceService, logger);
+    private static LocalTradeProcessor createLocalTradeProcessor(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        return new LocalTradeProcessor(binanceAdapter, logger);
     }
 }

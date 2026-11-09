@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static com.psw.cta.utils.Constants.FIBONACCI_SEQUENCE;
 import static com.psw.cta.utils.Constants.MIN_ORDER_PRICE_PERCENTAGE_TO_SPLIT;
@@ -13,7 +13,7 @@ import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.exception.CryptoTraderException;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -23,21 +23,21 @@ import java.util.stream.Stream;
 /**
  * Service to split crypto to cryptos with small amount.
  */
-public class SplitProcessor implements CryptoToBuyProvider {
+public class SplitService implements CryptoToBuyService {
 
     private static final BigDecimal MIN_BTC_AMOUNT_TO_SPLIT = new BigDecimal("0.001");
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public SplitProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public SplitService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -98,7 +98,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                                Set<String> existingSymbols) {
         logger.log("***** ***** Splitting order with lowest order price percentage ***** *****");
         orderWrappers.stream()
-                     .filter(SplitProcessor::hasEnoughBtcAmountToSplit)
+                     .filter(SplitService::hasEnoughBtcAmountToSplit)
                      .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
                      .ifPresent(orderToSplit -> split(orderToSplit, exchangeInfo, cryptos, existingSymbols));
     }
@@ -133,7 +133,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
         String symbol = orderToCancel.getOrder().getSymbol();
         try {
             Long orderId = orderToCancel.getOrder().getOrderId();
-            binanceService.checkOrderStatus(symbol, orderId);
+            binanceAdapter.checkOrderStatus(symbol, orderId);
         } catch (BinanceApiException exception) {
             logger.log("Order do not exist anymore: " + symbol);
             return;
@@ -147,12 +147,12 @@ public class SplitProcessor implements CryptoToBuyProvider {
         logger.log("cryptosToBuy.size(): " + cryptosToBuy.size());
 
         // 2. cancel existing order
-        binanceService.cancelOrder(orderToCancel);
+        binanceAdapter.cancelOrder(orderToCancel);
 
         // 3. sell cancelled order
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(symbol);
         BigDecimal currentQuantity = orderToCancel.getQuantity();
-        BigDecimal totalBtcAmountToSpend = binanceService.sellAvailableBalance(symbolInfoOfSellOrder,
+        BigDecimal totalBtcAmountToSpend = binanceAdapter.sellAvailableBalance(symbolInfoOfSellOrder,
                                                                                currentQuantity);
         logger.log("totalBtcAmountToSpend: " + totalBtcAmountToSpend);
 
@@ -205,7 +205,7 @@ public class SplitProcessor implements CryptoToBuyProvider {
 
     private void buyAndSell(OrderWrapper orderToCancel, BigDecimal btcAmountToSpend, Crypto cryptoToBuy) {
         // 4a. buy
-        BigDecimal boughtQuantity = binanceService.buyWithBtcs(cryptoToBuy.getSymbolInfo(), btcAmountToSpend);
+        BigDecimal boughtQuantity = binanceAdapter.buyWithBtcs(cryptoToBuy.getSymbolInfo(), btcAmountToSpend);
         logger.log("boughtQuantity: " + boughtQuantity);
 
         // 4b. place sell order
@@ -214,6 +214,6 @@ public class SplitProcessor implements CryptoToBuyProvider {
                                                      .multiply(new BigDecimal("1.01"))
                                                      .divide(orderToCancel.getCurrentPrice(), 8, CEILING);
         logger.log("finalPriceWithProfit: " + finalPriceWithProfit);
-        binanceService.placeSellOrder(cryptoToBuy.getSymbolInfo(), finalPriceWithProfit, boughtQuantity);
+        binanceAdapter.placeSellOrder(cryptoToBuy.getSymbolInfo(), finalPriceWithProfit, boughtQuantity);
     }
 }

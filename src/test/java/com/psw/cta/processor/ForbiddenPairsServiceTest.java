@@ -5,7 +5,8 @@ import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.binance.DelistResponse;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
+import com.psw.cta.service.ForbiddenPairsService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,16 +14,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ForbiddenPairsProviderTest {
+class ForbiddenPairsServiceTest {
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
     private LambdaLogger logger;
 
     @Test
     void shouldCombineDefaultConfiguredAndDelistedPairs() {
-        when(binanceService.getDelistSchedule()).thenReturn(List.of(delistResponse(List.of("OLDBTC", "OLDUSDT"))));
+        when(binanceAdapter.getDelistSchedule()).thenReturn(List.of(delistResponse(List.of("OLDBTC", "OLDUSDT"))));
 
         List<String> forbiddenPairs = getAllForbiddenPairs("ABCBTC");
 
@@ -31,7 +32,7 @@ class ForbiddenPairsProviderTest {
 
     @Test
     void shouldIgnoreDelistResponseWithoutSymbols() {
-        when(binanceService.getDelistSchedule()).thenReturn(List.of(delistResponse(null),
+        when(binanceAdapter.getDelistSchedule()).thenReturn(List.of(delistResponse(null),
                                                                     delistResponse(List.of("OLDBTC"))));
 
         List<String> forbiddenPairs = getAllForbiddenPairs();
@@ -41,7 +42,7 @@ class ForbiddenPairsProviderTest {
 
     @Test
     void shouldNotContainDuplicates() {
-        when(binanceService.getDelistSchedule()).thenReturn(List.of(delistResponse(List.of("ABCBTC")),
+        when(binanceAdapter.getDelistSchedule()).thenReturn(List.of(delistResponse(List.of("ABCBTC")),
                                                                     delistResponse(List.of("ABCBTC"))));
 
         List<String> forbiddenPairs = getAllForbiddenPairs("BNBBTC", "ABCBTC");
@@ -50,7 +51,7 @@ class ForbiddenPairsProviderTest {
     }
 
     private List<String> getAllForbiddenPairs(String... configuredForbiddenPairs) {
-        return new ForbiddenPairsProvider(binanceService, List.of(configuredForbiddenPairs), logger)
+        return new ForbiddenPairsService(binanceAdapter, List.of(configuredForbiddenPairs), logger)
             .getAllForbiddenPairs();
     }
 

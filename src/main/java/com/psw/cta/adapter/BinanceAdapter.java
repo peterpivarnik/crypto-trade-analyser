@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.adapter;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.CandlestickInterval.FIVE_MINUTES;
@@ -55,7 +55,7 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * Service providing functionality for {@link BinanceClient}.
  */
-public class BinanceService {
+public class BinanceAdapter {
 
     private static final int BALANCE_WAIT_MAX_ATTEMPTS = 20;
     private static final int BALANCE_WAIT_DELAY_MILLIS = 500;
@@ -69,7 +69,7 @@ public class BinanceService {
      * @param binanceClient Binance client
      * @param logger        Lambda logger for logging errors and messages.
      */
-    public BinanceService(BinanceClient binanceClient, LambdaLogger logger) {
+    public BinanceAdapter(BinanceClient binanceClient, LambdaLogger logger) {
         this.binanceClient = binanceClient;
         this.logger = logger;
     }

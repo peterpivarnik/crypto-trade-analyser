@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static com.psw.cta.dto.binance.CandlestickInterval.DAILY;
 import static com.psw.cta.dto.binance.SymbolStatus.TRADING;
@@ -11,7 +11,7 @@ import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.Crypto;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.TickerStatistics;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -20,19 +20,19 @@ import java.util.stream.Collectors;
 /**
  * Service providing functionality to get cryptos.
  */
-public class CryptoProcessor {
+public class CryptoService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public CryptoProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public CryptoService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -45,7 +45,7 @@ public class CryptoProcessor {
      */
     public List<Crypto> getCryptos(ExchangeInfo exchangeInfo, List<String> allForbiddenPairs) {
         logger.log("Get all cryptos");
-        List<TickerStatistics> tickers = binanceService.getAll24hTickers();
+        List<TickerStatistics> tickers = binanceAdapter.getAll24hTickers();
         Map<String, BigDecimal> askPrices = tickers.stream()
                                                    .filter(ticker -> ticker.getAskPrice() != null)
                                                    .collect(Collectors.toMap(TickerStatistics::getSymbol,
@@ -67,7 +67,7 @@ public class CryptoProcessor {
                                                crypto -> crypto.getCurrentPrice().compareTo(new BigDecimal("0.000001"))
                                                          > 0)
                                            .map(crypto -> crypto.setThreeMonthsCandleStickData(
-                                               binanceService.getCandleStickData(
+                                               binanceAdapter.getCandleStickData(
                                                    crypto.getSymbolInfo().getSymbol(),
                                                    DAILY,
                                                    90L,

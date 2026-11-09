@@ -1,11 +1,11 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.api.BinanceApi;
 import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
@@ -13,19 +13,19 @@ import java.util.List;
 /**
  * Service to cancel trade.
  */
-public class CancelProcessor {
+public class CancelService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public CancelProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public CancelService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -51,11 +51,11 @@ public class CancelProcessor {
      */
     public void cancelAndSell(OrderWrapper orderToCancel, ExchangeInfo exchangeInfo) {
         // 1. cancel existing order
-        binanceService.cancelOrder(orderToCancel);
+        binanceAdapter.cancelOrder(orderToCancel);
 
         // 2. sell cancelled order
         BigDecimal currentQuantity = orderToCancel.getQuantity();
         SymbolInfo symbolInfoOfSellOrder = exchangeInfo.getSymbolInfo(orderToCancel.getOrder().getSymbol());
-        binanceService.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
+        binanceAdapter.sellAvailableBalance(symbolInfoOfSellOrder, currentQuantity);
     }
 }

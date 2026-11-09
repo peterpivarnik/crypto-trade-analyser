@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,7 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class BinanceServiceTest {
+class BinanceAdapterTest {
 
     private static final String SYMBOL = "AAABTC";
 
@@ -32,12 +32,12 @@ class BinanceServiceTest {
     @Mock
     private OrderWrapper orderWrapper;
 
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     private SymbolInfo symbolInfo;
 
     @BeforeEach
     void setUp() {
-        binanceService = new BinanceService(binanceClient, logger);
+        binanceAdapter = new BinanceAdapter(binanceClient, logger);
         symbolInfo = new SymbolInfo();
         symbolInfo.setSymbol(SYMBOL);
         lenient().when(orderWrapper.getCurrentPrice()).thenReturn(new BigDecimal("0.0001"));
@@ -48,7 +48,7 @@ class BinanceServiceTest {
     void shouldCalculateNewPriceToSellFromOrderResponseWithoutLoadingTrades() {
         NewOrderResponse orderResponse = orderResponse("10", "0.00102");
 
-        BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
+        BigDecimal newPriceToSell = binanceAdapter.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
 
         assertThat(newPriceToSell).isEqualByComparingTo("0.000122");
         verify(binanceClient, never()).getMyTrades(any(), any());
@@ -59,7 +59,7 @@ class BinanceServiceTest {
         NewOrderResponse orderResponse = orderResponse("10", null);
         when(binanceClient.getMyTrades(SYMBOL, "1")).thenReturn(List.of(trade("4", "0.0001"), trade("6", "0.000103")));
 
-        BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
+        BigDecimal newPriceToSell = binanceAdapter.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
 
         assertThat(newPriceToSell).isEqualByComparingTo("0.0001218");
     }

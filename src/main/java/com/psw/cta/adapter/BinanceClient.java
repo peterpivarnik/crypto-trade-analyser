@@ -1,4 +1,4 @@
-package com.psw.cta.service;
+package com.psw.cta.adapter;
 
 import static com.psw.cta.dto.binance.NewOrderResponseType.RESULT;
 import static com.psw.cta.utils.BinanceApiConstants.DEFAULT_RECEIVING_WINDOW;

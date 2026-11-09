@@ -10,9 +10,9 @@ import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.exception.BinanceApiException;
 import com.psw.cta.processor.LambdaTradeProcessor;
-import com.psw.cta.processor.OrphanBalanceChecker;
-import com.psw.cta.processor.trade.BnbTradeProcessor;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.service.OrphanBalanceService;
+import com.psw.cta.service.BnbTradeService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,13 +27,13 @@ class CryptoTraderTest {
     private static final String ORPHAN = "ADA qty=2521.5 value=0.0064 BTC";
 
     @Mock
-    private BinanceService binanceService;
+    private BinanceAdapter binanceAdapter;
     @Mock
-    private BnbTradeProcessor bnbTradeProcessor;
+    private BnbTradeService bnbTradeService;
     @Mock
     private LambdaTradeProcessor tradeProcessor;
     @Mock
-    private OrphanBalanceChecker orphanBalanceChecker;
+    private OrphanBalanceService orphanBalanceService;
     @Mock
     private LambdaLogger logger;
     @Mock
@@ -43,30 +43,30 @@ class CryptoTraderTest {
 
     @BeforeEach
     void setUp() {
-        cryptoTrader = new CryptoTrader(binanceService,
-                                        bnbTradeProcessor,
+        cryptoTrader = new CryptoTrader(binanceAdapter,
+                                        bnbTradeService,
                                         tradeProcessor,
-                                        orphanBalanceChecker,
+                                        orphanBalanceService,
                                         logger);
-        lenient().when(binanceService.getOpenOrders()).thenReturn(List.of());
-        lenient().when(binanceService.getExchangeInfo()).thenReturn(exchangeInfo);
-        lenient().when(binanceService.getCurrentPrice(any())).thenReturn(new BigDecimal("0.009"));
-        lenient().when(bnbTradeProcessor.buyBnB(any(), any())).thenReturn(new BigDecimal("2"));
-        lenient().when(binanceService.getMyActualBalance()).thenReturn(new BigDecimal("0.1"));
+        lenient().when(binanceAdapter.getOpenOrders()).thenReturn(List.of());
+        lenient().when(binanceAdapter.getExchangeInfo()).thenReturn(exchangeInfo);
+        lenient().when(binanceAdapter.getCurrentPrice(any())).thenReturn(new BigDecimal("0.009"));
+        lenient().when(bnbTradeService.buyBnB(any(), any())).thenReturn(new BigDecimal("2"));
+        lenient().when(binanceAdapter.getMyActualBalance()).thenReturn(new BigDecimal("0.1"));
     }
 
     @Test
     void shouldFinishWithoutExceptionWhenThereIsNoProblem() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"));
-        when(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).thenReturn(List.of());
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"));
+        when(orphanBalanceService.findOrphanBalances(exchangeInfo)).thenReturn(List.of());
 
         assertThatCode(() -> cryptoTrader.startTrading()).doesNotThrowAnyException();
     }
 
     @Test
     void shouldFailWhenThereAreOrphanBalances() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"));
-        when(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).thenReturn(List.of(ORPHAN));
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"));
+        when(orphanBalanceService.findOrphanBalances(exchangeInfo)).thenReturn(List.of(ORPHAN));
 
         assertThatThrownBy(() -> cryptoTrader.startTrading())
             .isInstanceOf(BinanceApiException.class)
@@ -75,8 +75,8 @@ class CryptoTraderTest {
 
     @Test
     void shouldReportLowerAmountTogetherWithOrphanBalances() {
-        when(binanceService.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"), new BigDecimal("0.04"));
-        when(orphanBalanceChecker.findOrphanBalances(exchangeInfo)).thenReturn(List.of(ORPHAN));
+        when(binanceAdapter.getMyBalance("BTC")).thenReturn(new BigDecimal("0.05"), new BigDecimal("0.04"));
+        when(orphanBalanceService.findOrphanBalances(exchangeInfo)).thenReturn(List.of(ORPHAN));
 
         assertThatThrownBy(() -> cryptoTrader.startTrading())
             .isInstanceOf(BinanceApiException.class)

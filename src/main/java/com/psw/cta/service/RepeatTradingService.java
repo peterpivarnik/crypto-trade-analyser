@@ -1,4 +1,4 @@
-package com.psw.cta.processor.trade;
+package com.psw.cta.service;
 
 import static com.psw.cta.utils.Constants.ASSET_BTC;
 import static com.psw.cta.utils.Constants.MIN_PROFIT_PERCENTAGE;
@@ -9,7 +9,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.NewOrderResponse;
 import com.psw.cta.dto.binance.SymbolInfo;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -17,19 +17,19 @@ import java.util.function.BiPredicate;
 /**
  * Service to rebuy crypto.
  */
-public class RepeatTradingProcessor {
+public class RepeatTradingService {
 
-    private final BinanceService binanceService;
+    private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      * @param logger         logger
      */
-    public RepeatTradingProcessor(BinanceService binanceService, LambdaLogger logger) {
-        this.binanceService = binanceService;
+    public RepeatTradingService(BinanceAdapter binanceAdapter, LambdaLogger logger) {
+        this.binanceAdapter = binanceAdapter;
         this.logger = logger;
     }
 
@@ -42,7 +42,7 @@ public class RepeatTradingProcessor {
      */
     public void rebuyOrders(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance, ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Rebuy orders ***** *****");
-        BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate = (service, wrapper) -> hasEnoughBtcAmount(
+        BiPredicate<BinanceAdapter, OrderWrapper> hasBtcPredicate = (service, wrapper) -> hasEnoughBtcAmount(
             service.getMyBalance(ASSET_BTC),
             wrapper);
         orderWrappers.stream()
@@ -75,30 +75,30 @@ public class RepeatTradingProcessor {
      * @param exchangeInfo    exchange info containing symbol details
      */
     public void rebuySingleOrder(OrderWrapper orderWrapper,
-                                 BiPredicate<BinanceService, OrderWrapper> hasBtcPredicate,
+                                 BiPredicate<BinanceAdapter, OrderWrapper> hasBtcPredicate,
                                  ExchangeInfo exchangeInfo) {
         logger.log("***** ***** Repeat trading ***** *****");
         logger.log("OrderWrapper: " + orderWrapper);
 
 
         // 0. Check if still have enough balance
-        if (!hasBtcPredicate.test(binanceService, orderWrapper)) {
+        if (!hasBtcPredicate.test(binanceAdapter, orderWrapper)) {
             logger.log("Conditions to rebuy crypto not valid.");
             return;
         }
         // 1. buy
         SymbolInfo symbolInfo = exchangeInfo.getSymbolInfo(orderWrapper.getOrder().getSymbol());
-        NewOrderResponse orderResponse = binanceService.buyWithQuantityRoundedUp(symbolInfo,
+        NewOrderResponse orderResponse = binanceAdapter.buyWithQuantityRoundedUp(symbolInfo,
                                                                                  orderWrapper.getQuantity());
 
         // 2. cancel existing order
-        binanceService.cancelOrder(orderWrapper);
+        binanceAdapter.cancelOrder(orderWrapper);
 
         // 3. create new order
-        BigDecimal newPriceToSell = binanceService.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
+        BigDecimal newPriceToSell = binanceAdapter.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
         BigDecimal completeQuantityToSell = orderWrapper.getQuantity()
                                                         .multiply(new BigDecimal("2"));
-        binanceService.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
+        binanceAdapter.placeSellOrder(symbolInfo, newPriceToSell, completeQuantityToSell);
     }
 
     /**

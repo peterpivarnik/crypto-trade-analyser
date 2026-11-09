@@ -16,7 +16,7 @@ import com.psw.cta.dto.OrderWrapper;
 import com.psw.cta.dto.binance.Candlestick;
 import com.psw.cta.dto.binance.ExchangeInfo;
 import com.psw.cta.dto.binance.Order;
-import com.psw.cta.service.BinanceService;
+import com.psw.cta.adapter.BinanceAdapter;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.Duration;
@@ -31,15 +31,15 @@ import java.util.stream.Stream;
  */
 public abstract class MainTradeProcessor {
 
-    protected final BinanceService binanceService;
+    protected final BinanceAdapter binanceAdapter;
 
     /**
      * Default constructor.
      *
-     * @param binanceService service for {@link BinanceApi}
+     * @param binanceAdapter service for {@link BinanceApi}
      */
-    protected MainTradeProcessor(BinanceService binanceService) {
-        this.binanceService = binanceService;
+    protected MainTradeProcessor(BinanceAdapter binanceAdapter) {
+        this.binanceAdapter = binanceAdapter;
     }
 
     /**
@@ -96,11 +96,11 @@ public abstract class MainTradeProcessor {
                                             BigDecimal actualBalance,
                                             Map<String, BigDecimal> totalAmounts,
                                             boolean hasMoreSymbolOrders) {
-        BigDecimal currentPrice = binanceService.getCurrentPrice(order.getSymbol());
+        BigDecimal currentPrice = binanceAdapter.getCurrentPrice(order.getSymbol());
         BigDecimal actualWaitingTime = calculateActualWaitingTime(order);
         BigDecimal orderPrice = new BigDecimal(order.getPrice());
         BigDecimal orderPricePercentage = calculatePricePercentage(currentPrice, orderPrice);
-        List<Candlestick> candleStickData = binanceService.getCandlesticks(order,
+        List<Candlestick> candleStickData = binanceAdapter.getCandlesticks(order,
                                                                            actualWaitingTime,
                                                                            orderPricePercentage);
         return new OrderWrapper(order,

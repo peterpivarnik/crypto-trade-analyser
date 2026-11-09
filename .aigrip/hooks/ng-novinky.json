@@ -1,0 +1,67 @@
+{
+  "_popis": "Zoznam noviniek pre ľudí na serveri (STAVBA 4.156, rozhodnuté 25. 10. 2026: c). Ukazuje ho pás „Čo je nové“ vo workspace a upozornenie vo VS Code (aigrip-token-notifier). Ide von cez spoločné miesto /opt/aigrip-ng/ng/novinky.json (obnova každých 5 min). Ukážu sa len novinky s pustena=true — pustiť ich smie len PS svojím slovom. zapnute=false vypne pás aj upozornenie (vypínač). id sa po pustení nemení: podľa neho si prehliadač a VS Code pamätajú, čo človek videl. Mimo servera (vlastný počítač kolegu) ich pri štarte sedenia povie partner — háčik ng-novinky.sh z balíka stroja, ktorý nesie kópiu tohto zoznamu (príde s najbližšou verziou stroja); novinku s len_server=true mimo servera nepovie. Pole navod (zoznam podnetov workspace 47, 26. 10. 2026) = kapitola návodu s krokmi a obrázkami (navody/novinky.html#kN, zdroj work/cloud-workspace/novinky-navody/); ide von s novinkami (ng/navody/), pás „Čo je nové“ pri novinke ukáže „Návod“. Jazyky (JZ5, 27. 10. 2026, rozhodnutie PS: NG sľubuje význam, nie slová; v tomto kole SK + CS): nadpis a text sú slovenské (zdroj); nadpis_cs a text_cs sú české. Ak české pole chýba, workspace aj partner ukážu slovensky a označia to. Ďalšie jazyky (en, de) pribudnú ako nadpis_en/text_en, nadpis_de/text_de — čítače už berú pole nadpis_<jazyk>/text_<jazyk>. Partner novinku mimo servera nehovorí „doslova“, ale v jazyku človeka (význam a fakty bez zmeny).",
+  "zapnute": true,
+  "novinky": [
+    {
+      "id": "2026-10-29-asistovany-prehliadac",
+      "datum": "2026-10-29",
+      "nadpis": "Asistovaný prehliadač: prihlásiš sa a AI partner na webe pokračuje",
+      "text": "Keď AI partner potrebuje stránku, kde sa treba prihlásiť, potvrdiť prihlásenie v telefóne alebo vyriešiť captchu, pošle ti odkaz a heslo. Odkaz otvorí okno prehliadača, ktorý beží na serveri: zadáš heslo, prihlásiš sa a AI partner potom na stránke pracuje sám — číta, vypĺňa, sťahuje. Prihlásenia si prehliadač pamätá, takže nabudúce to často pôjde bez teba. Každé sedenie má vlastné okno, odkaz aj heslo, takže vidíš len stránky toho sedenia; okno sa samo zavrie pol hodiny po skončení sedenia. Prehliadač aj prihlásenia sú len tvoje. Môžeš o to AI partnera aj požiadať: „otvor to v asistovanom prehliadači“.",
+      "nadpis_cs": "Asistovaný prohlížeč: přihlásíš se a AI partner na webu pokračuje",
+      "text_cs": "Když AI partner potřebuje stránku, kde se musíš přihlásit, potvrdit přihlášení v telefonu nebo vyřešit captchu, pošle ti odkaz a heslo. Odkaz otevře okno prohlížeče, který běží na serveru: zadáš heslo, přihlásíš se a AI partner pak na stránce pracuje sám — čte, vyplňuje, stahuje. Přihlášení si prohlížeč pamatuje, takže příště to často půjde bez tebe. Každá relace má vlastní okno, odkaz i heslo, takže vidíš jen stránky té relace; okno se samo zavře půl hodiny po skončení relace. Prohlížeč i přihlášení jsou jen tvoje. Můžeš o to AI partnera i požádat: „otevři to v asistovaném prohlížeči“.",
+      "len_server": true,
+      "pustena": true,
+      "navod": "navody/novinky.html#k5"
+    },
+    {
+      "id": "2026-10-25-workspace",
+      "datum": "2026-10-25",
+      "nadpis": "Workspace — nové miesto na prácu s AI partnerom: aig.gr8it.cloud",
+      "text": "Na aig.gr8it.cloud pracuješ s AI partnerom na počítači aj na telefóne a vieš toho viac než vo VS Code. Na úvodnej stránke máš všetky svoje sedenia zo všetkých projektov (aj tie z VS Code) a hľadanie v celej ich histórii; žltý filter „čaká na teba“ ukáže sedenia, kde práca stojí na tvojom slove. Otvor si toľko okien, koľko potrebuješ — každé s iným sedením, nezávisle od seba; vedľa rozhovoru vidíš dokumenty a súbory projektu. AI partner pracuje na serveri ďalej, aj keď okno zavrieš alebo uspíš počítač. Pripni si ho ako aplikáciu: na iPhone v Safari Zdieľať → Pridať na plochu, na Macu v Safari Súbor → Pridať do Docku.",
+      "nadpis_cs": "Workspace — nové místo pro práci s AI partnerem: aig.gr8it.cloud",
+      "text_cs": "Na aig.gr8it.cloud pracuješ s AI partnerem na počítači i na telefonu a umíš tam víc než ve VS Code. Na úvodní stránce máš všechny své relace ze všech projektů (i ty z VS Code) a hledání v celé jejich historii; žlutý filtr „čeká na tebe“ ukáže relace, kde práce stojí na tvém slově. Otevři si tolik oken, kolik potřebuješ — každé s jinou relací, nezávisle na sobě; vedle rozhovoru vidíš dokumenty a soubory projektu. AI partner pracuje na serveru dál, i když okno zavřeš nebo uspíš počítač. Připni si ho jako aplikaci: na iPhonu v Safari Sdílet → Přidat na plochu, na Macu v Safari Soubor → Přidat do Docku.",
+      "pustena": true,
+      "navod": "navody/novinky.html#k1"
+    },
+    {
+      "id": "2026-10-25-mac-a-server",
+      "datum": "2026-10-25",
+      "nadpis": "Práca z Macu pokračuje na serveri a naopak",
+      "text": "Ak pracuješ s AI partnerom aj na svojom Macu, tvoje sedenia sa každú minútu prenášajú na server a späť. Vo workspace aig.gr8it.cloud ich máš vedľa ostatných, aj na telefóne, a v práci rozrobenej na Macu pokračuješ na serveri, aj keď Mac zavrieš — a naopak. Workspace ukáže, ktoré sedenie je práve otvorené na Macu, aby si do jedného nepísal na dvoch miestach naraz; keby sa to stalo, nič sa nestratí, druhá verzia ostane ako samostatné sedenie. Sedenie, ktoré začneš na serveri, príde na Mac na požiadanie. Platí to pre projekty, ktoré máš na Macu aj na serveri, zatiaľ len na Macu (nie na Windows). Zapnú ti to správcovia — napíš im.",
+      "nadpis_cs": "Práce z Macu pokračuje na serveru a naopak",
+      "text_cs": "Pokud pracuješ s AI partnerem i na svém Macu, tvoje relace se každou minutu přenášejí na server a zpět. Ve workspace aig.gr8it.cloud je máš vedle ostatních, i na telefonu, a v práci rozdělané na Macu můžeš pokračovat na serveru, i když Mac zavřeš — a naopak. Workspace ukáže, která relace je právě otevřená na Macu, abys do jedné nepsal na dvou místech současně; kdyby se to stalo, nic se neztratí, druhá verze zůstane jako samostatná relace. Relace, kterou začneš na serveru, přijde na Mac na požádání. Platí to pro projekty, které máš na Macu i na serveru, zatím jen na Macu (ne na Windows). Zapnou ti to správci — napiš jim.",
+      "pustena": false
+    },
+    {
+      "id": "2026-10-25-zakladanie-projektov",
+      "datum": "2026-10-25",
+      "nadpis": "Nový projekt si založíš sám",
+      "text": "Klikni na „+ Nové sedenie“ a potom na „+ Založiť nový projekt“. Napíš meno (malé písmená bez diakritiky, číslice, pomlčka), vyber pracovný alebo osobný a o chvíľu ho nájdeš v zozname projektov. Projekt je súkromný — vidíš ho ty a správcovia platformy. Do pracovného projektu pridávajú ďalších ľudí správcovia; ak niekoho potrebuješ, napíš im.",
+      "nadpis_cs": "Nový projekt si založíš sám",
+      "text_cs": "Klikni na „+ Nová relace“ a potom na „+ Založit nový projekt“. Napiš název (malá písmena bez diakritiky, číslice, pomlčka), vyber pracovní nebo osobní a za chvíli ho najdeš v seznamu projektů. Projekt je soukromý — vidíš ho ty a správci platformy. Do pracovního projektu přidávají další lidi správci; pokud někoho potřebuješ, napiš jim.",
+      "pustena": true,
+      "navod": "navody/novinky.html#k2"
+    },
+    {
+      "id": "2026-10-25-pripoj-github",
+      "datum": "2026-10-25",
+      "nadpis": "„Pripoj GitHub“ znova funguje",
+      "text": "Od 17. 10. tlačidlo „Pripoj GitHub“ nefungovalo. Je opravené. Ak ti VS Code hlási, že projekt nie je prepojený s GitHubom, klikni na „Pripoj GitHub“ — potom sa tvoja práca ukladá mimo servera priebežne. Kým GitHub pripojený nemáš, ukladá sa mimo servera raz denne, v noci.",
+      "nadpis_cs": "„Připoj GitHub“ znovu funguje",
+      "text_cs": "Od 17. 10. tlačítko „Připoj GitHub“ nefungovalo. Je opraveno. Pokud ti VS Code hlásí, že projekt není propojený s GitHubem, klikni na „Připoj GitHub“ — potom se tvoje práce ukládá mimo server průběžně. Dokud GitHub připojený nemáš, ukládá se mimo server jednou denně, v noci.",
+      "len_server": true,
+      "pustena": true,
+      "navod": "navody/novinky.html#k3"
+    },
+    {
+      "id": "2026-10-20-telefon",
+      "datum": "2026-10-20",
+      "nadpis": "AI partner na telefóne pracuje ako vo VS Code a dá sa zastaviť",
+      "text": "Na telefóne ťa ai.gr8it.cloud zavedie do workspace: zoznam sedení, ich prepis a pole na písanie. AI partner tam pracuje v tom istom režime ako vo VS Code. Keď ide práca zlým smerom, ťukni „Zastaviť“. Keď sa AI partner na niečo pýta a ponúkne možnosti, ťukni na tú, ktorú chceš; inak odpovedz obyčajnou správou.",
+      "nadpis_cs": "AI partner na telefonu pracuje jako ve VS Code a dá se zastavit",
+      "text_cs": "Na telefonu tě ai.gr8it.cloud zavede do workspace: seznam relací, jejich přepis a pole pro psaní. AI partner tam pracuje ve stejném režimu jako ve VS Code. Když práce jde špatným směrem, klepni na „Zastavit“. Když se AI partner na něco ptá a nabídne možnosti, klepni na tu, kterou chceš; jinak odpověz obyčejnou zprávou.",
+      "pustena": true,
+      "navod": "navody/novinky.html#k4"
+    }
+  ]
+}

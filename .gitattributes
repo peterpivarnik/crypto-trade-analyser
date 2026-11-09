@@ -1,0 +1,4 @@
+# NG stroj: zápisník a návrhy sa zlučujú pravidlom „zober oba" (merge=union) — súbežné zápisy dvoch ľudí nekončia konfliktom
+NG-zaznamy.md merge=union
+NAVRHY.md merge=union
+.aigrip/ng/*.jsonl merge=union

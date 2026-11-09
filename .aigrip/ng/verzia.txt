@@ -1,0 +1,2 @@
+2026.11.44
+stroj NG · balík: ng-vypadok.sh, ng-kdesom-pripomienka.sh, ng-zapisnik-guard.sh, ng-stare-straz.py, ng-kotva.sh, ng-kdesom-koniec.sh, ng-ohlaseny-krok.py, ng-kontext-straz.sh, ng-zapisnik-bash.sh, ng-straz-beh.sh, ng-audit-straz.py, ng-kotva-analyza.py, ng-kotva-over.py, ng-predosla-sprava.sh, ng-cudzia-praca.sh, ng-otazky-straz.sh, ng-otazky-straz.py, ng-otazky.py, ng-osobne.sh, ng-poruke-naraz.sh, ng-novinky.sh, ng-novinky.json, ng-hook-stopa.sh + výpadková veta + audit tichých potvrdení + 6 odsekov textu · nasadené 2026-11-09 05:43

@@ -29,6 +29,7 @@ public class OrderWrapper {
 
     private static final BigDecimal HALF_OF_MAX_PROFIT = new BigDecimal("0.15");
     private static final BigDecimal HALF_OF_MIN_PROFIT = new BigDecimal("0.0025");
+    private static final BigDecimal MAX_BTC_AMOUNT_FOR_FAST_WAITING = new BigDecimal("0.001");
 
     private final Order order;
     private final BigDecimal currentPrice;
@@ -195,8 +196,9 @@ public class OrderWrapper {
                                                   BigDecimal orderBtcAmount,
                                                   BigDecimal orderPricePercentage,
                                                   boolean hasMoreSymbolOrders) {
-        // Extracted small order is rebought cheaply, so the rest of the symbol must not slow it down
-        BigDecimal totalWaitingTime = hasMoreSymbolOrders ? BigDecimal.ZERO : getTimeFromAmount(totalSymbolAmount);
+        // Small extracted order is rebought cheaply, so the rest of the symbol must not slow it down
+        boolean fastWaiting = hasMoreSymbolOrders && orderBtcAmount.compareTo(MAX_BTC_AMOUNT_FOR_FAST_WAITING) <= 0;
+        BigDecimal totalWaitingTime = fastWaiting ? BigDecimal.ZERO : getTimeFromAmount(totalSymbolAmount);
         BigDecimal orderWaitingTime = getTimeFromAmount(orderBtcAmount);
         BigDecimal waitingTime = totalWaitingTime.add(orderWaitingTime);
         BigDecimal timeVariable = getTimeVariable(orderPricePercentage);

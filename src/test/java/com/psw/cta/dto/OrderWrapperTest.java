@@ -26,23 +26,35 @@ class OrderWrapperTest {
 
     @Test
     void shouldIgnoreRestOfSymbolInWaitingTimeWhenThereAreMoreSymbolOrders() {
-        OrderWrapper withBigRest = orderWrapper(List.of(), "0.046", true);
-        OrderWrapper withSmallRest = orderWrapper(List.of(), "0.002", true);
-        OrderWrapper singleOrder = orderWrapper(List.of(), "0.046", false);
+        OrderWrapper withBigRest = orderWrapper(List.of(), "9", "0.046", true);
+        OrderWrapper withSmallRest = orderWrapper(List.of(), "9", "0.002", true);
+        OrderWrapper singleOrder = orderWrapper(List.of(), "9", "0.046", false);
 
         assertThat(withBigRest.getRemainWaitingTime()).isEqualByComparingTo(withSmallRest.getRemainWaitingTime());
         assertThat(withBigRest.getRemainWaitingTime()).isLessThan(singleOrder.getRemainWaitingTime());
     }
 
-    private OrderWrapper orderWrapper(List<Candlestick> candlesticks) {
-        return orderWrapper(candlesticks, "0.0011", false);
+    @Test
+    void shouldWaitForRestOfSymbolWhenExtractedOrderIsBig() {
+        OrderWrapper bigExtractedOrder = orderWrapper(List.of(), "10", "0.046", true);
+        OrderWrapper bigSingleOrder = orderWrapper(List.of(), "10", "0.046", false);
+
+        assertThat(bigExtractedOrder.getRemainWaitingTime())
+            .isEqualByComparingTo(bigSingleOrder.getRemainWaitingTime());
     }
 
-    private OrderWrapper orderWrapper(List<Candlestick> candlesticks, String totalAmount, boolean hasMoreSymbolOrders) {
+    private OrderWrapper orderWrapper(List<Candlestick> candlesticks) {
+        return orderWrapper(candlesticks, "10", "0.0011", false);
+    }
+
+    private OrderWrapper orderWrapper(List<Candlestick> candlesticks,
+                                      String quantity,
+                                      String totalAmount,
+                                      boolean hasMoreSymbolOrders) {
         Order order = new Order();
         order.setSymbol(SYMBOL);
         order.setPrice(ORDER_PRICE.toPlainString());
-        order.setOrigQty("10");
+        order.setOrigQty(quantity);
         order.setExecutedQty("0");
         return new OrderWrapper(order,
                                 ORDER_PRICE,

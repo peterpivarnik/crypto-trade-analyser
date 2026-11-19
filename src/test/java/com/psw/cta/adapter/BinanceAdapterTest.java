@@ -1,15 +1,27 @@
 package com.psw.cta.adapter;
 
+import static com.psw.cta.dto.binance.FilterType.LOT_SIZE;
+import static com.psw.cta.dto.binance.FilterType.NOTIONAL;
+import static com.psw.cta.dto.binance.FilterType.PRICE_FILTER;
+import static com.psw.cta.dto.binance.OrderSide.SELL;
+import static com.psw.cta.dto.binance.OrderType.LIMIT;
+import static com.psw.cta.dto.binance.TimeInForce.GTC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.psw.cta.dto.OrderWrapper;
+import com.psw.cta.dto.binance.Account;
+import com.psw.cta.dto.binance.AssetBalance;
+import com.psw.cta.dto.binance.FilterType;
 import com.psw.cta.dto.binance.NewOrderResponse;
+import com.psw.cta.dto.binance.SymbolFilter;
 import com.psw.cta.dto.binance.SymbolInfo;
 import com.psw.cta.dto.binance.Trade;
 import java.math.BigDecimal;
@@ -62,6 +74,60 @@ class BinanceAdapterTest {
         BigDecimal newPriceToSell = binanceAdapter.getNewPriceToSell(symbolInfo, orderResponse, orderWrapper);
 
         assertThat(newPriceToSell).isEqualByComparingTo("0.0001218");
+    }
+
+    @Test
+    void shouldKeepSellPriceThatIsAlreadyOnTick() {
+        useEthFiltersAndBalance("1");
+
+        binanceAdapter.placeSellOrder(symbolInfo, new BigDecimal("0.02857"), new BigDecimal("1"));
+
+        verify(binanceClient).newOrder(SYMBOL, SELL, LIMIT, GTC, "1", "0.02857");
+    }
+
+    @Test
+    void shouldRoundSellPriceUpToNextTick() {
+        useEthFiltersAndBalance("1");
+
+        binanceAdapter.placeSellOrder(symbolInfo, new BigDecimal("0.028573"), new BigDecimal("1"));
+
+        verify(binanceClient).newOrder(eq(SYMBOL), eq(SELL), eq(LIMIT), eq(GTC), eq("1"), eq("0.028580"));
+    }
+
+    @Test
+    void shouldExtractSmallPartAtOrderPriceAndRestOneTickHigher() {
+        useEthFiltersAndBalance("0.2278");
+        when(orderWrapper.getQuantity()).thenReturn(new BigDecimal("0.2278"));
+        when(orderWrapper.getOrderPrice()).thenReturn(new BigDecimal("0.02857"));
+
+        binanceAdapter.extractTwoSellOrders(symbolInfo, orderWrapper);
+
+        verify(binanceClient).newOrder(eq(SYMBOL), eq(SELL), eq(LIMIT), eq(GTC), any(), eq("0.02857"));
+        verify(binanceClient).newOrder(eq(SYMBOL), eq(SELL), eq(LIMIT), eq(GTC), any(), eq("0.02858"));
+    }
+
+    private void useEthFiltersAndBalance(String balance) {
+        SymbolFilter priceFilter = filter(PRICE_FILTER);
+        lenient().when(priceFilter.getTickSize()).thenReturn("0.00001");
+        SymbolFilter lotSizeFilter = filter(LOT_SIZE);
+        lenient().when(lotSizeFilter.getStepSize()).thenReturn("0.001");
+        lenient().when(lotSizeFilter.getMinQty()).thenReturn("0.001");
+        SymbolFilter notionalFilter = filter(NOTIONAL);
+        lenient().when(notionalFilter.getMinNotional()).thenReturn("0.0001");
+        symbolInfo.setFilters(List.of(priceFilter, lotSizeFilter, notionalFilter));
+
+        AssetBalance assetBalance = new AssetBalance();
+        assetBalance.setAsset("AAA");
+        assetBalance.setFree(balance);
+        Account account = new Account();
+        account.setBalances(List.of(assetBalance));
+        when(binanceClient.getAccount()).thenReturn(account);
+    }
+
+    private SymbolFilter filter(FilterType filterType) {
+        SymbolFilter filter = mock(SymbolFilter.class);
+        lenient().when(filter.getFilterType()).thenReturn(filterType);
+        return filter;
     }
 
     private NewOrderResponse orderResponse(String executedQty, String cummulativeQuoteQty) {

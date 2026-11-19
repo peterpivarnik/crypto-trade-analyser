@@ -422,12 +422,14 @@ public class BinanceAdapter {
                      BigDecimal::add);
     }
 
+    // Price already on a tick stays as it is, otherwise it is rounded up to the next tick
     private BigDecimal roundPrice(SymbolInfo symbolInfo, BigDecimal price) {
-        return round(symbolInfo,
-                     price,
-                     PRICE_FILTER,
-                     SymbolFilter::getTickSize,
-                     BigDecimal::add);
+        BigDecimal tickSize = getValueFromFilter(symbolInfo, SymbolFilter::getTickSize, PRICE_FILTER);
+        BigDecimal remainder = price.remainder(tickSize);
+        if (remainder.signum() == 0) {
+            return price;
+        }
+        return price.subtract(remainder).add(tickSize);
     }
 
     private BigDecimal round(SymbolInfo symbolInfo,

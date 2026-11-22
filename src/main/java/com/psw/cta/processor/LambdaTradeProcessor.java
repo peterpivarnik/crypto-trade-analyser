@@ -247,9 +247,10 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
                && orderWrappers.stream().anyMatch(ExtractService::canBeExtracted);
     }
 
+    // No age check: only one order is extracted at a time, because its small part stays the order
+    // with the lowest loss and is too small to be extracted again until it is sold
     private boolean shouldExtractOneOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
-        return allOlderThanDay(orderWrappers)
-               && !haveEnoughBtcToExtractMoreOrders(myBtcBalance)
+        return !haveEnoughBtcToExtractMoreOrders(myBtcBalance)
                && !isBtcBalanceBelowMinToExtract(myBtcBalance)
                && ExtractService.canExtractFirstOrder(orderWrappers);
     }

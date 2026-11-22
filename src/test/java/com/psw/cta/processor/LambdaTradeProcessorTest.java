@@ -144,6 +144,20 @@ class LambdaTradeProcessorTest {
     }
 
     @Test
+    void shouldExtractOrderWithoutWaitingForAllOrdersToBeOlderThanDay() {
+        tradeOrder("0.00011", "10", "0.0002", "0.0011", 1L);
+
+        verify(extractService).extractOnlyFirstOrder(any(), eq(exchangeInfo));
+    }
+
+    @Test
+    void shouldNotCancelTradeWhenOrderIsNotOlderThanDay() {
+        tradeOrder("0.00011", "10", "0.00019999", "0.0011", 1L);
+
+        verify(cancelService, never()).cancelTrade(any(), any());
+    }
+
+    @Test
     void shouldSplitOrderBeforeCancellingTradeWhenBtcBalanceIsBelowMinimum() {
         tradeOldOrder("0.00012", "0.0001");
 
@@ -337,12 +351,20 @@ class LambdaTradeProcessorTest {
     }
 
     private void tradeOldOrder(String orderPrice, String quantity, String btcBalance, String totalAmount) {
+        tradeOrder(orderPrice, quantity, btcBalance, totalAmount, 1000L);
+    }
+
+    private void tradeOrder(String orderPrice,
+                            String quantity,
+                            String btcBalance,
+                            String totalAmount,
+                            long ageInHours) {
         when(binanceAdapter.getCurrentPrice(ACTIVE_SYMBOL)).thenReturn(new BigDecimal("0.0001"));
         Order order = order();
         order.setSymbol(ACTIVE_SYMBOL);
         order.setPrice(orderPrice);
         order.setOrigQty(quantity);
-        order.setTime(System.currentTimeMillis() - 1000L * 3_600_000L);
+        order.setTime(System.currentTimeMillis() - ageInHours * 3_600_000L);
         tradeProcessor.trade(List.of(order),
                              Map.of(ACTIVE_SYMBOL, new BigDecimal(totalAmount)),
                              new BigDecimal(btcBalance),

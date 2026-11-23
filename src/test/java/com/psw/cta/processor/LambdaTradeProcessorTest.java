@@ -151,6 +151,20 @@ class LambdaTradeProcessorTest {
     }
 
     @Test
+    void shouldNotExtractOrderBelowMinOrderAmountToExtract() {
+        tradeOrder("0.00011", "4.5", "0.0002", "0.000495", 1L);
+
+        verify(extractService, never()).extractOnlyFirstOrder(any(), any());
+    }
+
+    @Test
+    void shouldExtractOrderAboveMinOrderAmountToExtract() {
+        tradeOrder("0.00011", "4.6", "0.0002", "0.000506", 1L);
+
+        verify(extractService).extractOnlyFirstOrder(any(), eq(exchangeInfo));
+    }
+
+    @Test
     void shouldNotCancelTradeWhenOrderIsNotOlderThanDay() {
         tradeOrder("0.00011", "10", "0.00019999", "0.0011", 1L);
 

@@ -248,7 +248,7 @@ public class LambdaTradeProcessor extends MainTradeProcessor {
     }
 
     // No age check: only one order is extracted at a time, because its small part stays the order
-    // with the lowest loss and is too small to be extracted again until it is sold
+    // with the lowest loss and is too small to be extracted again until it is rebought a few times
     private boolean shouldExtractOneOrder(List<OrderWrapper> orderWrappers, BigDecimal myBtcBalance) {
         return !haveEnoughBtcToExtractMoreOrders(myBtcBalance)
                && !isBtcBalanceBelowMinToExtract(myBtcBalance)

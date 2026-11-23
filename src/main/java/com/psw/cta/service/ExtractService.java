@@ -16,6 +16,9 @@ import java.util.Optional;
  */
 public class ExtractService {
 
+    // Rebought extracted part must grow over this amount before it can be extracted again
+    private static final BigDecimal MIN_ORDER_BTC_AMOUNT_TO_EXTRACT = new BigDecimal("0.0005");
+
     private final BinanceAdapter binanceAdapter;
     private final LambdaLogger logger;
 
@@ -56,7 +59,7 @@ public class ExtractService {
      * @return true if order is big enough and its order price percentage is low enough
      */
     public static boolean canBeExtracted(OrderWrapper orderWrapper) {
-        return orderWrapper.getOrderBtcAmount().compareTo(new BigDecimal("0.0005")) > 0
+        return orderWrapper.getOrderBtcAmount().compareTo(MIN_ORDER_BTC_AMOUNT_TO_EXTRACT) > 0
                && orderWrapper.getOrderPricePercentage().compareTo(new BigDecimal("20")) < 0;
     }
 
@@ -90,7 +93,7 @@ public class ExtractService {
         return orderWrappers.stream()
                             .min(Comparator.comparing(OrderWrapper::getOrderPricePercentage))
                             .filter(orderWrapper -> orderWrapper.getOrderBtcAmount()
-                                                                .compareTo(new BigDecimal("0.0003")) > 0);
+                                                                .compareTo(MIN_ORDER_BTC_AMOUNT_TO_EXTRACT) > 0);
     }
 
     private void extractOrder(OrderWrapper orderToExtract, ExchangeInfo exchangeInfo) {
